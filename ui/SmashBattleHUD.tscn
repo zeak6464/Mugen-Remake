@@ -1,0 +1,80 @@
+[gd_scene format=3 uid="uid://cpil0k5n183m1"]
+
+[ext_resource type="Script" uid="uid://cfbxgrxmyjv1b" path="res://ui/SmashBattleHUD.gd" id="1_smash_hud_script"]
+[ext_resource type="Theme" uid="uid://ksxjx5uqcuqd" path="res://ui/theme/GlobalUITheme.tres" id="2_global_theme"]
+
+[node name="SmashBattleHUD" type="CanvasLayer" unique_id=67636157]
+script = ExtResource("1_smash_hud_script")
+
+[node name="TopBar" type="Control" parent="." unique_id=1866145995]
+layout_mode = 3
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 16.0
+offset_top = 10.0
+offset_right = -16.0
+offset_bottom = 130.0
+grow_horizontal = 2
+theme = ExtResource("2_global_theme")
+
+[node name="P1Stocks" type="Label" parent="TopBar" unique_id=1198382201]
+layout_mode = 0
+offset_left = 10.0
+offset_top = 12.0
+offset_right = 240.0
+offset_bottom = 36.0
+theme_override_font_sizes/font_size = 20
+text = "P1 Stocks: 3"
+
+[node name="P2Stocks" type="Label" parent="TopBar" unique_id=934552278]
+layout_mode = 0
+offset_left = 1014.0
+offset_top = 5.0
+offset_right = 1246.0
+offset_bottom = 33.0
+theme_override_font_sizes/font_size = 20
+text = "P2 Stocks: 3"
+horizontal_alignment = 2
+
+[node name="P1Percent" type="Label" parent="TopBar" unique_id=2104306418]
+layout_mode = 0
+offset_left = 10.0
+offset_top = 42.0
+offset_right = 240.0
+offset_bottom = 76.0
+theme_override_font_sizes/font_size = 30
+text = "P1: 0%"
+
+[node name="P2Percent" type="Label" parent="TopBar" unique_id=1699711041]
+layout_mode = 0
+offset_left = 1014.0
+offset_top = 35.0
+offset_right = 1246.0
+offset_bottom = 77.0
+theme_override_font_sizes/font_size = 30
+text = "P2: 0%"
+horizontal_alignment = 2
+
+[node name="CenterInfo" type="Control" parent="TopBar" unique_id=553102846]
+anchors_preset = 0
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -120.0
+offset_top = 12.0
+offset_right = 120.0
+offset_bottom = 96.0
+grow_horizontal = 2
+
+[node name="Round" type="Label" parent="TopBar/CenterInfo" unique_id=370375318]
+layout_mode = 0
+offset_top = 30.0
+offset_right = 77.0
+offset_bottom = 56.0
+text = "Round: 1"
+horizontal_alignment = 1
+
+[node name="Status" type="Label" parent="TopBar/CenterInfo" unique_id=528337524]
+layout_mode = 0
+theme_override_font_sizes/font_size = 22
+text = "Smash!"
+horizontal_alignment = 1

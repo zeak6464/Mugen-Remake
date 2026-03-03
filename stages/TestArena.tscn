@@ -1,0 +1,51 @@
+[gd_scene format=3 uid="uid://dnum0yoj0030k"]
+
+[ext_resource type="PackedScene" path="res://engine/FighterBase.tscn" id="1_fighter"]
+[ext_resource type="Script" uid="uid://bjrgr6l1l6ya7" path="res://engine/CameraController.gd" id="2_camera"]
+[ext_resource type="PackedScene" path="res://debug/InputBufferViewer.tscn" id="3_debug_ui"]
+[ext_resource type="Script" uid="uid://bgy4b5k62v78e" path="res://stages/TestArenaController.gd" id="4_arena_controller"]
+[ext_resource type="PackedScene" uid="uid://dp7tvye7oj88a" path="res://ui/BattleHUD.tscn" id="6_hud"]
+[ext_resource type="PackedScene" path="res://ui/TrainingOptionsMenu.tscn" id="7_training_options"]
+[ext_resource type="PackedScene" uid="uid://cpil0k5n183m1" path="res://ui/SmashBattleHUD.tscn" id="8_smash_hud"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_floor"]
+size = Vector3(240, 20, 80)
+
+[node name="TestArena" type="Node3D" unique_id=1823686995]
+
+[node name="Floor" type="StaticBody3D" parent="." unique_id=1705645042]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 9.01754, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Floor" unique_id=1145137531]
+shape = SubResource("BoxShape3D_floor")
+
+[node name="FighterA" parent="." unique_id=769650509 instance=ExtResource("1_fighter")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.25, 0.1319685, 0)
+lock_to_z_axis = true
+lock_to_x_axis = true
+
+[node name="FighterB" parent="." unique_id=1391742758 instance=ExtResource("1_fighter")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.25, 0.1319685, 0)
+lock_to_z_axis = true
+
+[node name="CameraController" type="Camera3D" parent="." unique_id=1581852597]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 17.784958, 12)
+current = true
+script = ExtResource("2_camera")
+fighter_a_path = NodePath("../FighterA")
+fighter_b_path = NodePath("../FighterB")
+
+[node name="InputBufferViewer" parent="." unique_id=1409392812 instance=ExtResource("3_debug_ui")]
+target_fighter_path = NodePath("../FighterA")
+
+[node name="ArenaController" type="Node" parent="." unique_id=1903725689]
+script = ExtResource("4_arena_controller")
+
+[node name="TeamFighters" type="Node3D" parent="." unique_id=2055707397]
+
+[node name="BattleHUD" parent="." unique_id=1724319727 instance=ExtResource("6_hud")]
+
+[node name="SmashBattleHUD" parent="." unique_id=1760722434 instance=ExtResource("8_smash_hud")]
+visible = false
+
+[node name="TrainingOptionsMenu" parent="." unique_id=1728961943 instance=ExtResource("7_training_options")]

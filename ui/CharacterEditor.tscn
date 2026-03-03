@@ -1,0 +1,621 @@
+[gd_scene format=3 uid="uid://yh0p5jcm33xs"]
+
+[ext_resource type="Script" uid="uid://bwiuotuaquytt" path="res://ui/CharacterEditor.gd" id="1_character_editor"]
+[ext_resource type="Theme" uid="uid://ksxjx5uqcuqd" path="res://ui/theme/GlobalUITheme.tres" id="2_theme"]
+
+[node name="CharacterEditor" type="Control" unique_id=162140212]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("2_theme")
+script = ExtResource("1_character_editor")
+
+[node name="MarginContainer" type="MarginContainer" parent="." unique_id=652157724]
+anchors_preset = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer" unique_id=98709736]
+anchors_preset = 0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="TopRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer" unique_id=1468529365]
+anchors_preset = 0
+
+[node name="ModOption" type="OptionButton" parent="MarginContainer/VBoxContainer/TopRow" unique_id=852021911]
+layout_mode = 0
+size_flags_horizontal = 3
+
+[node name="SectionOption" type="OptionButton" parent="MarginContainer/VBoxContainer/TopRow" unique_id=611639408]
+custom_minimum_size = Vector2(180, 0)
+layout_mode = 0
+offset_left = 11.0
+offset_top = 7.0
+offset_right = 191.0
+offset_bottom = 35.0
+
+[node name="ReloadButton" type="Button" parent="MarginContainer/VBoxContainer/TopRow" unique_id=1531618449]
+layout_mode = 0
+text = "Reload"
+
+[node name="SaveButton" type="Button" parent="MarginContainer/VBoxContainer/TopRow" unique_id=424075435]
+layout_mode = 0
+text = "Save"
+
+[node name="BackButton" type="Button" parent="MarginContainer/VBoxContainer/TopRow" unique_id=1910045041]
+layout_mode = 0
+text = "Back"
+
+[node name="ContentPanel" type="Panel" parent="MarginContainer/VBoxContainer" unique_id=782578289]
+layout_mode = 0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="EditorsRoot" type="Control" parent="MarginContainer/VBoxContainer/ContentPanel" unique_id=1465737294]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="BoxHost" type="Control" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot" unique_id=406648579]
+anchors_preset = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="FileHost" type="Control" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot" unique_id=1226157766]
+visible = false
+anchors_preset = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="StatesHost" type="ScrollContainer" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot"]
+visible = false
+anchors_preset = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+follow_focus = true
+horizontal_scroll_mode = 0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/StatesHost"]
+layout_mode = 0
+anchor_right = 1.0
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="TopRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/StatesHost/VBoxContainer"]
+layout_mode = 0
+theme_override_constants/separation = 8
+
+[node name="StateOption" type="OptionButton" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/StatesHost/VBoxContainer/TopRow"]
+layout_mode = 0
+size_flags_horizontal = 3
+
+[node name="AddStateButton" type="Button" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/StatesHost/VBoxContainer/TopRow"]
+layout_mode = 0
+text = "Add"
+
+[node name="DeleteStateButton" type="Button" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/StatesHost/VBoxContainer/TopRow"]
+layout_mode = 0
+text = "Delete"
+
+[node name="FormGrid" type="GridContainer" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/StatesHost/VBoxContainer"]
+layout_mode = 0
+columns = 4
+
+[node name="StateIdLabel" type="Label" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/StatesHost/VBoxContainer/FormGrid"]
+layout_mode = 0
+text = "State ID"
+
+[node name="StateIdEdit" type="LineEdit" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/StatesHost/VBoxContainer/FormGrid"]
+layout_mode = 0
+
+[node name="AnimationLabel" type="Label" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/StatesHost/VBoxContainer/FormGrid"]
+layout_mode = 0
+text = "Animation"
+
+[node name="AnimationEdit" type="LineEdit" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/StatesHost/VBoxContainer/FormGrid"]
+layout_mode = 0
+
+[node name="AnimationPickerLabel" type="Label" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/StatesHost/VBoxContainer/FormGrid"]
+layout_mode = 0
+text = "Anim Picker"
+
+[node name="AnimationRowSpacer" type="Label" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/StatesHost/VBoxContainer/FormGrid"]
+layout_mode = 0
+text = ""
+
+[node name="AllowMovementLabel" type="Label" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/StatesHost/VBoxContainer/FormGrid"]
+layout_mode = 0
+text = "Allow Movement"
+
+[node name="AllowMovementCheck" type="CheckBox" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/StatesHost/VBoxContainer/FormGrid"]
+layout_mode = 0
+
+[node name="CancelIntoLabel" type="Label" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/StatesHost/VBoxContainer/FormGrid"]
+layout_mode = 0
+text = "Cancel Into"
+
+[node name="CancelIntoEdit" type="LineEdit" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/StatesHost/VBoxContainer/FormGrid"]
+layout_mode = 0
+placeholder_text = "comma list or [\"state_a\",\"state_b\"]"
+
+[node name="CancelWindowsLabel" type="Label" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/StatesHost/VBoxContainer/FormGrid"]
+layout_mode = 0
+text = "Cancel Windows"
+
+[node name="CancelWindowsEdit" type="LineEdit" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/StatesHost/VBoxContainer/FormGrid"]
+layout_mode = 0
+placeholder_text = "JSON array, e.g. [{\"start\":2,\"end\":8}]"
+
+[node name="NextFrameLabel" type="Label" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/StatesHost/VBoxContainer/FormGrid"]
+layout_mode = 0
+text = "Next Frame"
+
+[node name="NextFrameSpin" type="SpinBox" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/StatesHost/VBoxContainer/FormGrid"]
+layout_mode = 0
+min_value = 0.0
+max_value = 2000.0
+step = 1.0
+
+[node name="NextIdLabel" type="Label" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/StatesHost/VBoxContainer/FormGrid"]
+layout_mode = 0
+text = "Next ID"
+
+[node name="NextIdEdit" type="LineEdit" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/StatesHost/VBoxContainer/FormGrid"]
+layout_mode = 0
+placeholder_text = "leave empty for no auto-next"
+
+[node name="AnimationRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/StatesHost/VBoxContainer"]
+layout_mode = 0
+theme_override_constants/separation = 8
+
+[node name="AnimationOption" type="OptionButton" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/StatesHost/VBoxContainer/AnimationRow"]
+layout_mode = 0
+size_flags_horizontal = 3
+
+[node name="RefreshAnimationsButton" type="Button" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/StatesHost/VBoxContainer/AnimationRow"]
+layout_mode = 0
+text = "Refresh Anims"
+
+[node name="UseAnimationButton" type="Button" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/StatesHost/VBoxContainer/AnimationRow"]
+layout_mode = 0
+text = "Use Selected Anim"
+
+[node name="PresetRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/StatesHost/VBoxContainer"]
+layout_mode = 0
+theme_override_constants/separation = 8
+
+[node name="PresetOption" type="OptionButton" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/StatesHost/VBoxContainer/PresetRow"]
+layout_mode = 0
+size_flags_horizontal = 3
+
+[node name="AddPresetButton" type="Button" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/StatesHost/VBoxContainer/PresetRow"]
+layout_mode = 0
+text = "Add Controller Preset"
+
+[node name="ArraysRow" type="VBoxContainer" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/StatesHost/VBoxContainer"]
+layout_mode = 0
+theme_override_constants/separation = 8
+
+[node name="ControllersPanel" type="Panel" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/StatesHost/VBoxContainer/ArraysRow"]
+layout_mode = 0
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 132)
+
+[node name="ControllersVBox" type="VBoxContainer" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/StatesHost/VBoxContainer/ArraysRow/ControllersPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 6.0
+offset_top = 6.0
+offset_right = -6.0
+offset_bottom = -6.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 6
+
+[node name="ControllersLaneLabel" type="Label" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/StatesHost/VBoxContainer/ArraysRow/ControllersPanel/ControllersVBox"]
+layout_mode = 0
+text = "Controllers"
+
+[node name="ControllersLaneList" type="ItemList" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/StatesHost/VBoxContainer/ArraysRow/ControllersPanel/ControllersVBox"]
+layout_mode = 0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+custom_minimum_size = Vector2(0, 62)
+
+[node name="ControllersEditRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/StatesHost/VBoxContainer/ArraysRow/ControllersPanel/ControllersVBox"]
+layout_mode = 0
+theme_override_constants/separation = 6
+
+[node name="ControllerTypeOption" type="OptionButton" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/StatesHost/VBoxContainer/ArraysRow/ControllersPanel/ControllersVBox/ControllersEditRow"]
+layout_mode = 0
+custom_minimum_size = Vector2(120, 0)
+
+[node name="ControllerTriggerEdit" type="LineEdit" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/StatesHost/VBoxContainer/ArraysRow/ControllersPanel/ControllersVBox/ControllersEditRow"]
+layout_mode = 0
+size_flags_horizontal = 3
+placeholder_text = "trigger1 (optional)"
+
+[node name="ControllerParamsEdit" type="LineEdit" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/StatesHost/VBoxContainer/ArraysRow/ControllersPanel/ControllersVBox/ControllersEditRow"]
+layout_mode = 0
+size_flags_horizontal = 3
+placeholder_text = "params JSON, e.g. {\"value\":\"idle\"}"
+
+[node name="AddUpdateControllerButton" type="Button" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/StatesHost/VBoxContainer/ArraysRow/ControllersPanel/ControllersVBox/ControllersEditRow"]
+layout_mode = 0
+text = "Add/Update"
+
+[node name="DeleteControllerButton" type="Button" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/StatesHost/VBoxContainer/ArraysRow/ControllersPanel/ControllersVBox/ControllersEditRow"]
+layout_mode = 0
+text = "Delete"
+
+[node name="ControllersText" type="TextEdit" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/StatesHost/VBoxContainer/ArraysRow/ControllersPanel/ControllersVBox"]
+visible = false
+layout_mode = 0
+text = "[]"
+
+[node name="SoundsPanel" type="Panel" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/StatesHost/VBoxContainer/ArraysRow"]
+layout_mode = 0
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 132)
+
+[node name="SoundsVBox" type="VBoxContainer" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/StatesHost/VBoxContainer/ArraysRow/SoundsPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 6.0
+offset_top = 6.0
+offset_right = -6.0
+offset_bottom = -6.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 6
+
+[node name="SoundsLaneLabel" type="Label" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/StatesHost/VBoxContainer/ArraysRow/SoundsPanel/SoundsVBox"]
+layout_mode = 0
+text = "Sounds"
+
+[node name="SoundsLaneList" type="ItemList" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/StatesHost/VBoxContainer/ArraysRow/SoundsPanel/SoundsVBox"]
+layout_mode = 0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+custom_minimum_size = Vector2(0, 62)
+
+[node name="SoundsEditRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/StatesHost/VBoxContainer/ArraysRow/SoundsPanel/SoundsVBox"]
+layout_mode = 0
+theme_override_constants/separation = 6
+
+[node name="SoundFrameSpin" type="SpinBox" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/StatesHost/VBoxContainer/ArraysRow/SoundsPanel/SoundsVBox/SoundsEditRow"]
+layout_mode = 0
+custom_minimum_size = Vector2(72, 0)
+min_value = 0.0
+max_value = 2000.0
+step = 1.0
+
+[node name="SoundIdEdit" type="LineEdit" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/StatesHost/VBoxContainer/ArraysRow/SoundsPanel/SoundsVBox/SoundsEditRow"]
+layout_mode = 0
+size_flags_horizontal = 3
+placeholder_text = "sound id"
+
+[node name="SoundChannelEdit" type="LineEdit" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/StatesHost/VBoxContainer/ArraysRow/SoundsPanel/SoundsVBox/SoundsEditRow"]
+layout_mode = 0
+custom_minimum_size = Vector2(72, 0)
+placeholder_text = "sfx"
+
+[node name="AddUpdateSoundButton" type="Button" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/StatesHost/VBoxContainer/ArraysRow/SoundsPanel/SoundsVBox/SoundsEditRow"]
+layout_mode = 0
+text = "Add/Update"
+
+[node name="DeleteSoundButton" type="Button" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/StatesHost/VBoxContainer/ArraysRow/SoundsPanel/SoundsVBox/SoundsEditRow"]
+layout_mode = 0
+text = "Delete"
+
+[node name="SoundsText" type="TextEdit" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/StatesHost/VBoxContainer/ArraysRow/SoundsPanel/SoundsVBox"]
+visible = false
+layout_mode = 0
+text = "[]"
+
+[node name="ProjectilesPanel" type="Panel" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/StatesHost/VBoxContainer/ArraysRow"]
+layout_mode = 0
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 132)
+
+[node name="ProjectilesVBox" type="VBoxContainer" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/StatesHost/VBoxContainer/ArraysRow/ProjectilesPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 6.0
+offset_top = 6.0
+offset_right = -6.0
+offset_bottom = -6.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 6
+
+[node name="ProjectilesLaneLabel" type="Label" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/StatesHost/VBoxContainer/ArraysRow/ProjectilesPanel/ProjectilesVBox"]
+layout_mode = 0
+text = "Projectiles"
+
+[node name="ProjectilesLaneList" type="ItemList" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/StatesHost/VBoxContainer/ArraysRow/ProjectilesPanel/ProjectilesVBox"]
+layout_mode = 0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+custom_minimum_size = Vector2(0, 62)
+
+[node name="ProjectilesEditRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/StatesHost/VBoxContainer/ArraysRow/ProjectilesPanel/ProjectilesVBox"]
+layout_mode = 0
+theme_override_constants/separation = 6
+
+[node name="ProjectileFrameSpin" type="SpinBox" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/StatesHost/VBoxContainer/ArraysRow/ProjectilesPanel/ProjectilesVBox/ProjectilesEditRow"]
+layout_mode = 0
+custom_minimum_size = Vector2(72, 0)
+min_value = 0.0
+max_value = 2000.0
+step = 1.0
+
+[node name="ProjectileIdEdit" type="LineEdit" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/StatesHost/VBoxContainer/ArraysRow/ProjectilesPanel/ProjectilesVBox/ProjectilesEditRow"]
+layout_mode = 0
+size_flags_horizontal = 3
+placeholder_text = "projectile id"
+
+[node name="AddUpdateProjectileButton" type="Button" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/StatesHost/VBoxContainer/ArraysRow/ProjectilesPanel/ProjectilesVBox/ProjectilesEditRow"]
+layout_mode = 0
+text = "Add/Update"
+
+[node name="DeleteProjectileButton" type="Button" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/StatesHost/VBoxContainer/ArraysRow/ProjectilesPanel/ProjectilesVBox/ProjectilesEditRow"]
+layout_mode = 0
+text = "Delete"
+
+[node name="ProjectilesText" type="TextEdit" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/StatesHost/VBoxContainer/ArraysRow/ProjectilesPanel/ProjectilesVBox"]
+visible = false
+layout_mode = 0
+text = "[]"
+
+[node name="TimelineText" type="RichTextLabel" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/StatesHost/VBoxContainer"]
+layout_mode = 0
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(0, 90)
+bbcode_enabled = true
+text = "No state selected."
+
+[node name="ActionsRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/StatesHost/VBoxContainer"]
+layout_mode = 0
+theme_override_constants/separation = 8
+
+[node name="ApplyStateButton" type="Button" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/StatesHost/VBoxContainer/ActionsRow"]
+layout_mode = 0
+text = "Apply State"
+
+[node name="CommandsHost" type="Control" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot"]
+visible = false
+anchors_preset = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/CommandsHost"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 8
+
+[node name="TopRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/CommandsHost/VBoxContainer"]
+layout_mode = 0
+theme_override_constants/separation = 8
+
+[node name="CommandOption" type="OptionButton" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/CommandsHost/VBoxContainer/TopRow"]
+layout_mode = 0
+size_flags_horizontal = 3
+
+[node name="AddCommandButton" type="Button" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/CommandsHost/VBoxContainer/TopRow"]
+layout_mode = 0
+text = "Add"
+
+[node name="DeleteCommandButton" type="Button" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/CommandsHost/VBoxContainer/TopRow"]
+layout_mode = 0
+text = "Delete"
+
+[node name="FormGrid" type="GridContainer" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/CommandsHost/VBoxContainer"]
+layout_mode = 0
+columns = 4
+
+[node name="CommandIdLabel" type="Label" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/CommandsHost/VBoxContainer/FormGrid"]
+layout_mode = 0
+text = "ID"
+
+[node name="CommandIdEdit" type="LineEdit" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/CommandsHost/VBoxContainer/FormGrid"]
+layout_mode = 0
+
+[node name="PatternLabel" type="Label" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/CommandsHost/VBoxContainer/FormGrid"]
+layout_mode = 0
+text = "Pattern"
+
+[node name="PatternEdit" type="LineEdit" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/CommandsHost/VBoxContainer/FormGrid"]
+layout_mode = 0
+placeholder_text = "[\"FORWARD+P\"] or [2,3,6,\"P\"]"
+
+[node name="TargetStateLabel" type="Label" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/CommandsHost/VBoxContainer/FormGrid"]
+layout_mode = 0
+text = "Target State"
+
+[node name="TargetStateEdit" type="LineEdit" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/CommandsHost/VBoxContainer/FormGrid"]
+layout_mode = 0
+
+[node name="MaxWindowLabel" type="Label" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/CommandsHost/VBoxContainer/FormGrid"]
+layout_mode = 0
+text = "Max Window"
+
+[node name="MaxWindowSpin" type="SpinBox" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/CommandsHost/VBoxContainer/FormGrid"]
+layout_mode = 0
+min_value = 1.0
+max_value = 120.0
+step = 1.0
+value = 8.0
+
+[node name="MinRepeatLabel" type="Label" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/CommandsHost/VBoxContainer/FormGrid"]
+layout_mode = 0
+text = "Min Repeat"
+
+[node name="MinRepeatSpin" type="SpinBox" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/CommandsHost/VBoxContainer/FormGrid"]
+layout_mode = 0
+min_value = 1.0
+max_value = 240.0
+step = 1.0
+value = 8.0
+
+[node name="TransformToLabel" type="Label" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/CommandsHost/VBoxContainer/FormGrid"]
+layout_mode = 0
+text = "Transform To"
+
+[node name="TransformToEdit" type="LineEdit" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/CommandsHost/VBoxContainer/FormGrid"]
+layout_mode = 0
+
+[node name="TransformStateLabel" type="Label" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/CommandsHost/VBoxContainer/FormGrid"]
+layout_mode = 0
+text = "Transform State"
+
+[node name="TransformStateEdit" type="LineEdit" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/CommandsHost/VBoxContainer/FormGrid"]
+layout_mode = 0
+
+[node name="RevertTransformLabel" type="Label" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/CommandsHost/VBoxContainer/FormGrid"]
+layout_mode = 0
+text = "Revert Transform"
+
+[node name="RevertTransformCheck" type="CheckBox" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/CommandsHost/VBoxContainer/FormGrid"]
+layout_mode = 0
+
+[node name="ActionsRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/CommandsHost/VBoxContainer"]
+layout_mode = 0
+theme_override_constants/separation = 8
+
+[node name="ApplyCommandButton" type="Button" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/CommandsHost/VBoxContainer/ActionsRow"]
+layout_mode = 0
+text = "Apply Command"
+
+[node name="PreviewHost" type="Control" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot" unique_id=1788333217]
+visible = false
+anchors_preset = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/PreviewHost" unique_id=706532916]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 8
+
+[node name="CommandRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/PreviewHost/VBoxContainer" unique_id=1229949298]
+layout_mode = 0
+theme_override_constants/separation = 8
+
+[node name="CommandOption" type="OptionButton" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/PreviewHost/VBoxContainer/CommandRow" unique_id=781537640]
+layout_mode = 0
+size_flags_horizontal = 3
+
+[node name="MatchLabel" type="Label" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/PreviewHost/VBoxContainer/CommandRow" unique_id=1188117535]
+custom_minimum_size = Vector2(280, 0)
+layout_mode = 0
+text = "Last Match: -"
+
+[node name="InputRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/PreviewHost/VBoxContainer" unique_id=419208314]
+layout_mode = 0
+theme_override_constants/separation = 8
+
+[node name="InputLabel" type="Label" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/PreviewHost/VBoxContainer/InputRow" unique_id=414191195]
+layout_mode = 0
+size_flags_horizontal = 3
+text = "Dir: (0.00, 0.00) | Facing: Right"
+
+[node name="ActionRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/PreviewHost/VBoxContainer" unique_id=1533756037]
+layout_mode = 0
+theme_override_constants/separation = 8
+
+[node name="PlaytestButton" type="Button" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/PreviewHost/VBoxContainer/ActionRow" unique_id=877721752]
+layout_mode = 0
+text = "Start In-Editor Playtest"
+
+[node name="BufferText" type="RichTextLabel" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/PreviewHost/VBoxContainer" unique_id=1125639410]
+layout_mode = 0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+bbcode_enabled = false
+scroll_following = true
+text = "Input buffer is empty."
+
+[node name="FrameHost" type="Control" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot" unique_id=446341922]
+visible = false
+anchors_preset = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/FrameHost" unique_id=886606400]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="TopRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/FrameHost/VBoxContainer" unique_id=1389788445]
+anchors_preset = 0
+
+[node name="StateOption" type="OptionButton" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/FrameHost/VBoxContainer/TopRow" unique_id=295324540]
+layout_mode = 0
+size_flags_horizontal = 3
+
+[node name="HintLabel" type="Label" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/FrameHost/VBoxContainer/TopRow" unique_id=1459933572]
+layout_mode = 0
+text = "Startup / Active / Recovery / Total"
+
+[node name="FrameDataText" type="RichTextLabel" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/FrameHost/VBoxContainer" unique_id=1182523402]
+layout_mode = 0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+bbcode_enabled = true
+scroll_following = true
+
+[node name="StatusLabel" type="Label" parent="MarginContainer/VBoxContainer" unique_id=1164158928]
+layout_mode = 0

@@ -1,0 +1,70 @@
+[gd_scene format=3 uid="uid://dg8lcwgpqp0gs"]
+
+[ext_resource type="Script" uid="uid://cfvq345ogo5y7" path="res://ui/TitleScreen.gd" id="1_title_screen_script"]
+[ext_resource type="Theme" uid="uid://ksxjx5uqcuqd" path="res://ui/theme/GlobalUITheme.tres" id="2_global_theme"]
+[ext_resource type="Texture2D" uid="uid://debfuu8bsmsnj" path="res://ui/Menu/TitleScreen.png" id="3_emmnt"]
+
+[node name="TitleScreen" type="Control" unique_id=1867827904]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_bottom = -237.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("2_global_theme")
+script = ExtResource("1_title_screen_script")
+
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=1143368965]
+position = Vector2(641.25006, 364)
+scale = Vector2(0.9996094, 1.0027778)
+texture = ExtResource("3_emmnt")
+
+[node name="CenterContainer" type="Control" parent="." unique_id=1392439906]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="Control" parent="CenterContainer" unique_id=1111931695]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_bottom = 6.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="TitleLabel" type="Label" parent="CenterContainer/VBoxContainer" unique_id=48230738]
+layout_mode = 0
+offset_left = 280.0
+offset_top = 96.0
+offset_right = 1000.0
+offset_bottom = 172.0
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_font_sizes/font_size = 56
+text = "MUGEN REMAKE"
+horizontal_alignment = 1
+
+[node name="SubtitleLabel" type="Label" parent="CenterContainer/VBoxContainer" unique_id=581593072]
+layout_mode = 0
+offset_left = 340.0
+offset_top = 184.0
+offset_right = 940.0
+offset_bottom = 216.0
+theme_override_font_sizes/font_size = 22
+text = "3D Fighting Engine"
+horizontal_alignment = 1
+
+[node name="PromptLabel" type="Label" parent="CenterContainer/VBoxContainer" unique_id=234540514]
+layout_mode = 0
+offset_left = 300.0
+offset_top = 630.0
+offset_right = 980.0
+offset_bottom = 664.0
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_font_sizes/font_size = 20
+text = "Press Attack (P) or Enter to Start"
+horizontal_alignment = 1

@@ -1,0 +1,197 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://ui/TrainingOptionsMenu.gd" id="1_training_options_script"]
+[ext_resource type="Theme" path="res://ui/theme/GlobalUITheme.tres" id="2_global_theme"]
+
+[node name="TrainingOptionsMenu" type="CanvasLayer"]
+visible = false
+script = ExtResource("1_training_options_script")
+
+[node name="Root" type="Control" parent="."]
+layout_mode = 0
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("2_global_theme")
+
+[node name="Dim" type="ColorRect" parent="Root"]
+layout_mode = 0
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.55)
+
+[node name="CenterContainer" type="CenterContainer" parent="Root"]
+layout_mode = 0
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Panel" type="Panel" parent="Root/CenterContainer"]
+custom_minimum_size = Vector2(540, 430)
+layout_mode = 0
+
+[node name="Content" type="Control" parent="Root/CenterContainer/Panel"]
+layout_mode = 0
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = 16.0
+offset_right = -16.0
+offset_bottom = -16.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MainVBox" type="VBoxContainer" parent="Root/CenterContainer/Panel/Content"]
+layout_mode = 0
+theme_override_constants/separation = 10
+
+[node name="TitleLabel" type="Label" parent="Root/CenterContainer/Panel/Content/MainVBox"]
+layout_mode = 0
+theme_override_font_sizes/font_size = 24
+text = "Pause Menu"
+horizontal_alignment = 1
+
+[node name="ResumeButton" type="Button" parent="Root/CenterContainer/Panel/Content/MainVBox"]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 0
+text = "Continue / Resume"
+
+[node name="MoveListButton" type="Button" parent="Root/CenterContainer/Panel/Content/MainVBox"]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 0
+text = "Move List / Skill List"
+
+[node name="ButtonConfigButton" type="Button" parent="Root/CenterContainer/Panel/Content/MainVBox"]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 0
+text = "Button Configuration"
+
+[node name="SoundConfigButton" type="Button" parent="Root/CenterContainer/Panel/Content/MainVBox"]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 0
+text = "Sound Configuration"
+
+[node name="ExitCharacterSelectButton" type="Button" parent="Root/CenterContainer/Panel/Content/MainVBox"]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 0
+text = "Exit to Character Select"
+
+[node name="ExitMainMenuButton" type="Button" parent="Root/CenterContainer/Panel/Content/MainVBox"]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 0
+text = "Exit to Main Menu"
+
+[node name="MoveListPanel" type="VBoxContainer" parent="Root/CenterContainer/Panel/Content"]
+visible = false
+layout_mode = 0
+theme_override_constants/separation = 10
+
+[node name="MoveListTitle" type="Label" parent="Root/CenterContainer/Panel/Content/MoveListPanel"]
+layout_mode = 0
+theme_override_font_sizes/font_size = 22
+text = "Move List / Skill List"
+horizontal_alignment = 1
+
+[node name="MoveListText" type="RichTextLabel" parent="Root/CenterContainer/Panel/Content/MoveListPanel"]
+custom_minimum_size = Vector2(0, 300)
+layout_mode = 0
+size_flags_vertical = 3
+bbcode_enabled = false
+scroll_active = true
+text = "No moves available."
+
+[node name="MoveListBackButton" type="Button" parent="Root/CenterContainer/Panel/Content/MoveListPanel"]
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 0
+text = "Back"
+
+[node name="SoundPanel" type="VBoxContainer" parent="Root/CenterContainer/Panel/Content"]
+visible = false
+layout_mode = 0
+theme_override_constants/separation = 10
+
+[node name="SoundTitle" type="Label" parent="Root/CenterContainer/Panel/Content/SoundPanel"]
+layout_mode = 0
+theme_override_font_sizes/font_size = 22
+text = "Sound Configuration"
+horizontal_alignment = 1
+
+[node name="MasterRow" type="HBoxContainer" parent="Root/CenterContainer/Panel/Content/SoundPanel"]
+layout_mode = 0
+theme_override_constants/separation = 8
+
+[node name="MasterLabel" type="Label" parent="Root/CenterContainer/Panel/Content/SoundPanel/MasterRow"]
+custom_minimum_size = Vector2(140, 0)
+layout_mode = 0
+text = "Master"
+
+[node name="MasterSlider" type="HSlider" parent="Root/CenterContainer/Panel/Content/SoundPanel/MasterRow"]
+layout_mode = 0
+size_flags_horizontal = 3
+max_value = 1.0
+step = 0.01
+value = 1.0
+
+[node name="MasterValue" type="Label" parent="Root/CenterContainer/Panel/Content/SoundPanel/MasterRow"]
+custom_minimum_size = Vector2(70, 0)
+layout_mode = 0
+text = "100%"
+horizontal_alignment = 2
+
+[node name="SfxRow" type="HBoxContainer" parent="Root/CenterContainer/Panel/Content/SoundPanel"]
+layout_mode = 0
+theme_override_constants/separation = 8
+
+[node name="SfxLabel" type="Label" parent="Root/CenterContainer/Panel/Content/SoundPanel/SfxRow"]
+custom_minimum_size = Vector2(140, 0)
+layout_mode = 0
+text = "SFX"
+
+[node name="SfxSlider" type="HSlider" parent="Root/CenterContainer/Panel/Content/SoundPanel/SfxRow"]
+layout_mode = 0
+size_flags_horizontal = 3
+max_value = 1.0
+step = 0.01
+value = 0.8
+
+[node name="SfxValue" type="Label" parent="Root/CenterContainer/Panel/Content/SoundPanel/SfxRow"]
+custom_minimum_size = Vector2(70, 0)
+layout_mode = 0
+text = "80%"
+horizontal_alignment = 2
+
+[node name="BgmRow" type="HBoxContainer" parent="Root/CenterContainer/Panel/Content/SoundPanel"]
+layout_mode = 0
+theme_override_constants/separation = 8
+
+[node name="BgmLabel" type="Label" parent="Root/CenterContainer/Panel/Content/SoundPanel/BgmRow"]
+custom_minimum_size = Vector2(140, 0)
+layout_mode = 0
+text = "BGM"
+
+[node name="BgmSlider" type="HSlider" parent="Root/CenterContainer/Panel/Content/SoundPanel/BgmRow"]
+layout_mode = 0
+size_flags_horizontal = 3
+max_value = 1.0
+step = 0.01
+value = 0.75
+
+[node name="BgmValue" type="Label" parent="Root/CenterContainer/Panel/Content/SoundPanel/BgmRow"]
+custom_minimum_size = Vector2(70, 0)
+layout_mode = 0
+text = "75%"
+horizontal_alignment = 2
+
+[node name="SoundBackButton" type="Button" parent="Root/CenterContainer/Panel/Content/SoundPanel"]
+custom_minimum_size = Vector2(0, 42)
+layout_mode = 0
+text = "Back"
+

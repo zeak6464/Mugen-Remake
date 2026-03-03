@@ -1,0 +1,196 @@
+[gd_scene format=3 uid="uid://du3d1mriqbatf"]
+
+[ext_resource type="Script" uid="uid://ce2sxoq53m8q1" path="res://ui/MainMenu.gd" id="1_main_menu_script"]
+[ext_resource type="Theme" uid="uid://ksxjx5uqcuqd" path="res://ui/theme/GlobalUITheme.tres" id="2_global_theme"]
+
+[node name="MainMenu" type="Control" unique_id=48417875]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("2_global_theme")
+script = ExtResource("1_main_menu_script")
+
+[node name="BackgroundColor" type="ColorRect" parent="." unique_id=1361919415]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.06, 0.06, 0.08, 1)
+
+[node name="TitleLabel" type="Label" parent="." unique_id=1287810162]
+layout_mode = 0
+offset_left = 515.0
+offset_top = 119.0
+offset_right = 835.0
+offset_bottom = 158.0
+theme_override_font_sizes/font_size = 28
+text = "MUGEN REMAKE"
+horizontal_alignment = 1
+
+[node name="CenterContainer" type="CenterContainer" parent="." unique_id=672242037]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = 255.0
+offset_right = -927.0
+offset_bottom = -130.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer" unique_id=354132110]
+layout_mode = 2
+
+[node name="TrainingModeButton" type="Button" parent="CenterContainer/VBoxContainer" unique_id=848529132]
+custom_minimum_size = Vector2(320, 36)
+layout_mode = 2
+text = "Training Mode"
+
+[node name="ArcadeModeButton" type="Button" parent="CenterContainer/VBoxContainer" unique_id=750145285]
+custom_minimum_size = Vector2(320, 36)
+layout_mode = 2
+text = "Arcade Mode"
+
+[node name="VersusModeButton" type="Button" parent="CenterContainer/VBoxContainer" unique_id=742869156]
+custom_minimum_size = Vector2(320, 36)
+layout_mode = 2
+text = "2P Versus"
+
+[node name="SmashModeButton" type="Button" parent="CenterContainer/VBoxContainer" unique_id=1695240683]
+custom_minimum_size = Vector2(320, 36)
+layout_mode = 2
+text = "Smash Mode"
+
+[node name="TeamModeButton" type="Button" parent="CenterContainer/VBoxContainer" unique_id=2007816188]
+custom_minimum_size = Vector2(320, 36)
+layout_mode = 2
+text = "Team Mode"
+
+[node name="TeamModeSubmenu" type="VBoxContainer" parent="CenterContainer/VBoxContainer" unique_id=235796856]
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="TeamSubtypeRow" type="HBoxContainer" parent="CenterContainer/VBoxContainer/TeamModeSubmenu" unique_id=836783265]
+layout_mode = 2
+
+[node name="TeamSubtypeLabel" type="Label" parent="CenterContainer/VBoxContainer/TeamModeSubmenu/TeamSubtypeRow" unique_id=259907031]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Submode"
+
+[node name="TeamSubtypeOption" type="OptionButton" parent="CenterContainer/VBoxContainer/TeamModeSubmenu/TeamSubtypeRow" unique_id=1385873354]
+custom_minimum_size = Vector2(170, 0)
+layout_mode = 2
+
+[node name="TeamP1SizeRow" type="HBoxContainer" parent="CenterContainer/VBoxContainer/TeamModeSubmenu" unique_id=1274887586]
+layout_mode = 2
+
+[node name="TeamP1SizeLabel" type="Label" parent="CenterContainer/VBoxContainer/TeamModeSubmenu/TeamP1SizeRow" unique_id=1873119719]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "P1 Team Size"
+
+[node name="TeamP1SizeOption" type="OptionButton" parent="CenterContainer/VBoxContainer/TeamModeSubmenu/TeamP1SizeRow" unique_id=330732497]
+custom_minimum_size = Vector2(170, 0)
+layout_mode = 2
+
+[node name="TeamP2SizeRow" type="HBoxContainer" parent="CenterContainer/VBoxContainer/TeamModeSubmenu" unique_id=2000413384]
+layout_mode = 2
+
+[node name="TeamP2SizeLabel" type="Label" parent="CenterContainer/VBoxContainer/TeamModeSubmenu/TeamP2SizeRow" unique_id=681924247]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "P2 Team Size"
+
+[node name="TeamP2SizeOption" type="OptionButton" parent="CenterContainer/VBoxContainer/TeamModeSubmenu/TeamP2SizeRow" unique_id=380695551]
+custom_minimum_size = Vector2(170, 0)
+layout_mode = 2
+
+[node name="TeamSubmenuButtons" type="HBoxContainer" parent="CenterContainer/VBoxContainer/TeamModeSubmenu" unique_id=842701242]
+layout_mode = 2
+
+[node name="TeamStartButton" type="Button" parent="CenterContainer/VBoxContainer/TeamModeSubmenu/TeamSubmenuButtons" unique_id=623908882]
+custom_minimum_size = Vector2(156, 30)
+layout_mode = 2
+text = "Start Team Mode"
+
+[node name="TeamBackButton" type="Button" parent="CenterContainer/VBoxContainer/TeamModeSubmenu/TeamSubmenuButtons" unique_id=2023634783]
+custom_minimum_size = Vector2(156, 30)
+layout_mode = 2
+text = "Close"
+
+[node name="SurvivalModeButton" type="Button" parent="CenterContainer/VBoxContainer" unique_id=1448934072]
+custom_minimum_size = Vector2(320, 36)
+layout_mode = 2
+text = "Survival Mode"
+
+[node name="WatchModeButton" type="Button" parent="CenterContainer/VBoxContainer" unique_id=200083739]
+custom_minimum_size = Vector2(320, 36)
+layout_mode = 2
+text = "Watch Mode"
+
+[node name="BoxEditorButton" type="Button" parent="CenterContainer/VBoxContainer" unique_id=1460589268]
+custom_minimum_size = Vector2(320, 36)
+layout_mode = 2
+text = "Character Editor"
+
+[node name="CharacterEditorSubmenu" type="VBoxContainer" parent="CenterContainer/VBoxContainer" unique_id=46732069]
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="CharacterEditorBoxButton" type="Button" parent="CenterContainer/VBoxContainer/CharacterEditorSubmenu" unique_id=2084411091]
+custom_minimum_size = Vector2(320, 32)
+layout_mode = 2
+text = "  - Box Tools"
+
+[node name="JsonEditorButton" type="Button" parent="CenterContainer/VBoxContainer/CharacterEditorSubmenu" unique_id=844863763]
+custom_minimum_size = Vector2(320, 32)
+layout_mode = 2
+text = "  - Raw Files"
+
+[node name="CharacterEditorCommandsButton" type="Button" parent="CenterContainer/VBoxContainer/CharacterEditorSubmenu" unique_id=1202413183]
+custom_minimum_size = Vector2(320, 32)
+layout_mode = 2
+text = "  - Commands"
+
+[node name="CharacterEditorPreviewButton" type="Button" parent="CenterContainer/VBoxContainer/CharacterEditorSubmenu" unique_id=754610283]
+custom_minimum_size = Vector2(320, 32)
+layout_mode = 2
+text = "  - Preview Tools"
+
+[node name="StageEditorButton" type="Button" parent="CenterContainer/VBoxContainer" unique_id=1224864657]
+custom_minimum_size = Vector2(320, 36)
+layout_mode = 2
+text = "Stage Editor"
+
+[node name="OpenModsFolderButton" type="Button" parent="CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(320, 36)
+layout_mode = 2
+text = "Open Mods Folder"
+
+[node name="OpenStagesFolderButton" type="Button" parent="CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(320, 36)
+layout_mode = 2
+text = "Open Stages Folder"
+
+[node name="OptionsButton" type="Button" parent="CenterContainer/VBoxContainer" unique_id=1591722274]
+custom_minimum_size = Vector2(320, 36)
+layout_mode = 2
+text = "Options"
+
+[node name="OptionsStatusLabel" type="Label" parent="CenterContainer/VBoxContainer" unique_id=128325453]
+layout_mode = 2
+text = "Options menu coming soon."
+horizontal_alignment = 1
+
+[node name="QuitGameButton" type="Button" parent="CenterContainer/VBoxContainer" unique_id=866648873]
+custom_minimum_size = Vector2(320, 36)
+layout_mode = 2
+text = "Quit Game"

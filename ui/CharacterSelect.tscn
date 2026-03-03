@@ -1,0 +1,337 @@
+[gd_scene format=3 uid="uid://pp7fmnkwp6bm"]
+
+[ext_resource type="Script" uid="uid://cinjdotmm3dkg" path="res://ui/CharacterSelect.gd" id="1_character_select_script"]
+[ext_resource type="Theme" uid="uid://ksxjx5uqcuqd" path="res://ui/theme/GlobalUITheme.tres" id="2_global_theme"]
+
+[node name="CharacterSelect" type="Node3D" unique_id=2100262875]
+script = ExtResource("1_character_select_script")
+
+[node name="CharacterPreviewP1" type="Node3D" parent="." unique_id=306715756]
+
+[node name="PreviewSpawnPointP1" type="Marker3D" parent="CharacterPreviewP1" unique_id=318172962]
+
+[node name="CharacterPreviewP2" type="Node3D" parent="." unique_id=1867130886]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0, 0)
+
+[node name="PreviewSpawnPointP2" type="Marker3D" parent="CharacterPreviewP2" unique_id=19489911]
+
+[node name="CameraRigP1" type="Node3D" parent="." unique_id=271171174]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 4.5)
+
+[node name="PreviewCameraP1" type="Camera3D" parent="CameraRigP1" unique_id=1561532637]
+fov = 18.0
+near = 1.0
+
+[node name="SunLightP1" type="DirectionalLight3D" parent="CameraRigP1" unique_id=1844692660]
+transform = Transform3D(0.90630776, -0.24240388, 0.34618863, 0, 0.81915206, 0.57357645, -0.42261827, -0.5198368, 0.74240386, 0, 0, 0)
+light_energy = 1.2
+
+[node name="CameraRigP2" type="Node3D" parent="." unique_id=765789559]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.8217351, 1.2, 4.5)
+
+[node name="PreviewCameraP2" type="Camera3D" parent="CameraRigP2" unique_id=1674317407]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.11886454, 0, 0)
+fov = 18.0
+
+[node name="SunLightP2" type="DirectionalLight3D" parent="CameraRigP2" unique_id=94825550]
+transform = Transform3D(0.90630776, -0.24240388, 0.34618863, 0, 0.81915206, 0.57357645, -0.42261827, -0.5198368, 0.74240386, 0, 0, 0)
+light_energy = 1.2
+
+[node name="FillLightP1" type="OmniLight3D" parent="." unique_id=74472853]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 1.8, 2)
+light_energy = 0.8
+
+[node name="FillLightP2" type="OmniLight3D" parent="." unique_id=289970053]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, 1.8, 2)
+light_energy = 0.8
+
+[node name="UI" type="CanvasLayer" parent="." unique_id=2022068527]
+
+[node name="Root" type="Control" parent="UI" unique_id=1022668757]
+layout_direction = 1
+layout_mode = 3
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_right = 2.0
+offset_bottom = 240.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("2_global_theme")
+
+[node name="BackgroundTint" type="ColorRect" parent="UI/Root" unique_id=151895518]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -2.0
+offset_right = 4.0
+offset_bottom = 14.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.05, 0.08, 0.12, 0.78)
+
+[node name="Player1UI" type="Control" parent="UI/Root" unique_id=1607823793]
+layout_mode = 1
+anchors_preset = 0
+offset_left = 20.0
+offset_top = 56.0
+offset_right = 620.0
+offset_bottom = 634.0
+
+[node name="P1Panel" type="Panel" parent="UI/Root/Player1UI" unique_id=235584282]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="P1VBox" type="Control" parent="UI/Root/Player1UI/P1Panel" unique_id=480758365]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 10.0
+offset_top = 10.0
+offset_right = -10.0
+offset_bottom = -10.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="PreviewFrame" type="Panel" parent="UI/Root/Player1UI/P1Panel/P1VBox" unique_id=1101695131]
+custom_minimum_size = Vector2(0, 126)
+layout_mode = 0
+offset_right = 570.0
+offset_bottom = 210.0
+
+[node name="PreviewTexture" type="TextureRect" parent="UI/Root/Player1UI/P1Panel/P1VBox/PreviewFrame" unique_id=1894743781]
+layout_mode = 0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+expand_mode = 1
+stretch_mode = 6
+
+[node name="TeamSlots" type="HBoxContainer" parent="UI/Root/Player1UI/P1Panel/P1VBox" unique_id=815532735]
+anchors_preset = 0
+offset_top = 216.0
+offset_right = 570.0
+offset_bottom = 252.0
+theme_override_constants/separation = 8
+
+[node name="Cursor" type="Label" parent="UI/Root/Player1UI/P1Panel/P1VBox" unique_id=2103462663]
+layout_mode = 0
+offset_top = 256.0
+offset_right = 570.0
+offset_bottom = 286.0
+text = "P1 Cursor"
+horizontal_alignment = 1
+
+[node name="RosterScroll" type="Control" parent="UI/Root/Player1UI/P1Panel/P1VBox" unique_id=1082596094]
+custom_minimum_size = Vector2(0, 78)
+anchors_preset = 0
+offset_top = 376.0
+offset_right = 570.0
+offset_bottom = 454.0
+size_flags_vertical = 3
+
+[node name="RosterRow" type="HBoxContainer" parent="UI/Root/Player1UI/P1Panel/P1VBox/RosterScroll" unique_id=1527660832]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 8
+
+[node name="CharacterFolderPanelP1" type="Panel" parent="UI/Root/Player1UI/P1Panel/P1VBox" unique_id=81179495]
+layout_mode = 0
+offset_top = 292.0
+offset_right = 570.0
+offset_bottom = 370.0
+
+[node name="FolderP1Root" type="Control" parent="UI/Root/Player1UI/P1Panel/P1VBox/CharacterFolderPanelP1" unique_id=634062282]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = 6.0
+offset_right = -8.0
+offset_bottom = -6.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="FolderTitleP1" type="Label" parent="UI/Root/Player1UI/P1Panel/P1VBox/CharacterFolderPanelP1/FolderP1Root" unique_id=1507770560]
+layout_mode = 0
+offset_right = 554.0
+offset_bottom = 24.0
+text = "P1 Character Folder"
+horizontal_alignment = 1
+
+[node name="VariantP1Host" type="ScrollContainer" parent="UI/Root/Player1UI/P1Panel/P1VBox/CharacterFolderPanelP1/FolderP1Root" unique_id=1527344416]
+custom_minimum_size = Vector2(0, 44)
+anchors_preset = 0
+offset_top = 26.0
+offset_right = 554.0
+offset_bottom = 64.0
+
+[node name="VariantRowP1" type="HBoxContainer" parent="UI/Root/Player1UI/P1Panel/P1VBox/CharacterFolderPanelP1/FolderP1Root/VariantP1Host" unique_id=1276913035]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 8
+
+[node name="Player2UI" type="Control" parent="UI/Root" unique_id=257376514]
+layout_mode = 1
+anchors_preset = 0
+offset_left = 629.0
+offset_top = 50.0
+offset_right = 1139.0
+offset_bottom = 636.0
+
+[node name="P2Panel" type="Panel" parent="UI/Root/Player2UI" unique_id=1820902764]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 76.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="P2VBox" type="Control" parent="UI/Root/Player2UI/P2Panel" unique_id=469351543]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 10.0
+offset_top = 10.0
+offset_right = -10.0
+offset_bottom = -10.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="PreviewFrame" type="Panel" parent="UI/Root/Player2UI/P2Panel/P2VBox" unique_id=280934436]
+custom_minimum_size = Vector2(0, 126)
+layout_mode = 0
+offset_right = 561.0
+offset_bottom = 210.0
+
+[node name="PreviewTexture" type="TextureRect" parent="UI/Root/Player2UI/P2Panel/P2VBox/PreviewFrame" unique_id=1792620574]
+layout_mode = 0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+expand_mode = 1
+stretch_mode = 6
+
+[node name="TeamSlots" type="HBoxContainer" parent="UI/Root/Player2UI/P2Panel/P2VBox" unique_id=1715181371]
+anchors_preset = 0
+offset_top = 216.0
+offset_right = 570.0
+offset_bottom = 252.0
+theme_override_constants/separation = 8
+
+[node name="Cursor" type="Label" parent="UI/Root/Player2UI/P2Panel/P2VBox" unique_id=1867691082]
+layout_mode = 0
+offset_top = 256.0
+offset_right = 570.0
+offset_bottom = 286.0
+text = "P2 Cursor"
+horizontal_alignment = 1
+
+[node name="RosterScroll" type="Control" parent="UI/Root/Player2UI/P2Panel/P2VBox" unique_id=131513250]
+custom_minimum_size = Vector2(0, 78)
+anchors_preset = 0
+offset_top = 376.0
+offset_right = 570.0
+offset_bottom = 454.0
+size_flags_vertical = 3
+
+[node name="RosterRow" type="HBoxContainer" parent="UI/Root/Player2UI/P2Panel/P2VBox/RosterScroll" unique_id=755834988]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 8
+
+[node name="CharacterFolderPanelP2" type="Panel" parent="UI/Root/Player2UI/P2Panel/P2VBox" unique_id=147819475]
+layout_mode = 0
+offset_top = 292.0
+offset_right = 570.0
+offset_bottom = 370.0
+
+[node name="FolderP2Root" type="Control" parent="UI/Root/Player2UI/P2Panel/P2VBox/CharacterFolderPanelP2" unique_id=1994179871]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = 6.0
+offset_right = -8.0
+offset_bottom = -6.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="FolderTitleP2" type="Label" parent="UI/Root/Player2UI/P2Panel/P2VBox/CharacterFolderPanelP2/FolderP2Root" unique_id=1659955556]
+layout_mode = 0
+offset_right = 554.0
+offset_bottom = 24.0
+text = "P2 Character Folder"
+horizontal_alignment = 1
+
+[node name="VariantP2Host" type="ScrollContainer" parent="UI/Root/Player2UI/P2Panel/P2VBox/CharacterFolderPanelP2/FolderP2Root" unique_id=736579329]
+custom_minimum_size = Vector2(0, 44)
+anchors_preset = 0
+offset_top = 26.0
+offset_right = 554.0
+offset_bottom = 64.0
+
+[node name="VariantRowP2" type="HBoxContainer" parent="UI/Root/Player2UI/P2Panel/P2VBox/CharacterFolderPanelP2/FolderP2Root/VariantP2Host" unique_id=1251247593]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 8
+
+[node name="StatusLabel" type="Label" parent="UI/Root" unique_id=1462489820]
+layout_mode = 1
+offset_left = 20.0
+offset_top = 10.0
+offset_right = 1260.0
+offset_bottom = 38.0
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="LockInOverlay" type="ColorRect" parent="UI/Root" unique_id=1816769380]
+visible = false
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.62)
+
+[node name="LockLabel" type="Label" parent="UI/Root/LockInOverlay" unique_id=36000711]
+layout_mode = 0
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -280.0
+offset_top = -22.0
+offset_right = 280.0
+offset_bottom = 22.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 28
+text = "Teams locked. Press Attack(P) to continue."
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="SelectManager" type="Node" parent="." unique_id=473854010]

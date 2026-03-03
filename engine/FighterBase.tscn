@@ -1,0 +1,26 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://engine/FighterBase.gd" id="1_fighter"]
+[ext_resource type="Script" path="res://engine/StateController.gd" id="2_state"]
+[ext_resource type="Script" path="res://engine/CommandInterpreter.gd" id="3_command"]
+
+[node name="Fighter" type="CharacterBody3D"]
+script = ExtResource("1_fighter")
+
+[node name="Skeleton3D" type="Skeleton3D" parent="."]
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+
+[node name="AnimationTree" type="AnimationTree" parent="."]
+active = true
+anim_player = NodePath("../AnimationPlayer")
+
+[node name="Hurtboxes" type="Node3D" parent="."]
+
+[node name="Hitboxes" type="Node3D" parent="."]
+
+[node name="StateController" type="Node" parent="."]
+script = ExtResource("2_state")
+
+[node name="CommandInterpreter" type="Node" parent="."]
+script = ExtResource("3_command")

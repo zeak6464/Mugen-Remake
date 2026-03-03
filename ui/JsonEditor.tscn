@@ -1,0 +1,101 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://ui/JsonEditor.gd" id="1_json_editor_script"]
+[ext_resource type="Theme" path="res://ui/theme/GlobalUITheme.tres" id="2_global_theme"]
+
+[node name="JsonEditor" type="Control"]
+layout_mode = 0
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_json_editor_script")
+theme = ExtResource("2_global_theme")
+
+[node name="BackgroundColor" type="ColorRect" parent="."]
+layout_mode = 0
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.06, 0.06, 0.08, 1)
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 0
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 18
+theme_override_constants/margin_top = 18
+theme_override_constants/margin_right = 18
+theme_override_constants/margin_bottom = 18
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+layout_mode = 0
+theme_override_constants/separation = 8
+
+[node name="TitleLabel" type="Label" parent="MarginContainer/VBoxContainer"]
+layout_mode = 0
+theme_override_font_sizes/font_size = 28
+text = "JSON / DEF Editor"
+horizontal_alignment = 1
+
+[node name="TopRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 0
+theme_override_constants/separation = 8
+
+[node name="ModOption" type="OptionButton" parent="MarginContainer/VBoxContainer/TopRow"]
+layout_mode = 0
+size_flags_horizontal = 3
+
+[node name="FileOption" type="OptionButton" parent="MarginContainer/VBoxContainer/TopRow"]
+layout_mode = 0
+size_flags_horizontal = 3
+
+[node name="ReloadButton" type="Button" parent="MarginContainer/VBoxContainer/TopRow"]
+layout_mode = 0
+text = "Reload"
+
+[node name="FormatJsonButton" type="Button" parent="MarginContainer/VBoxContainer/TopRow"]
+layout_mode = 0
+text = "Format JSON"
+
+[node name="EditorPanel" type="Panel" parent="MarginContainer/VBoxContainer"]
+layout_mode = 0
+size_flags_vertical = 3
+
+[node name="Editor" type="TextEdit" parent="MarginContainer/VBoxContainer/EditorPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 6.0
+offset_top = 6.0
+offset_right = -6.0
+offset_bottom = -6.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+wrap_mode = 0
+
+[node name="StatusLabel" type="Label" parent="MarginContainer/VBoxContainer"]
+layout_mode = 0
+text = ""
+
+[node name="BottomRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 0
+theme_override_constants/separation = 8
+
+[node name="SaveButton" type="Button" parent="MarginContainer/VBoxContainer/BottomRow"]
+layout_mode = 0
+text = "Save"
+
+[node name="BackButton" type="Button" parent="MarginContainer/VBoxContainer/BottomRow"]
+layout_mode = 0
+text = "Back"
+

@@ -1,0 +1,138 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://ui/ControlsMenu.gd" id="1_controls_script"]
+[ext_resource type="Theme" path="res://ui/theme/GlobalUITheme.tres" id="2_global_theme"]
+
+[node name="ControlsMenu" type="Control"]
+layout_mode = 0
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_controls_script")
+theme = ExtResource("2_global_theme")
+
+[node name="BackgroundColor" type="ColorRect" parent="."]
+layout_mode = 0
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.06, 0.06, 0.08, 1)
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 0
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 30
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_right = 30
+theme_override_constants/margin_bottom = 24
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 12
+
+[node name="TitleLabel" type="Label" parent="MarginContainer/VBoxContainer"]
+layout_mode = 0
+theme_override_font_sizes/font_size = 30
+text = "Controls"
+horizontal_alignment = 1
+
+[node name="HintLabel" type="Label" parent="MarginContainer/VBoxContainer"]
+layout_mode = 0
+text = "Set key binds for Player 1 and Player 2."
+horizontal_alignment = 1
+
+[node name="KeymapPanel" type="Panel" parent="MarginContainer/VBoxContainer"]
+layout_mode = 0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="KeymapScroll" type="ScrollContainer" parent="MarginContainer/VBoxContainer/KeymapPanel"]
+custom_minimum_size = Vector2(0, 360)
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = -8.0
+offset_bottom = -8.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="ColumnsRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer/KeymapPanel/KeymapScroll"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 18
+
+[node name="P1Panel" type="Panel" parent="MarginContainer/VBoxContainer/KeymapPanel/KeymapScroll/ColumnsRow"]
+layout_mode = 1
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="P1List" type="VBoxContainer" parent="MarginContainer/VBoxContainer/KeymapPanel/KeymapScroll/ColumnsRow/P1Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = -8.0
+offset_bottom = -8.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 8
+
+[node name="P2Panel" type="Panel" parent="MarginContainer/VBoxContainer/KeymapPanel/KeymapScroll/ColumnsRow"]
+layout_mode = 1
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="P2List" type="VBoxContainer" parent="MarginContainer/VBoxContainer/KeymapPanel/KeymapScroll/ColumnsRow/P2Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = -8.0
+offset_bottom = -8.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 8
+
+[node name="StatusLabel" type="Label" parent="MarginContainer/VBoxContainer"]
+layout_mode = 0
+text = ""
+
+[node name="BottomButtons" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 0
+
+[node name="BackButton" type="Button" parent="MarginContainer/VBoxContainer/BottomButtons"]
+layout_mode = 0
+text = "Back"
+

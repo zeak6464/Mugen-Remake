@@ -1,0 +1,383 @@
+[gd_scene format=3 uid="uid://btcvlxh2q2jlc"]
+
+[ext_resource type="Script" uid="uid://ex4ucp0tyudn" path="res://ui/Battle/HITBOX/BoxEditor.gd" id="1_box_editor_script"]
+[ext_resource type="Theme" uid="uid://ksxjx5uqcuqd" path="res://ui/theme/GlobalUITheme.tres" id="2_global_theme"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_1"]
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_1"]
+size = Vector2(12, 12)
+
+[node name="BoxEditor" type="Control" unique_id=962341718]
+layout_mode = 0
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("2_global_theme")
+script = ExtResource("1_box_editor_script")
+
+[node name="BackgroundColor" type="ColorRect" parent="." unique_id=514284340]
+layout_mode = 0
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.06, 0.06, 0.08, 1)
+
+[node name="MarginContainer" type="MarginContainer" parent="." unique_id=2136351438]
+layout_mode = 0
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="ContentScroll" type="ScrollContainer" parent="MarginContainer" unique_id=1004109197]
+layout_mode = 0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="ContentVBox" type="VBoxContainer" parent="MarginContainer/ContentScroll" unique_id=611784822]
+layout_mode = 0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 10
+
+[node name="TitleLabel" type="Label" parent="MarginContainer/ContentScroll/ContentVBox" unique_id=1034103904]
+layout_mode = 0
+theme_override_font_sizes/font_size = 28
+text = "Hit/Persistent-Hurt/Throw/Push Box Editor"
+horizontal_alignment = 1
+
+[node name="TopRow" type="HBoxContainer" parent="MarginContainer/ContentScroll/ContentVBox" unique_id=970330603]
+layout_mode = 0
+theme_override_constants/separation = 8
+
+[node name="ModOption" type="OptionButton" parent="MarginContainer/ContentScroll/ContentVBox/TopRow" unique_id=1277241862]
+layout_mode = 0
+size_flags_horizontal = 3
+
+[node name="StateOption" type="OptionButton" parent="MarginContainer/ContentScroll/ContentVBox/TopRow" unique_id=1672721454]
+layout_mode = 0
+size_flags_horizontal = 3
+
+[node name="BoxTypeOption" type="OptionButton" parent="MarginContainer/ContentScroll/ContentVBox/TopRow" unique_id=1432928578]
+layout_mode = 0
+size_flags_horizontal = 2
+selected = 0
+item_count = 4
+popup/item_0/text = "Hit Boxes"
+popup/item_0/id = 0
+popup/item_1/text = "Persistent Hurtboxes"
+popup/item_1/id = 1
+popup/item_2/text = "Throw Boxes"
+popup/item_2/id = 2
+popup/item_3/text = "Push Boxes"
+popup/item_3/id = 3
+
+[node name="BoxIndexOption" type="OptionButton" parent="MarginContainer/ContentScroll/ContentVBox/TopRow" unique_id=238991656]
+layout_mode = 0
+size_flags_horizontal = 3
+
+[node name="FormGrid" type="GridContainer" parent="MarginContainer/ContentScroll/ContentVBox" unique_id=1519601848]
+columns = 4
+layout_mode = 0
+columns = 4
+
+[node name="IdLabel" type="Label" parent="MarginContainer/ContentScroll/ContentVBox/FormGrid" unique_id=864129300]
+layout_mode = 0
+text = "ID"
+
+[node name="IdEdit" type="LineEdit" parent="MarginContainer/ContentScroll/ContentVBox/FormGrid" unique_id=1971876755]
+layout_mode = 0
+
+[node name="BoneLabel" type="Label" parent="MarginContainer/ContentScroll/ContentVBox/FormGrid" unique_id=1283604665]
+layout_mode = 0
+text = "Bone"
+
+[node name="BoneOption" type="OptionButton" parent="MarginContainer/ContentScroll/ContentVBox/FormGrid" unique_id=1502133475]
+layout_mode = 0
+
+[node name="StartLabel" type="Label" parent="MarginContainer/ContentScroll/ContentVBox/FormGrid" unique_id=1087263683]
+layout_mode = 0
+text = "Start"
+
+[node name="StartSpin" type="SpinBox" parent="MarginContainer/ContentScroll/ContentVBox/FormGrid" unique_id=29695586]
+layout_mode = 0
+max_value = 999.0
+
+[node name="EndLabel" type="Label" parent="MarginContainer/ContentScroll/ContentVBox/FormGrid" unique_id=1609588199]
+layout_mode = 0
+text = "End"
+
+[node name="EndSpin" type="SpinBox" parent="MarginContainer/ContentScroll/ContentVBox/FormGrid" unique_id=1874504551]
+layout_mode = 0
+max_value = 999.0
+
+[node name="OffsetXLabel" type="Label" parent="MarginContainer/ContentScroll/ContentVBox/FormGrid" unique_id=156459000]
+layout_mode = 0
+text = "Offset X"
+
+[node name="OffsetXSpin" type="SpinBox" parent="MarginContainer/ContentScroll/ContentVBox/FormGrid" unique_id=78136536]
+layout_mode = 0
+min_value = -10.0
+max_value = 10.0
+step = 0.01
+
+[node name="OffsetYLabel" type="Label" parent="MarginContainer/ContentScroll/ContentVBox/FormGrid" unique_id=491898493]
+layout_mode = 0
+text = "Offset Y"
+
+[node name="OffsetYSpin" type="SpinBox" parent="MarginContainer/ContentScroll/ContentVBox/FormGrid" unique_id=600754473]
+layout_mode = 0
+min_value = -10.0
+max_value = 10.0
+step = 0.01
+
+[node name="OffsetZLabel" type="Label" parent="MarginContainer/ContentScroll/ContentVBox/FormGrid" unique_id=2066961615]
+layout_mode = 0
+text = "Offset Z"
+
+[node name="OffsetZSpin" type="SpinBox" parent="MarginContainer/ContentScroll/ContentVBox/FormGrid" unique_id=670414498]
+layout_mode = 0
+min_value = -10.0
+max_value = 10.0
+step = 0.01
+
+[node name="SizeXLabel" type="Label" parent="MarginContainer/ContentScroll/ContentVBox/FormGrid" unique_id=1336087953]
+layout_mode = 0
+text = "Size X"
+
+[node name="SizeXSpin" type="SpinBox" parent="MarginContainer/ContentScroll/ContentVBox/FormGrid" unique_id=714531850]
+layout_mode = 0
+min_value = 0.05
+max_value = 10.0
+step = 0.01
+value = 0.5
+
+[node name="SizeYLabel" type="Label" parent="MarginContainer/ContentScroll/ContentVBox/FormGrid" unique_id=1894449981]
+layout_mode = 0
+text = "Size Y"
+
+[node name="SizeYSpin" type="SpinBox" parent="MarginContainer/ContentScroll/ContentVBox/FormGrid" unique_id=1614897927]
+layout_mode = 0
+min_value = 0.05
+max_value = 10.0
+step = 0.01
+value = 0.5
+
+[node name="SizeZLabel" type="Label" parent="MarginContainer/ContentScroll/ContentVBox/FormGrid" unique_id=1222532783]
+layout_mode = 0
+text = "Size Z"
+
+[node name="SizeZSpin" type="SpinBox" parent="MarginContainer/ContentScroll/ContentVBox/FormGrid" unique_id=1546467427]
+layout_mode = 0
+min_value = 0.05
+max_value = 10.0
+step = 0.01
+value = 0.5
+
+[node name="HitDataGrid" type="GridContainer" parent="MarginContainer/ContentScroll/ContentVBox" unique_id=114982221]
+layout_mode = 0
+columns = 4
+
+[node name="DamageLabel" type="Label" parent="MarginContainer/ContentScroll/ContentVBox/HitDataGrid" unique_id=19308122]
+layout_mode = 0
+text = "Damage"
+
+[node name="DamageSpin" type="SpinBox" parent="MarginContainer/ContentScroll/ContentVBox/HitDataGrid" unique_id=1412863200]
+layout_mode = 0
+min_value = -9999.0
+max_value = 9999.0
+step = 1.0
+value = 10.0
+
+[node name="HitstunStateLabel" type="Label" parent="MarginContainer/ContentScroll/ContentVBox/HitDataGrid" unique_id=157738651]
+layout_mode = 0
+text = "Hitstun State"
+
+[node name="HitstunStateEdit" type="LineEdit" parent="MarginContainer/ContentScroll/ContentVBox/HitDataGrid" unique_id=157965710]
+layout_mode = 0
+placeholder_text = "hitstun"
+
+[node name="PushbackXLabel" type="Label" parent="MarginContainer/ContentScroll/ContentVBox/HitDataGrid" unique_id=1148942410]
+layout_mode = 0
+text = "Pushback X"
+
+[node name="PushbackXSpin" type="SpinBox" parent="MarginContainer/ContentScroll/ContentVBox/HitDataGrid" unique_id=188862777]
+layout_mode = 0
+min_value = -50.0
+max_value = 50.0
+step = 0.01
+value = 0.5
+
+[node name="PushbackYLabel" type="Label" parent="MarginContainer/ContentScroll/ContentVBox/HitDataGrid" unique_id=2022848886]
+layout_mode = 0
+text = "Pushback Y"
+
+[node name="PushbackYSpin" type="SpinBox" parent="MarginContainer/ContentScroll/ContentVBox/HitDataGrid" unique_id=1556291459]
+layout_mode = 0
+min_value = -50.0
+max_value = 50.0
+step = 0.01
+
+[node name="PushbackZLabel" type="Label" parent="MarginContainer/ContentScroll/ContentVBox/HitDataGrid" unique_id=1042546001]
+layout_mode = 0
+text = "Pushback Z"
+
+[node name="PushbackZSpin" type="SpinBox" parent="MarginContainer/ContentScroll/ContentVBox/HitDataGrid" unique_id=512476643]
+layout_mode = 0
+min_value = -50.0
+max_value = 50.0
+step = 0.01
+
+[node name="HitSoundLabel" type="Label" parent="MarginContainer/ContentScroll/ContentVBox/HitDataGrid" unique_id=1613305540]
+layout_mode = 0
+text = "Hit Sound"
+
+[node name="HitSoundEdit" type="LineEdit" parent="MarginContainer/ContentScroll/ContentVBox/HitDataGrid" unique_id=1737211298]
+layout_mode = 0
+placeholder_text = "hit_light"
+
+[node name="PreviewPanel" type="Panel" parent="MarginContainer/ContentScroll/ContentVBox" unique_id=269485933]
+custom_minimum_size = Vector2(0, 360)
+layout_mode = 0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="PreviewViewportContainer" type="SubViewportContainer" parent="MarginContainer/ContentScroll/ContentVBox/PreviewPanel" unique_id=80044855]
+custom_minimum_size = Vector2(0, 360)
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = -8.0
+offset_bottom = -8.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+stretch = true
+
+[node name="PreviewViewport" type="SubViewport" parent="MarginContainer/ContentScroll/ContentVBox/PreviewPanel/PreviewViewportContainer" unique_id=1209354157]
+handle_input_locally = false
+own_world_3d = true
+disable_3d = false
+transparent_bg = false
+size = Vector2i(1100, 360)
+render_target_update_mode = 4
+
+[node name="PreviewWorld" type="Node3D" parent="MarginContainer/ContentScroll/ContentVBox/PreviewPanel/PreviewViewportContainer/PreviewViewport" unique_id=511088519]
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="MarginContainer/ContentScroll/ContentVBox/PreviewPanel/PreviewViewportContainer/PreviewViewport/PreviewWorld" unique_id=1020589869]
+transform = Transform3D(0.866025, -0.353553, 0.353553, 0, 0.707107, 0.707107, -0.5, -0.612372, 0.612372, 0, 4, 6)
+light_energy = 1.8
+
+[node name="Camera3D" type="Camera3D" parent="MarginContainer/ContentScroll/ContentVBox/PreviewPanel/PreviewViewportContainer/PreviewViewport/PreviewWorld" unique_id=241765043]
+transform = Transform3D(1, 0, 0, 0, 0.978148, 0.207912, 0, -0.207912, 0.978148, 0, 1.8, 4.2)
+current = true
+
+[node name="ModelRoot" type="Node3D" parent="MarginContainer/ContentScroll/ContentVBox/PreviewPanel/PreviewViewportContainer/PreviewViewport/PreviewWorld" unique_id=295666359]
+
+[node name="BoxMesh" type="MeshInstance3D" parent="MarginContainer/ContentScroll/ContentVBox/PreviewPanel/PreviewViewportContainer/PreviewViewport/PreviewWorld" unique_id=1816885996]
+visible = false
+mesh = SubResource("BoxMesh_1")
+
+[node name="Floor" type="MeshInstance3D" parent="MarginContainer/ContentScroll/ContentVBox/PreviewPanel/PreviewViewportContainer/PreviewViewport/PreviewWorld" unique_id=1445874507]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.001, 0)
+mesh = SubResource("PlaneMesh_1")
+
+[node name="AnimationControlsRow" type="HBoxContainer" parent="MarginContainer/ContentScroll/ContentVBox" unique_id=826257344]
+layout_mode = 0
+theme_override_constants/separation = 8
+
+[node name="PlayButton" type="Button" parent="MarginContainer/ContentScroll/ContentVBox/AnimationControlsRow" unique_id=674647805]
+layout_mode = 0
+text = "Play"
+
+[node name="PauseButton" type="Button" parent="MarginContainer/ContentScroll/ContentVBox/AnimationControlsRow" unique_id=771774102]
+layout_mode = 0
+text = "Pause"
+
+[node name="StopButton" type="Button" parent="MarginContainer/ContentScroll/ContentVBox/AnimationControlsRow" unique_id=839429337]
+layout_mode = 0
+text = "Stop"
+
+[node name="PrevFrameButton" type="Button" parent="MarginContainer/ContentScroll/ContentVBox/AnimationControlsRow" unique_id=1077234507]
+layout_mode = 0
+text = "< Frame"
+
+[node name="NextFrameButton" type="Button" parent="MarginContainer/ContentScroll/ContentVBox/AnimationControlsRow" unique_id=1396103568]
+layout_mode = 0
+text = "Frame >"
+
+[node name="SpeedLabel" type="Label" parent="MarginContainer/ContentScroll/ContentVBox/AnimationControlsRow" unique_id=2094904317]
+layout_mode = 0
+text = "Speed"
+
+[node name="SpeedSpin" type="SpinBox" parent="MarginContainer/ContentScroll/ContentVBox/AnimationControlsRow" unique_id=938029790]
+custom_minimum_size = Vector2(90, 0)
+layout_mode = 0
+min_value = 0.1
+max_value = 3.0
+step = 0.1
+value = 1.0
+
+[node name="AnimationTimelineRow" type="HBoxContainer" parent="MarginContainer/ContentScroll/ContentVBox" unique_id=181649625]
+layout_mode = 0
+theme_override_constants/separation = 8
+
+[node name="TimelineSlider" type="HSlider" parent="MarginContainer/ContentScroll/ContentVBox/AnimationTimelineRow" unique_id=1511875214]
+layout_mode = 0
+size_flags_horizontal = 3
+max_value = 1.0
+step = 0.0001
+
+[node name="FrameLabel" type="Label" parent="MarginContainer/ContentScroll/ContentVBox/AnimationTimelineRow" unique_id=334817530]
+custom_minimum_size = Vector2(140, 0)
+layout_mode = 0
+text = "Frame: -"
+
+[node name="TimeLabel" type="Label" parent="MarginContainer/ContentScroll/ContentVBox/AnimationTimelineRow" unique_id=1803205911]
+custom_minimum_size = Vector2(130, 0)
+layout_mode = 0
+text = "Time: -"
+
+[node name="StatusLabel" type="Label" parent="MarginContainer/ContentScroll/ContentVBox" unique_id=1095002422]
+layout_mode = 0
+text = "Preview: LMB orbit, RMB/MMB pan, mouse wheel zoom"
+
+[node name="ActionsRow" type="HBoxContainer" parent="MarginContainer/ContentScroll/ContentVBox" unique_id=873731488]
+layout_mode = 0
+theme_override_constants/separation = 8
+
+[node name="AddBoxButton" type="Button" parent="MarginContainer/ContentScroll/ContentVBox/ActionsRow" unique_id=1991023151]
+layout_mode = 0
+text = "Add"
+
+[node name="DeleteBoxButton" type="Button" parent="MarginContainer/ContentScroll/ContentVBox/ActionsRow" unique_id=531699035]
+layout_mode = 0
+text = "Delete"
+
+[node name="ApplyButton" type="Button" parent="MarginContainer/ContentScroll/ContentVBox/ActionsRow" unique_id=1408901253]
+layout_mode = 0
+text = "Apply"
+
+[node name="SaveButton" type="Button" parent="MarginContainer/ContentScroll/ContentVBox/ActionsRow" unique_id=1128460999]
+layout_mode = 0
+text = "Save states + hurtboxes"
+
+[node name="CloseButton" type="Button" parent="MarginContainer/ContentScroll/ContentVBox/ActionsRow" unique_id=73779804]
+layout_mode = 0
+text = "Close"
+

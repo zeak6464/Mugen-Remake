@@ -1,0 +1,348 @@
+[gd_scene format=3 uid="uid://bd0b3nr0b2wx8"]
+
+[ext_resource type="Script" uid="uid://oykn57p4gr2j" path="res://ui/StageEditor.gd" id="1_stage_editor_script"]
+[ext_resource type="Theme" uid="uid://ksxjx5uqcuqd" path="res://ui/theme/GlobalUITheme.tres" id="2_global_theme"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_marker"]
+size = Vector3(0.35, 0.35, 0.35)
+
+[sub_resource type="BoxMesh" id="BoxMesh_bound"]
+size = Vector3(0.12, 2, 0.12)
+
+[sub_resource type="BoxMesh" id="BoxMesh_camera"]
+size = Vector3(0.22, 0.22, 0.22)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_floor"]
+size = Vector2(60, 30)
+
+[node name="StageEditor" type="Control" unique_id=1687724757]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("2_global_theme")
+script = ExtResource("1_stage_editor_script")
+
+[node name="BackgroundColor" type="ColorRect" parent="." unique_id=1645736550]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.06, 0.06, 0.08, 1)
+
+[node name="MarginContainer" type="MarginContainer" parent="." unique_id=1592245154]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 18
+theme_override_constants/margin_top = 18
+theme_override_constants/margin_right = 18
+theme_override_constants/margin_bottom = 18
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer" unique_id=1785227483]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="TitleLabel" type="Label" parent="MarginContainer/VBoxContainer" unique_id=2055694677]
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "Stage Editor"
+horizontal_alignment = 1
+
+[node name="TopRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer" unique_id=359908095]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="StageOption" type="OptionButton" parent="MarginContainer/VBoxContainer/TopRow" unique_id=345800124]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ShowCollisionCheck" type="CheckBox" parent="MarginContainer/VBoxContainer/TopRow" unique_id=1400661085]
+layout_mode = 2
+button_pressed = true
+text = "Show Collision"
+
+[node name="ReloadButton" type="Button" parent="MarginContainer/VBoxContainer/TopRow" unique_id=589766144]
+layout_mode = 2
+text = "Reload"
+
+[node name="SaveButton" type="Button" parent="MarginContainer/VBoxContainer/TopRow" unique_id=1707916417]
+layout_mode = 2
+text = "Save stage.def"
+
+[node name="BackButton" type="Button" parent="MarginContainer/VBoxContainer/TopRow" unique_id=2065123511]
+layout_mode = 2
+text = "Back"
+
+[node name="ContentScroll" type="ScrollContainer" parent="MarginContainer/VBoxContainer" unique_id=142327770]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="ContentVBox" type="VBoxContainer" parent="MarginContainer/VBoxContainer/ContentScroll" unique_id=358067185]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="FormGrid" type="GridContainer" parent="MarginContainer/VBoxContainer/ContentScroll/ContentVBox" unique_id=1832952421]
+layout_mode = 2
+columns = 6
+
+[node name="P1Label" type="Label" parent="MarginContainer/VBoxContainer/ContentScroll/ContentVBox/FormGrid" unique_id=691358429]
+layout_mode = 2
+text = "P1 Spawn (X/Y/Z)"
+
+[node name="P1XSpin" type="SpinBox" parent="MarginContainer/VBoxContainer/ContentScroll/ContentVBox/FormGrid" unique_id=694371203]
+layout_mode = 2
+min_value = -200.0
+max_value = 200.0
+step = 0.01
+prefix = "X "
+
+[node name="P1YSpin" type="SpinBox" parent="MarginContainer/VBoxContainer/ContentScroll/ContentVBox/FormGrid" unique_id=1397846453]
+layout_mode = 2
+min_value = -50.0
+max_value = 50.0
+step = 0.01
+prefix = "Y "
+
+[node name="P1ZSpin" type="SpinBox" parent="MarginContainer/VBoxContainer/ContentScroll/ContentVBox/FormGrid" unique_id=980004650]
+layout_mode = 2
+min_value = -200.0
+max_value = 200.0
+step = 0.01
+prefix = "Z "
+
+[node name="P2Label" type="Label" parent="MarginContainer/VBoxContainer/ContentScroll/ContentVBox/FormGrid" unique_id=1475967161]
+layout_mode = 2
+text = "P2 Spawn (X/Y/Z)"
+
+[node name="P2XSpin" type="SpinBox" parent="MarginContainer/VBoxContainer/ContentScroll/ContentVBox/FormGrid" unique_id=1058902748]
+layout_mode = 2
+min_value = -200.0
+max_value = 200.0
+step = 0.01
+prefix = "X "
+
+[node name="P2YSpin" type="SpinBox" parent="MarginContainer/VBoxContainer/ContentScroll/ContentVBox/FormGrid" unique_id=286370488]
+layout_mode = 2
+min_value = -50.0
+max_value = 50.0
+step = 0.01
+prefix = "Y "
+
+[node name="P2ZSpin" type="SpinBox" parent="MarginContainer/VBoxContainer/ContentScroll/ContentVBox/FormGrid" unique_id=338193918]
+layout_mode = 2
+min_value = -200.0
+max_value = 200.0
+step = 0.01
+prefix = "Z "
+
+[node name="StageOffsetLabel" type="Label" parent="MarginContainer/VBoxContainer/ContentScroll/ContentVBox/FormGrid" unique_id=1401492892]
+layout_mode = 2
+text = "Stage Offset (X/Y/Z)"
+
+[node name="StageOffsetXSpin" type="SpinBox" parent="MarginContainer/VBoxContainer/ContentScroll/ContentVBox/FormGrid" unique_id=1229435181]
+layout_mode = 2
+min_value = -200.0
+max_value = 200.0
+step = 0.01
+prefix = "X "
+
+[node name="StageOffsetYSpin" type="SpinBox" parent="MarginContainer/VBoxContainer/ContentScroll/ContentVBox/FormGrid" unique_id=1598152691]
+layout_mode = 2
+min_value = -50.0
+max_value = 50.0
+step = 0.01
+prefix = "Y "
+
+[node name="StageOffsetZSpin" type="SpinBox" parent="MarginContainer/VBoxContainer/ContentScroll/ContentVBox/FormGrid" unique_id=482946508]
+layout_mode = 2
+min_value = -200.0
+max_value = 200.0
+step = 0.01
+prefix = "Z "
+
+[node name="FloorLabel" type="Label" parent="MarginContainer/VBoxContainer/ContentScroll/ContentVBox/FormGrid" unique_id=1635005717]
+layout_mode = 2
+text = "Floor Y Level"
+
+[node name="FloorYSpin" type="SpinBox" parent="MarginContainer/VBoxContainer/ContentScroll/ContentVBox/FormGrid" unique_id=834114023]
+layout_mode = 2
+min_value = -50.0
+max_value = 50.0
+step = 0.01
+
+[node name="ArenaLeftLabel" type="Label" parent="MarginContainer/VBoxContainer/ContentScroll/ContentVBox/FormGrid" unique_id=1453471108]
+layout_mode = 2
+text = "Arena Left"
+
+[node name="ArenaLeftSpin" type="SpinBox" parent="MarginContainer/VBoxContainer/ContentScroll/ContentVBox/FormGrid" unique_id=541755677]
+layout_mode = 2
+min_value = -400.0
+max_value = 400.0
+step = 0.01
+
+[node name="ArenaRightLabel" type="Label" parent="MarginContainer/VBoxContainer/ContentScroll/ContentVBox/FormGrid" unique_id=922669395]
+layout_mode = 2
+text = "Arena Right"
+
+[node name="ArenaRightSpin" type="SpinBox" parent="MarginContainer/VBoxContainer/ContentScroll/ContentVBox/FormGrid" unique_id=2120060589]
+layout_mode = 2
+min_value = -400.0
+max_value = 400.0
+step = 0.01
+
+[node name="SmashBlastLabel" type="Label" parent="MarginContainer/VBoxContainer/ContentScroll/ContentVBox/FormGrid" unique_id=1943600469]
+layout_mode = 2
+text = "Smash Blast (L/R/T/B)"
+
+[node name="SmashBlastLeftSpin" type="SpinBox" parent="MarginContainer/VBoxContainer/ContentScroll/ContentVBox/FormGrid" unique_id=497766542]
+layout_mode = 2
+min_value = -800.0
+max_value = 800.0
+step = 0.01
+prefix = "L "
+
+[node name="SmashBlastRightSpin" type="SpinBox" parent="MarginContainer/VBoxContainer/ContentScroll/ContentVBox/FormGrid" unique_id=1922419068]
+layout_mode = 2
+min_value = -800.0
+max_value = 800.0
+step = 0.01
+prefix = "R "
+
+[node name="SmashBlastTopSpin" type="SpinBox" parent="MarginContainer/VBoxContainer/ContentScroll/ContentVBox/FormGrid" unique_id=1322024499]
+layout_mode = 2
+min_value = -200.0
+max_value = 200.0
+step = 0.01
+prefix = "T "
+
+[node name="SmashBlastBottomSpin" type="SpinBox" parent="MarginContainer/VBoxContainer/ContentScroll/ContentVBox/FormGrid" unique_id=2021840722]
+layout_mode = 2
+min_value = -200.0
+max_value = 200.0
+step = 0.01
+prefix = "B "
+
+[node name="CamPosLabel" type="Label" parent="MarginContainer/VBoxContainer/ContentScroll/ContentVBox/FormGrid" unique_id=659242628]
+layout_mode = 2
+text = "Camera Position (X/Y/Z)"
+
+[node name="CamXSpin" type="SpinBox" parent="MarginContainer/VBoxContainer/ContentScroll/ContentVBox/FormGrid" unique_id=2107085757]
+layout_mode = 2
+min_value = -200.0
+max_value = 200.0
+step = 0.01
+prefix = "X "
+
+[node name="CamYSpin" type="SpinBox" parent="MarginContainer/VBoxContainer/ContentScroll/ContentVBox/FormGrid" unique_id=681439788]
+layout_mode = 2
+min_value = -50.0
+max_value = 80.0
+step = 0.01
+prefix = "Y "
+
+[node name="CamZSpin" type="SpinBox" parent="MarginContainer/VBoxContainer/ContentScroll/ContentVBox/FormGrid" unique_id=1837081945]
+layout_mode = 2
+min_value = -200.0
+max_value = 200.0
+step = 0.01
+prefix = "Z "
+
+[node name="LookLabel" type="Label" parent="MarginContainer/VBoxContainer/ContentScroll/ContentVBox/FormGrid" unique_id=7769783]
+layout_mode = 2
+text = "Camera Look Target (X/Y/Z)"
+
+[node name="LookXSpin" type="SpinBox" parent="MarginContainer/VBoxContainer/ContentScroll/ContentVBox/FormGrid" unique_id=317125030]
+layout_mode = 2
+min_value = -200.0
+max_value = 200.0
+step = 0.01
+prefix = "X "
+
+[node name="LookYSpin" type="SpinBox" parent="MarginContainer/VBoxContainer/ContentScroll/ContentVBox/FormGrid" unique_id=547663526]
+layout_mode = 2
+min_value = -50.0
+max_value = 80.0
+step = 0.01
+prefix = "Y "
+
+[node name="LookZSpin" type="SpinBox" parent="MarginContainer/VBoxContainer/ContentScroll/ContentVBox/FormGrid" unique_id=648575775]
+layout_mode = 2
+min_value = -200.0
+max_value = 200.0
+step = 0.01
+prefix = "Z "
+
+[node name="PreviewPanel" type="Panel" parent="MarginContainer/VBoxContainer/ContentScroll/ContentVBox" unique_id=2097161789]
+custom_minimum_size = Vector2(0, 380)
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="PreviewViewportContainer" type="SubViewportContainer" parent="MarginContainer/VBoxContainer/ContentScroll/ContentVBox/PreviewPanel" unique_id=461305350]
+custom_minimum_size = Vector2(0, 380)
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = -8.0
+offset_bottom = -8.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+stretch = true
+
+[node name="PreviewViewport" type="SubViewport" parent="MarginContainer/VBoxContainer/ContentScroll/ContentVBox/PreviewPanel/PreviewViewportContainer" unique_id=1099147968]
+handle_input_locally = false
+own_world_3d = true
+disable_3d = false
+transparent_bg = false
+size = Vector2i(1280, 720)
+render_target_update_mode = 4
+
+[node name="PreviewRoot" type="Node3D" parent="MarginContainer/VBoxContainer/ContentScroll/ContentVBox/PreviewPanel/PreviewViewportContainer/PreviewViewport" unique_id=771470186]
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="MarginContainer/VBoxContainer/ContentScroll/ContentVBox/PreviewPanel/PreviewViewportContainer/PreviewViewport/PreviewRoot" unique_id=1862671789]
+transform = Transform3D(0.866025, -0.353553, 0.353553, 0, 0.707107, 0.707107, -0.5, -0.612372, 0.612372, 0, 4, 6)
+light_energy = 1.8
+
+[node name="Camera3D" type="Camera3D" parent="MarginContainer/VBoxContainer/ContentScroll/ContentVBox/PreviewPanel/PreviewViewportContainer/PreviewViewport/PreviewRoot" unique_id=1915873294]
+transform = Transform3D(1, 0, 0, 0, 0.97, 0.24, 0, -0.24, 0.97, 0, 4.2, 11.5)
+current = true
+
+[node name="StageRoot" type="Node3D" parent="MarginContainer/VBoxContainer/ContentScroll/ContentVBox/PreviewPanel/PreviewViewportContainer/PreviewViewport/PreviewRoot" unique_id=1345956884]
+
+[node name="CharacterRoot" type="Node3D" parent="MarginContainer/VBoxContainer/ContentScroll/ContentVBox/PreviewPanel/PreviewViewportContainer/PreviewViewport/PreviewRoot" unique_id=960829213]
+
+[node name="CollisionDebugRoot" type="Node3D" parent="MarginContainer/VBoxContainer/ContentScroll/ContentVBox/PreviewPanel/PreviewViewportContainer/PreviewViewport/PreviewRoot" unique_id=2125234696]
+
+[node name="P1Marker" type="MeshInstance3D" parent="MarginContainer/VBoxContainer/ContentScroll/ContentVBox/PreviewPanel/PreviewViewportContainer/PreviewViewport/PreviewRoot" unique_id=775503346]
+mesh = SubResource("BoxMesh_marker")
+
+[node name="P2Marker" type="MeshInstance3D" parent="MarginContainer/VBoxContainer/ContentScroll/ContentVBox/PreviewPanel/PreviewViewportContainer/PreviewViewport/PreviewRoot" unique_id=612493601]
+mesh = SubResource("BoxMesh_marker")
+
+[node name="LeftBound" type="MeshInstance3D" parent="MarginContainer/VBoxContainer/ContentScroll/ContentVBox/PreviewPanel/PreviewViewportContainer/PreviewViewport/PreviewRoot" unique_id=522857092]
+mesh = SubResource("BoxMesh_bound")
+
+[node name="RightBound" type="MeshInstance3D" parent="MarginContainer/VBoxContainer/ContentScroll/ContentVBox/PreviewPanel/PreviewViewportContainer/PreviewViewport/PreviewRoot" unique_id=2014649349]
+mesh = SubResource("BoxMesh_bound")
+
+[node name="CameraMarker" type="MeshInstance3D" parent="MarginContainer/VBoxContainer/ContentScroll/ContentVBox/PreviewPanel/PreviewViewportContainer/PreviewViewport/PreviewRoot" unique_id=2121679782]
+mesh = SubResource("BoxMesh_camera")
+
+[node name="Floor" type="MeshInstance3D" parent="MarginContainer/VBoxContainer/ContentScroll/ContentVBox/PreviewPanel/PreviewViewportContainer/PreviewViewport/PreviewRoot" unique_id=33862539]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.001, 0)
+mesh = SubResource("PlaneMesh_floor")
+
+[node name="StatusLabel" type="Label" parent="MarginContainer/VBoxContainer" unique_id=1839288977]
+layout_mode = 2
+text = "Edit values to see realtime spawn/bounds/camera preview."
