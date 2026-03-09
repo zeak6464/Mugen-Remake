@@ -43,7 +43,7 @@ func spawn_projectile(projectile_id: String, facing_right: bool, spawn_origin: V
 	projectile.name = "Projectile_%s_%d" % [projectile_id, Time.get_ticks_msec()]
 	var root: Node = fighter.get_parent() if fighter.get_parent() != null else self
 	root.add_child(projectile)
-	projectile.setup(fighter, spawn_origin + spawn_offset, velocity, lifetime_frames, hit_data, size, despawn_on_hit)
+	projectile.setup(fighter, spawn_origin + spawn_offset, velocity, lifetime_frames, hit_data, size, despawn_on_hit, def)
 	projectile.projectile_hit.connect(_on_projectile_hit)
 	projectile.projectile_expired.connect(_on_projectile_expired)
 	active_projectiles.append(projectile)

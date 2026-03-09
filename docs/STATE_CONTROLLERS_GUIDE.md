@@ -285,7 +285,265 @@ Current types implemented by runtime:
 - Controllers may match, but state transition can still fail due to fighter/state rules.
 - During hitpause, expect controllers to stop unless `ignorehitpause` is enabled.
 
-## 9) Recommended authoring pattern
+## 9) Practical recipes
+
+These are small starter patterns you can copy and adapt instead of building everything from scratch.
+
+### A) Teleport behind the opponent
+
+There is currently no dedicated `Teleport` controller type.
+
+Teleport behavior is implemented by the runtime as a command effect in `commands.json`, then the move itself runs as a normal state in `states.json`.
+
+Example `commands.json` entry:
+
+```json
+{
+  "id": "teleport_behind",
+  "pattern": [2, 3, 6, "S"],
+  "max_window": 20,
+  "min_repeat_frames": 12,
+  "target_state": "teleport_start",
+  "teleport_to_opponent_offset": [-1.2, 0.0, 0.0]
+}
+```
+
+Example `states.json` entry:
+
+```json
+"teleport_start": {
+  "animation": "teleport_start",
+  "allow_movement": false,
+  "controllers": [
+    { "type": "CtrlSet", "value": 0, "trigger1": "time = 1", "persistent": 0 },
+    { "type": "Trans", "trans": "addalpha", "alpha": [96, 256], "trigger1": "time <= 6" },
+    { "type": "PlaySnd", "id": "teleport", "channel": "sfx", "trigger1": "time = 1", "persistent": 0 }
+  ],
+  "next": { "frame": 10, "id": "idle" }
+}
+```
+
+Notes:
+
+- `teleport_to_opponent_offset` is facing-aware, so negative `x` places the fighter behind the opponent.
+- You can also use `teleport_to` for a fixed world location, or `teleport_offset` for a relative blink.
+- If you want more control, the runtime also supports `custom_actions` with `teleport_self`, `teleport_self_offset`, and `teleport_to_opponent`.
+
+### B) Reflect projectiles
+
+Projectile reflection is state-driven.
+
+To reflect, enter a state that sets `reflect_active = true`. When a projectile touches the fighter during that state, the projectile is reassigned and sent back at the attacker.
+
+Example command:
+
+```json
+{
+  "id": "reflect",
+  "pattern": ["S"],
+  "max_window": 8,
+  "min_repeat_frames": 8,
+  "target_state": "reflect"
+}
+```
+
+Example state:
+
+```json
+"reflect": {
+  "animation": "parry",
+  "allow_movement": false,
+  "reflect_active": true,
+  "controllers": [
+    { "type": "CtrlSet", "value": 0, "trigger1": "time = 1", "persistent": 0 },
+    { "type": "PlaySnd", "id": "parry", "channel": "sfx", "trigger1": "time = 1", "persistent": 0 },
+    { "type": "PalFX", "time": 5, "add": [32, 32, 64], "mul": [256, 256, 256], "trigger1": "time <= 4" }
+  ],
+  "next": { "frame": 7, "id": "idle" }
+}
+```
+
+Notes:
+
+- `reflect_active` is a state field, not a controller.
+- This only affects projectiles. Regular strikes still need guard/parry/reversal logic.
+- Reflected projectiles now keep traveling and can clash with other opposing projectiles.
+
+### C) Simple fireball move
+
+This one does use normal state/controller flow plus the projectile timeline.
+
+Example command:
+
+```json
+{
+  "id": "qcf_p",
+  "pattern": [2, 3, 6, "P"],
+  "max_window": 20,
+  "min_repeat_frames": 10,
+  "target_state": "qcf_p"
+}
+```
+
+Example state:
+
+```json
+"qcf_p": {
+  "animation": "fireball",
+  "allow_movement": false,
+  "projectiles": [
+    { "frame": 8, "id": "fireball_light" }
+  ],
+  "controllers": [
+    { "type": "CtrlSet", "value": 0, "trigger1": "time = 1", "persistent": 0 },
+    { "type": "PlaySnd", "id": "swing_heavy", "channel": "sfx", "trigger1": "time = 4", "persistent": 0 }
+  ],
+  "next": { "frame": 18, "id": "idle" }
+}
+```
+
+### D) Charge-and-release projectile (Samus-style starter)
+
+This pattern combines command matching with a hold state and a release state.
+
+Example commands:
+
+```json
+{
+  "id": "charge_start",
+  "pattern": ["hold:S"],
+  "max_window": 8,
+  "min_repeat_frames": 8,
+  "target_state": "charge_hold"
+},
+{
+  "id": "charge_release",
+  "pattern": ["release:S"],
+  "max_window": 8,
+  "min_repeat_frames": 4,
+  "target_state": "charge_fire"
+}
+```
+
+Example states:
+
+```json
+"charge_hold": {
+  "animation": "charge_hold",
+  "allow_movement": false,
+  "cancel_into": ["charge_fire"],
+  "controllers": [
+    { "type": "CtrlSet", "value": 0, "trigger1": "time = 1", "persistent": 0 },
+    { "type": "VarAdd", "v": 0, "value": 1, "trigger1": "time < 60" },
+    { "type": "PlaySnd", "id": "charge_loop", "channel": "sfx", "trigger1": "time = 1", "persistent": 0 },
+    { "type": "PalFX", "time": 2, "add": [0, 16, 32], "mul": [256, 256, 256], "trigger1": "time % 4 = 0" }
+  ],
+  "next": {}
+},
+"charge_fire": {
+  "animation": "charge_fire",
+  "allow_movement": false,
+  "projectiles": [
+    { "frame": 4, "id": "charge_shot" }
+  ],
+  "controllers": [
+    { "type": "CtrlSet", "value": 0, "trigger1": "time = 1", "persistent": 0 },
+    { "type": "PlaySnd", "id": "charge_fire", "channel": "sfx", "trigger1": "time = 4", "persistent": 0 },
+    { "type": "VarSet", "v": 0, "value": 0, "trigger1": "time = 1", "persistent": 0 }
+  ],
+  "next": { "frame": 18, "id": "idle" }
+}
+```
+
+Notes:
+
+- `hold:S` and `release:S` are supported command tokens.
+- Use a var such as `var(0)` to track charge level, then branch into different fire states or projectile IDs if you want weak/medium/strong shots.
+- If you want the release move to depend on charge amount, split `charge_fire` into multiple states and use `ChangeState` in the hold state when the release command is detected.
+
+### E) Form / stance swap (Pyra/Mythra or Zelda/Sheik-style starter)
+
+Form swapping is command-driven and uses `transformations.json`.
+
+Example commands:
+
+```json
+{
+  "id": "swap_form",
+  "pattern": [2, 1, 4, "S"],
+  "max_window": 20,
+  "min_repeat_frames": 12,
+  "transform_to": "speed_form",
+  "transform_state": "transform_start"
+},
+{
+  "id": "swap_back",
+  "pattern": [2, 3, 6, "S"],
+  "max_window": 20,
+  "min_repeat_frames": 12,
+  "revert_transform": true,
+  "transform_state": "transform_end"
+}
+```
+
+Example `transformations.json`:
+
+```json
+{
+  "forms": {
+    "speed_form": {
+      "commands_path": "forms/speed_form/commands.json",
+      "states_path": "forms/speed_form/states.json",
+      "physics_overrides": {
+        "walk_speed": 4.0,
+        "run_speed": 7.2
+      },
+      "sounds_overrides": {
+        "swing_light": {
+          "path": "sounds/speed_swing.ogg"
+        }
+      },
+      "model_scale_multiplier": 1.0,
+      "transform_sound": "transform_on",
+      "revert_sound": "transform_off"
+    }
+  }
+}
+```
+
+Notes:
+
+- Forms can swap commands, states, physics, sounds, and model settings.
+- This is the cleanest current path for characters that change move sets mid-match.
+- It works best for full stance swaps, not per-opponent copy logic like Kirby inhale.
+
+### F) Multi-jump tuning (Kirby / Jigglypuff-style starter)
+
+Multi-jump is not a state controller feature. It is driven by `physics.json`.
+
+Example:
+
+```json
+{
+  "walk_speed": 3.2,
+  "run_speed": 6.0,
+  "jump_speed": 7.5,
+  "air_jump_speed": 6.8,
+  "max_jumps": 6,
+  "gravity": 18.0
+}
+```
+
+Notes:
+
+- `max_jumps` includes the initial jump.
+- `air_jump_count` is also accepted as an alias.
+- `air_jump_speed` lets air jumps feel softer or floatier than the first jump.
+- This is enough for Kirby/Jigglypuff-style repeated jumps, but not yet a full ledge-grab / tether-recovery system.
+
+---
+
+## 10) Recommended authoring pattern
 
 For each attack state:
 
@@ -296,7 +554,7 @@ For each attack state:
 
 This keeps behavior deterministic and easier to debug.
 
-## 10) JSON example for every controller
+## 11) JSON example for every controller
 
 Use this as a reference library. These are example entries for a `controllers` array:
 

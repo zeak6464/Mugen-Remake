@@ -146,7 +146,7 @@
 	},
 	"p_light": {
 		"allow_movement": false,
-		"animation": "ba01",
+		"animation": "bs02",
 		"cancel_into": [],
 		"cancel_windows": [
 			{
@@ -166,6 +166,7 @@
 				"start": 10.0
 			}
 		],
+		"controllers": [],
 		"hitboxes": [
 			{
 				"bone": "J_weapon_r",
@@ -188,7 +189,7 @@
 						0.0
 					]
 				},
-				"end": 57,
+				"end": 122,
 				"id": "p_light_1",
 				"offset": [
 					-0.51,
@@ -205,9 +206,10 @@
 		],
 		"hurtboxes": [],
 		"next": {
-			"frame": 60.0,
+			"frame": 123.0,
 			"id": "idle"
 		},
+		"projectiles": [],
 		"pushboxes": [],
 		"sounds": [
 			{
@@ -291,14 +293,14 @@
 				"end": 10.0,
 				"id": "qcf_p_1",
 				"offset": [
-					0.95,
+					0.0,
 					1.0,
 					0.0
 				],
 				"size": [
-					0.7,
-					0.55,
-					0.7
+					1.0,
+					1.0,
+					1.0
 				],
 				"start": 6.0
 			}

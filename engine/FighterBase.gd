@@ -104,6 +104,8 @@ var guard_lock_facing_right: bool = true
 var smash_mode_enabled: bool = false
 var smash_percent: float = 0.0
 var smash_respawn_protect_frames_remaining: int = 0
+var jumps_used: int = 0
+var jump_input_was_pressed: bool = false
 var state_control_enabled: bool = true
 var runtime_forced_statetype: String = ""
 var runtime_forced_movetype: String = ""
@@ -388,6 +390,7 @@ func inject_character_data(data: Dictionary) -> void:
 	max_juggle_points = maxi(1, int(def_data.get("max_juggle_points", max_juggle_points)))
 	resource = clampi(int(def_data.get("starting_resource", resource)), 0, max_resource)
 	reset_juggle_state()
+	_reset_jump_state()
 	_apply_collision_scale()
 	_configure_persistent_hurtboxes(def_data)
 	command_interpreter.set_command_data(command_data)
@@ -1678,11 +1681,13 @@ func set_smash_mode_enabled(enabled: bool) -> void:
 	if not enabled:
 		smash_percent = 0.0
 		smash_respawn_protect_frames_remaining = 0
+		_reset_jump_state()
 
 
 func reset_smash_state() -> void:
 	smash_percent = 0.0
 	smash_respawn_protect_frames_remaining = 0
+	_reset_jump_state()
 
 
 func add_smash_percent(amount: float) -> void:
@@ -2942,20 +2947,32 @@ func _apply_jump_and_gravity(delta: float) -> void:
 	else:
 		gravity = float(physics_data.get("gravity", default_gravity))
 	var jump_speed: float = float(physics_data.get("jump_speed", default_jump_speed))
+	var air_jump_speed: float = float(physics_data.get("air_jump_speed", jump_speed))
 	var max_fall_speed: float = float(physics_data.get("max_fall_speed", 25.0 if smash_mode_enabled else 1000.0))
 	var grounded: bool = _is_grounded_for_jump()
+	var jump_just_pressed: bool = _consume_jump_press()
+	var jumped_this_frame: bool = false
 
 	if grounded:
 		if juggle_points_used > 0:
 			reset_juggle_state()
+		if jumps_used != 0:
+			jumps_used = 0
 		if use_floor_y_fallback_grounding and global_position.y < floor_y_level:
 			global_position.y = floor_y_level
 		if velocity.y < 0.0:
 			velocity.y = 0.0
-		if accepts_player_movement_input and _can_jump() and InputMap.has_action(jump_action) and Input.is_action_just_pressed(jump_action):
+		if accepts_player_movement_input and _can_jump() and jump_just_pressed:
+			jumps_used = 1
 			velocity.y = jump_speed
+			jumped_this_frame = true
 	else:
-		velocity.y -= gravity * delta
+		if accepts_player_movement_input and _can_jump() and jump_just_pressed and jumps_used < _get_max_jumps():
+			jumps_used += 1
+			velocity.y = air_jump_speed
+			jumped_this_frame = true
+		if not jumped_this_frame:
+			velocity.y -= gravity * delta
 		velocity.y = maxf(velocity.y, -max_fall_speed)
 
 
@@ -2964,6 +2981,28 @@ func _can_jump() -> bool:
 	if state_info.has("allow_jump"):
 		return bool(state_info["allow_jump"])
 	return _state_allows_movement(state_info)
+
+
+func _get_max_jumps() -> int:
+	return maxi(1, int(physics_data.get("max_jumps", physics_data.get("air_jump_count", 1))))
+
+
+func _consume_jump_press() -> bool:
+	var pressed_now: bool = false
+	if command_interpreter != null:
+		pressed_now = command_interpreter.get_latest_raw_direction().y < -walk_deadzone
+	if accepts_player_movement_input and InputMap.has_action(jump_action):
+		pressed_now = pressed_now or Input.is_action_pressed(jump_action)
+	var just_pressed: bool = pressed_now and not jump_input_was_pressed
+	if accepts_player_movement_input and InputMap.has_action(jump_action) and Input.is_action_just_pressed(jump_action):
+		just_pressed = true
+	jump_input_was_pressed = pressed_now
+	return just_pressed
+
+
+func _reset_jump_state() -> void:
+	jumps_used = 0
+	jump_input_was_pressed = false
 
 
 func _is_grounded_for_jump() -> bool:

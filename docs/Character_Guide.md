@@ -221,6 +221,132 @@ Notes:
 
 ---
 
+### 6.6) `sounds.json` (character audio)
+
+Character sounds are defined by sound ID in `sounds.json`. Those IDs can then be triggered from a state's `sounds` timeline, from a `PlaySnd` controller, or by built-in combat event fallbacks that look up common IDs such as `hit_light`, `hit_heavy`, `guard`, `parry`, `throw_start`, `throw_hit`, and `ko`.
+
+Example `sounds.json`:
+
+```json
+{
+  "swing_light": {
+    "path": "sounds/swing_light.ogg",
+    "volume_db": -4.0,
+    "pitch_scale": 1.0,
+    "bus": "Master"
+  },
+  "hit_heavy": {
+    "path": "sounds/hit_heavy.ogg",
+    "volume_db": -1.0,
+    "pitch_scale": 0.9,
+    "bus": "Master"
+  },
+  "voice_attack": {
+    "path": "voice/attack_01.ogg",
+    "volume_db": -2.0,
+    "pitch_scale": 1.0,
+    "bus": "Master"
+  }
+}
+```
+
+Notes:
+
+- `path` can be relative to the character mod folder, or absolute via `res://` / `user://`.
+- Supported runtime formats are `.ogg`, `.mp3`, and `.wav`.
+- `volume_db`, `pitch_scale`, and `bus` are optional.
+- When a sound is played with channel `voice`, the engine routes it to the fighter's voice player. Otherwise it uses the normal SFX player.
+
+Example state timeline usage:
+
+```json
+"sounds": [
+  { "frame": 4, "id": "swing_light", "channel": "sfx" },
+  { "frame": 1, "id": "voice_attack", "channel": "voice" }
+]
+```
+
+Example controller usage:
+
+```json
+{ "type": "PlaySnd", "id": "voice_attack", "channel": "voice", "trigger1": "time = 1", "persistent": 0 }
+```
+
+---
+
+### 6.7) `projectiles.json` (projectile data + visuals)
+
+Projectiles are defined in `projectiles.json`, then spawned from a state by listing them in that state's `projectiles` timeline.
+
+Example `projectiles.json`:
+
+```json
+{
+  "projectiles": [
+    {
+      "id": "fireball_light",
+      "speed": 8.0,
+      "lifetime_frames": 120,
+      "spawn_offset": [1.0, 1.0, 0.0],
+      "size": [0.45, 0.45, 0.45],
+      "despawn_on_hit": true,
+
+      "visual_path": "res://mods/MyFighter/projectiles/fireball.glb",
+      "visual_scale": [1.0, 1.0, 1.0],
+      "visual_offset": [0.0, 0.0, 0.0],
+      "visual_rotation_degrees": [0.0, 0.0, 0.0],
+      "visual_animation": "loop",
+      "visual_animation_speed": 1.0,
+      "visual_animation_loop": true,
+      "visual_face_velocity": true,
+      "visual_yaw_offset_degrees": 0.0,
+      "visual_tint": [1.0, 0.72, 0.2, 0.78],
+      "visual_emission": [1.0, 0.58, 0.16, 1.0],
+      "visual_unshaded": true,
+      "visual_double_sided": true,
+
+      "trail_enabled": true,
+      "trail_color": [1.0, 0.55, 0.18, 0.72],
+      "trail_emission": [1.0, 0.42, 0.12, 1.0],
+      "trail_size": [0.28, 0.16],
+      "trail_lifetime": 0.25,
+      "trail_amount": 18,
+
+      "hit_data": {
+        "damage": 65,
+        "pushback": [3.2, 0.0, 0.0],
+        "launch_velocity": [4.0, 2.4, 0.0],
+        "hitstun_state": "hitstun",
+        "hit_sound": "hit_heavy"
+      }
+    }
+  ]
+}
+```
+
+Example `states.json` entry that spawns it:
+
+```json
+"qcf_p": {
+  "animation": "bs01",
+  "allow_movement": false,
+  "projectiles": [
+    { "frame": 8, "id": "fireball_light" }
+  ],
+  "next": { "frame": 18, "id": "idle" }
+}
+```
+
+Notes:
+
+- `visual_path` can point to a `.glb`, `.gltf`, or scene file.
+- If `visual_path` is missing or fails to load, the engine falls back to the built-in glowing box projectile.
+- `model_path` / `model_scale` are also accepted as aliases for `visual_path` / `visual_scale`.
+- Projectile-vs-projectile clashes now cancel both projectiles on contact when they belong to opposing fighters/teams.
+- Same-owner and same-team projectiles do not cancel each other.
+
+---
+
 ### 7) Grapples / throws
 
 Use `throwboxes` in a state (not regular strike hitboxes):
@@ -585,7 +711,7 @@ Controller parameter examples:
 - `PlaySnd`: plays character sound by `id`/`value`, optional `channel` (`sfx`/`voice`)
 - `ChangeAnim`: plays animation by `value`/`anim`/`id`, optional `animation_loop`/`loop`
 - `ChangeAnim2`: change opponent animation by `value`/`anim`, optional `animation_loop`/`loop`
-- `Projectile`: spawns projectile by `id`/`value` from `projectiles.json`
+- `Projectile`: spawns projectile by `id`/`value` from `projectiles.json` using that entry's gameplay, visual, and trail settings
 - `TargetState`: changes opponent state via `value`/`state`, optional `ctrl`
 - `TargetLifeAdd`: adds/subtracts opponent life via `value`/`amount`, optional `kill`
 - `TargetPowerAdd`: adds/subtracts opponent power via `value`/`amount`

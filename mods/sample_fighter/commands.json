@@ -3,8 +3,8 @@
     {
       "id": "p_light",
       "pattern": ["P"],
-      "max_window": 52,
-      "min_repeat_frames": 49,
+      "max_window": 122,
+      "min_repeat_frames": 120,
       "target_state": "p_light"
     },
     {
