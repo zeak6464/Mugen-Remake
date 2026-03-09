@@ -3,19 +3,26 @@ extends CanvasLayer
 signal resume_requested
 signal button_config_requested
 signal exit_requested(target_scene: String)
+signal toggle_hitbox_requested
+signal open_hitbox_editor_requested
 
 const SETTINGS_PATH: String = "user://options.cfg"
 const CONTROLS_MENU_SCENE: PackedScene = preload("res://ui/ControlsMenu.tscn")
 
-@onready var title_label: Label = $Root/CenterContainer/Panel/Content/MainVBox/TitleLabel
+@onready var title_label: Label = $Root/CenterContainer/Panel/Content/MainScroll/MainVBox/TitleLabel
+@onready var debug_state_label: Label = $Root/CenterContainer/Panel/Content/MainScroll/MainVBox/DebugStateLabel
+@onready var toggle_hitbox_button: Button = $Root/CenterContainer/Panel/Content/MainScroll/MainVBox/ToggleHitboxButton
+@onready var hitbox_editor_hint_label: Label = $Root/CenterContainer/Panel/Content/MainScroll/MainVBox/HitboxEditStatusLabel
+@onready var open_hitbox_editor_button: Button = $Root/CenterContainer/Panel/Content/MainScroll/MainVBox/ToggleHitboxEditButton
 @onready var content_root: Control = $Root/CenterContainer/Panel/Content
-@onready var main_vbox: Control = $Root/CenterContainer/Panel/Content/MainVBox
-@onready var resume_button: Button = $Root/CenterContainer/Panel/Content/MainVBox/ResumeButton
-@onready var move_list_button: Button = $Root/CenterContainer/Panel/Content/MainVBox/MoveListButton
-@onready var button_config_button: Button = $Root/CenterContainer/Panel/Content/MainVBox/ButtonConfigButton
-@onready var sound_config_button: Button = $Root/CenterContainer/Panel/Content/MainVBox/SoundConfigButton
-@onready var exit_character_select_button: Button = $Root/CenterContainer/Panel/Content/MainVBox/ExitCharacterSelectButton
-@onready var exit_main_menu_button: Button = $Root/CenterContainer/Panel/Content/MainVBox/ExitMainMenuButton
+@onready var main_scroll: ScrollContainer = $Root/CenterContainer/Panel/Content/MainScroll
+@onready var main_vbox: Control = $Root/CenterContainer/Panel/Content/MainScroll/MainVBox
+@onready var resume_button: Button = $Root/CenterContainer/Panel/Content/MainScroll/MainVBox/ResumeButton
+@onready var move_list_button: Button = $Root/CenterContainer/Panel/Content/MainScroll/MainVBox/MoveListButton
+@onready var button_config_button: Button = $Root/CenterContainer/Panel/Content/MainScroll/MainVBox/ButtonConfigButton
+@onready var sound_config_button: Button = $Root/CenterContainer/Panel/Content/MainScroll/MainVBox/SoundConfigButton
+@onready var exit_character_select_button: Button = $Root/CenterContainer/Panel/Content/MainScroll/MainVBox/ExitCharacterSelectButton
+@onready var exit_main_menu_button: Button = $Root/CenterContainer/Panel/Content/MainScroll/MainVBox/ExitMainMenuButton
 @onready var move_list_panel: Control = $Root/CenterContainer/Panel/Content/MoveListPanel
 @onready var move_list_title: Label = $Root/CenterContainer/Panel/Content/MoveListPanel/MoveListTitle
 @onready var move_list_text: RichTextLabel = $Root/CenterContainer/Panel/Content/MoveListPanel/MoveListText
@@ -31,6 +38,7 @@ const CONTROLS_MENU_SCENE: PackedScene = preload("res://ui/ControlsMenu.tscn")
 
 var current_move_list_text: String = "No moves available."
 var controls_overlay: Control = null
+var current_is_training_mode: bool = true
 
 
 func _ready() -> void:
@@ -40,6 +48,16 @@ func _ready() -> void:
 		func() -> void:
 			SystemSFX.play_ui_from(self, "ui_confirm")
 			resume_requested.emit()
+	)
+	toggle_hitbox_button.pressed.connect(
+		func() -> void:
+			SystemSFX.play_ui_from(self, "ui_confirm")
+			toggle_hitbox_requested.emit()
+	)
+	open_hitbox_editor_button.pressed.connect(
+		func() -> void:
+			SystemSFX.play_ui_from(self, "ui_confirm")
+			open_hitbox_editor_requested.emit()
 	)
 	move_list_button.pressed.connect(
 		func() -> void:
@@ -183,6 +201,8 @@ func _menu_focus_controls() -> Array[Control]:
 		_append_focus_if_visible(out, move_list_back_button)
 		return out
 	_append_focus_if_visible(out, resume_button)
+	_append_focus_if_visible(out, toggle_hitbox_button)
+	_append_focus_if_visible(out, open_hitbox_editor_button)
 	_append_focus_if_visible(out, move_list_button)
 	_append_focus_if_visible(out, button_config_button)
 	_append_focus_if_visible(out, sound_config_button)
@@ -201,7 +221,7 @@ func _append_focus_if_visible(out: Array[Control], control: Control) -> void:
 
 func show_menu() -> void:
 	visible = true
-	title_label.text = "Pause Menu"
+	title_label.text = "Training Menu" if current_is_training_mode else "Pause Menu"
 	_show_main_panel()
 	resume_button.grab_focus()
 
@@ -211,9 +231,30 @@ func hide_menu() -> void:
 	_close_controls_overlay()
 
 
-func set_menu_state(_dummy_local_input: bool, _hitbox_debug: bool) -> void:
-	# Kept for backwards compatibility with existing calls.
-	pass
+func set_menu_state(is_training_mode: bool, _dummy_local_input: bool, hitbox_debug: bool) -> void:
+	current_is_training_mode = is_training_mode
+	_update_debug_state_label(hitbox_debug)
+	_update_hitbox_editor_ui()
+
+
+func _update_debug_state_label(enabled: bool) -> void:
+	if debug_state_label == null:
+		return
+	debug_state_label.visible = current_is_training_mode
+	if toggle_hitbox_button != null:
+		toggle_hitbox_button.visible = current_is_training_mode
+	if current_is_training_mode:
+		debug_state_label.text = "Debug View: Hitboxes + Hurtboxes %s" % ("ON" if enabled else "OFF")
+		if toggle_hitbox_button != null:
+			toggle_hitbox_button.text = "Hitboxes + Hurtboxes: %s" % ("ON" if enabled else "OFF")
+
+
+func _update_hitbox_editor_ui() -> void:
+	var visible_training_tools: bool = current_is_training_mode
+	if hitbox_editor_hint_label != null:
+		hitbox_editor_hint_label.visible = visible_training_tools
+	if open_hitbox_editor_button != null:
+		open_hitbox_editor_button.visible = visible_training_tools
 
 
 func set_move_list_text(value: String) -> void:
@@ -224,13 +265,14 @@ func set_move_list_text(value: String) -> void:
 
 
 func _show_main_panel() -> void:
-	main_vbox.visible = true
+	main_scroll.visible = true
 	move_list_panel.visible = false
 	sound_panel.visible = false
+	main_scroll.scroll_vertical = 0
 
 
 func _show_move_list_panel() -> void:
-	main_vbox.visible = false
+	main_scroll.visible = false
 	move_list_panel.visible = true
 	sound_panel.visible = false
 	move_list_text.text = current_move_list_text
@@ -242,7 +284,7 @@ func _show_move_list_panel() -> void:
 
 
 func _show_sound_panel() -> void:
-	main_vbox.visible = false
+	main_scroll.visible = false
 	move_list_panel.visible = false
 	sound_panel.visible = true
 	_update_sound_labels()

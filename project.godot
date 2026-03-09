@@ -25,6 +25,7 @@ EnvVFX="*res://addons/vfx_library/env_vfx.gd"
 
 window/size/viewport_width=1280
 window/size/viewport_height=960
+window/stretch/mode="canvas_items"
 
 [editor_plugins]
 

@@ -1,0 +1,86 @@
+{
+  "swing_light": {
+    "path": "sounds/swing_light.ogg",
+    "volume_db": -4.0,
+    "pitch_scale": 1.0,
+    "bus": "Master"
+  },
+  "swing_heavy": {
+    "path": "sounds/swing_heavy.ogg",
+    "volume_db": -3.0,
+    "pitch_scale": 0.95,
+    "bus": "Master"
+  },
+  "hit_light": {
+    "path": "sounds/hit_light.ogg",
+    "volume_db": -2.0,
+    "pitch_scale": 1.0,
+    "bus": "Master"
+  },
+  "hit_heavy": {
+    "path": "sounds/hit_heavy.ogg",
+    "volume_db": -1.0,
+    "pitch_scale": 0.9,
+    "bus": "Master"
+  },
+  "hit_confirm": {
+    "path": "sounds/hit_light.ogg",
+    "volume_db": -2.0,
+    "pitch_scale": 1.0,
+    "bus": "Master"
+  },
+  "hurt": {
+    "path": "sounds/hit_light.ogg",
+    "volume_db": -1.5,
+    "pitch_scale": 0.95,
+    "bus": "Master"
+  },
+  "block": {
+    "path": "sounds/hit_light.ogg",
+    "volume_db": -4.0,
+    "pitch_scale": 0.85,
+    "bus": "Master"
+  },
+  "guard": {
+    "path": "sounds/hit_light.ogg",
+    "volume_db": -4.0,
+    "pitch_scale": 0.9,
+    "bus": "Master"
+  },
+  "parry": {
+    "path": "sounds/hit_light.ogg",
+    "volume_db": -3.0,
+    "pitch_scale": 1.15,
+    "bus": "Master"
+  },
+  "parry_success": {
+    "path": "sounds/hit_heavy.ogg",
+    "volume_db": -2.0,
+    "pitch_scale": 1.2,
+    "bus": "Master"
+  },
+  "throw_start": {
+    "path": "sounds/swing_heavy.ogg",
+    "volume_db": -3.0,
+    "pitch_scale": 0.95,
+    "bus": "Master"
+  },
+  "throw_hit": {
+    "path": "sounds/hit_heavy.ogg",
+    "volume_db": -1.0,
+    "pitch_scale": 0.9,
+    "bus": "Master"
+  },
+  "thrown": {
+    "path": "sounds/hit_heavy.ogg",
+    "volume_db": -1.0,
+    "pitch_scale": 0.9,
+    "bus": "Master"
+  },
+  "ko": {
+    "path": "sounds/hit_heavy.ogg",
+    "volume_db": 0.0,
+    "pitch_scale": 0.8,
+    "bus": "Master"
+  }
+}

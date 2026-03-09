@@ -104,5 +104,3 @@ func _resolve_imported_resource_path(source_path: String) -> String:
 	if cfg.load(import_path) != OK:
 		return ""
 	return str(cfg.get_value("remap", "path", "")).strip_edges()
-
-

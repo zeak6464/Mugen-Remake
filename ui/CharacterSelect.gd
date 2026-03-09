@@ -15,6 +15,7 @@ var p1_team_slots: Control = null
 var p1_cursor_label: Label = null
 var p1_roster_row: Control = null
 var p1_roster_scroll: Control = null
+var p1_roster_cursor_marker: Control = null
 var p1_panel: Panel = null
 
 var p2_ui: Control = null
@@ -22,6 +23,7 @@ var p2_team_slots: Control = null
 var p2_cursor_label: Label = null
 var p2_roster_row: Control = null
 var p2_roster_scroll: Control = null
+var p2_roster_cursor_marker: Control = null
 var p2_panel: Panel = null
 
 var p1_folder_panel: Panel = null
@@ -54,7 +56,7 @@ var preview_key_light_p2_source: DirectionalLight3D = null
 var preview_fill_light_p1_source: OmniLight3D = null
 var preview_fill_light_p2_source: OmniLight3D = null
 
-const ROSTER_PAGE_SIZE: int = 4
+const ROSTER_PAGE_SIZE: int = 8
 
 var game_mode: String = "training"
 var team_mode_subtype: String = "simul"
@@ -202,43 +204,25 @@ func _uses_dual_player() -> bool:
 
 func _load_mod_entries() -> void:
 	available_mods.clear()
-	var seen_names: Dictionary = {}
-	for root in mods_roots:
-		var normalized_root: String = _normalize_root(root)
-		if normalized_root.begins_with("user://"):
-			var root_abs: String = ProjectSettings.globalize_path(normalized_root)
-			if not DirAccess.dir_exists_absolute(root_abs):
-				DirAccess.make_dir_recursive_absolute(root_abs)
-
-		var dir := DirAccess.open(normalized_root)
-		if dir == null:
-			continue
-		dir.list_dir_begin()
-		var item := dir.get_next()
-		while not item.is_empty():
-			if dir.current_is_dir() and item != "." and item != ".." and not seen_names.has(item):
-				var mod_path := "%s%s/" % [normalized_root, item]
-				if _is_valid_mod_folder(mod_path):
-					var forms_data: Dictionary = _load_mod_forms_data(mod_path)
-					var forms: Array[String] = []
-					for form_key in forms_data.keys():
-						forms.append(str(form_key))
-					forms.sort()
-					available_mods.append(
-						{
-							"name": item,
-							"path": mod_path,
-							"forms": forms,
-							"forms_data": forms_data,
-							"costumes_data": _load_mod_costumes_data(mod_path),
-							"icon_texture": _load_mod_icon_texture(mod_path),
-							"model_path": _find_model_file(mod_path),
-							"def_data": _load_character_def("%scharacter.def" % mod_path)
-						}
-					)
-					seen_names[item] = true
-			item = dir.get_next()
-		dir.list_dir_end()
+	for content_entry in ContentResolver.scan_character_entries(mods_roots, "playable"):
+		var mod_path: String = str(content_entry.get("path", ""))
+		var forms_data: Dictionary = _load_mod_forms_data(mod_path)
+		var forms: Array[String] = []
+		for form_key in forms_data.keys():
+			forms.append(str(form_key))
+		forms.sort()
+		available_mods.append(
+			{
+				"name": str(content_entry.get("name", "")),
+				"path": mod_path,
+				"forms": forms,
+				"forms_data": forms_data,
+				"costumes_data": _load_mod_costumes_data(mod_path),
+				"icon_texture": _load_mod_icon_texture(mod_path),
+				"model_path": str(content_entry.get("model_path", "")),
+				"def_data": content_entry.get("def_data", {})
+			}
+		)
 	available_mods.sort_custom(func(a, b): return str(a.get("name", "")) < str(b.get("name", "")))
 
 
@@ -265,18 +249,15 @@ func _build_roster_rows() -> void:
 
 func _create_roster_button(mod_entry: Dictionary, player_id: int, index: int) -> Button:
 	var button := Button.new()
-	button.custom_minimum_size = Vector2(132, 72)
+	button.custom_minimum_size = Vector2(124, 54)
 	var full_name: String = str(mod_entry.get("name", "Unknown"))
-	button.text = _short_roster_name(full_name, 10)
+	button.text = _short_roster_name(full_name.to_upper(), 11)
 	button.flat = false
 	button.alignment = HORIZONTAL_ALIGNMENT_CENTER
 	button.clip_text = true
 	button.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	button.tooltip_text = full_name
-	var icon_tex: Texture2D = mod_entry.get("icon_texture", null)
-	if icon_tex != null:
-		button.icon = icon_tex
-		button.expand_icon = false
+	button.focus_mode = Control.FOCUS_NONE
 	button.pressed.connect(_on_roster_button_pressed.bind(player_id, index))
 	return button
 
@@ -412,6 +393,8 @@ func _commit_folder_pick(player_id: int) -> void:
 			p2_locked = true
 
 	_close_folder()
+	if game_mode == "watch" and not _all_required_locked():
+		active_player = 2 if p1_locked else 1
 	SystemSFX.play_ui_from(self, "ui_confirm")
 	_refresh_ui()
 
@@ -426,6 +409,8 @@ func _handle_cancel() -> void:
 		p1_locked = false
 		if game_mode == "team" and not p1_team_roster.is_empty():
 			p1_team_roster.remove_at(p1_team_roster.size() - 1)
+		if game_mode == "watch":
+			active_player = 1
 		SystemSFX.play_ui_from(self, "ui_back")
 		_refresh_ui()
 		return
@@ -433,6 +418,8 @@ func _handle_cancel() -> void:
 		p2_locked = false
 		if game_mode == "team" and not p2_team_roster.is_empty():
 			p2_team_roster.remove_at(p2_team_roster.size() - 1)
+		if game_mode == "watch":
+			active_player = 2
 		SystemSFX.play_ui_from(self, "ui_back")
 		_refresh_ui()
 		return
@@ -513,13 +500,13 @@ func _refresh_ui() -> void:
 	var p2_pages_total: int = _roster_total_pages()
 	_set_label_text(
 		p1_cursor_label,
-		"%sP1 Cursor: %s%s | Page %d/%d"
-		% [p1_prefix, _mod_name_at(p1_cursor_index), " [LOCKED]" if p1_locked else "", p1_page_index + 1, p1_pages_total]
+		"%sP1  %s  FORM %s%s  PAGE %d/%d"
+		% [p1_prefix, _mod_name_at(p1_cursor_index), _current_form_display_name(1), " [LOCKED]" if p1_locked else "", p1_page_index + 1, p1_pages_total]
 	)
 	_set_label_text(
 		p2_cursor_label,
-		"%sP2 Cursor: %s%s | Page %d/%d"
-		% [p2_prefix, _mod_name_at(p2_cursor_index), " [LOCKED]" if p2_locked else "", p2_page_index + 1, p2_pages_total]
+		"%sP2  %s  FORM %s%s  PAGE %d/%d"
+		% [p2_prefix, _mod_name_at(p2_cursor_index), _current_form_display_name(2), " [LOCKED]" if p2_locked else "", p2_page_index + 1, p2_pages_total]
 	)
 	if p2_ui != null:
 		p2_ui.visible = _uses_dual_player()
@@ -547,15 +534,8 @@ func _refresh_roster_markers() -> void:
 		if p1_locked and p1_selected_mod == _mod_name_at(i):
 			tags.append("LOCK")
 		var base_name: String = _mod_name_at(i)
-		b.text = _short_roster_name(base_name, 10)
+		b.text = _short_roster_name(base_name.to_upper(), 11)
 		b.tooltip_text = "%s%s" % [base_name, "" if tags.is_empty() else " [%s]" % ",".join(tags)]
-		b.modulate = Color(1.0, 1.0, 1.0, 1.0)
-		if folder_open and folder_player == 1 and i == folder_mod_index:
-			b.modulate = Color(1.0, 0.95, 0.72, 1.0)
-		elif i == p1_cursor_index:
-			b.modulate = Color(0.8, 0.95, 1.0, 1.0)
-		elif p1_locked and p1_selected_mod == base_name:
-			b.modulate = Color(0.78, 1.0, 0.78, 1.0)
 
 	for i in range(p2_roster_buttons.size()):
 		var b: Button = p2_roster_buttons[i]
@@ -567,15 +547,9 @@ func _refresh_roster_markers() -> void:
 		if p2_locked and p2_selected_mod == _mod_name_at(i):
 			tags.append("LOCK")
 		var base_name: String = _mod_name_at(i)
-		b.text = _short_roster_name(base_name, 10)
+		b.text = _short_roster_name(base_name.to_upper(), 11)
 		b.tooltip_text = "%s%s" % [base_name, "" if tags.is_empty() else " [%s]" % ",".join(tags)]
-		b.modulate = Color(1.0, 1.0, 1.0, 1.0)
-		if folder_open and folder_player == 2 and i == folder_mod_index:
-			b.modulate = Color(1.0, 0.95, 0.72, 1.0)
-		elif _uses_dual_player() and i == p2_cursor_index:
-			b.modulate = Color(0.8, 0.95, 1.0, 1.0)
-		elif p2_locked and p2_selected_mod == base_name:
-			b.modulate = Color(0.78, 1.0, 0.78, 1.0)
+	call_deferred("_refresh_visual_roster_cursors")
 
 
 func _apply_roster_page_visibility(player_id: int, buttons: Array[Button], page_index: int) -> void:
@@ -600,15 +574,43 @@ func _short_roster_name(name: String, max_chars: int) -> String:
 
 
 func _refresh_active_player_highlight() -> void:
-	var dual: bool = _uses_dual_player()
-	if p1_panel != null:
-		p1_panel.modulate = Color(1.0, 1.0, 1.0, 1.0)
-	if p2_panel != null:
-		p2_panel.modulate = Color(1.0, 1.0, 1.0, 1.0)
-	if p1_cursor_label != null:
-		p1_cursor_label.modulate = Color(1.0, 0.95, 0.65, 1.0) if active_player == 1 or not dual else Color(1.0, 1.0, 1.0, 1.0)
-	if p2_cursor_label != null:
-		p2_cursor_label.modulate = Color(1.0, 0.95, 0.65, 1.0) if dual and active_player == 2 else Color(1.0, 1.0, 1.0, 1.0)
+	pass
+
+
+func _refresh_visual_roster_cursors() -> void:
+	_update_roster_cursor_marker(p1_roster_buttons, p1_cursor_index, p1_roster_cursor_marker, false)
+	if _uses_dual_player():
+		_update_roster_cursor_marker(p2_roster_buttons, p2_cursor_index, p2_roster_cursor_marker, true)
+	elif p2_roster_cursor_marker != null:
+		p2_roster_cursor_marker.visible = false
+
+
+func _update_roster_cursor_marker(buttons: Array[Button], cursor_index: int, marker: Control, place_above: bool) -> void:
+	if marker == null:
+		return
+	if cursor_index < 0 or cursor_index >= buttons.size():
+		marker.visible = false
+		return
+	var target: Button = buttons[cursor_index]
+	if target == null or not is_instance_valid(target) or not target.visible:
+		marker.visible = false
+		return
+	var parent_ctrl := marker.get_parent() as Control
+	if parent_ctrl == null:
+		marker.visible = false
+		return
+	var button_rect: Rect2 = target.get_global_rect()
+	var parent_rect: Rect2 = parent_ctrl.get_global_rect()
+	var center_x: float = (button_rect.position.x - parent_rect.position.x) + (button_rect.size.x * 0.5)
+	var marker_size: Vector2 = marker.size
+	if marker_size.x <= 1.0 or marker_size.y <= 1.0:
+		marker_size = marker.get_combined_minimum_size()
+		if marker_size.x <= 1.0:
+			marker_size = Vector2(36.0, 20.0)
+	var marker_x: float = clampf(center_x - (marker_size.x * 0.5), 0.0, maxf(0.0, parent_ctrl.size.x - marker_size.x))
+	var marker_y: float = button_rect.position.y - parent_rect.position.y - marker_size.y - 2.0 if place_above else button_rect.end.y - parent_rect.position.y + 2.0
+	marker.position = Vector2(marker_x, marker_y)
+	marker.visible = true
 
 
 func _refresh_team_slots(container: Control, roster: Array[Dictionary], size_required: int, player_label: String) -> void:
@@ -619,7 +621,7 @@ func _refresh_team_slots(container: Control, roster: Array[Dictionary], size_req
 	var needed: int = size_required if game_mode == "team" else 2
 	for i in range(needed):
 		var slot := Label.new()
-		slot.custom_minimum_size = Vector2(110, 26)
+		slot.custom_minimum_size = Vector2(118, 28)
 		if i < roster.size():
 			var entry: Dictionary = roster[i]
 			var mod_name: String = str(entry.get("mod", "--"))
@@ -628,6 +630,7 @@ func _refresh_team_slots(container: Control, roster: Array[Dictionary], size_req
 		else:
 			slot.text = "%s Slot %d" % [player_label, i + 1]
 		slot.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		slot.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		container.add_child(slot)
 
 
@@ -653,7 +656,11 @@ func _refresh_folder_panel_for_player(player_id: int, panel: Panel, title_label:
 		return
 	panel.visible = true
 	var mod_entry: Dictionary = available_mods[cursor_index]
-	_set_label_text(title_label, "P%d: %s Forms" % [player_id, str(mod_entry.get("name", "Character"))])
+	_set_label_text(
+		title_label,
+		"P%d: %s Forms  |  Current: %s  |  H/S or click to change, Attack(P) to confirm"
+		% [player_id, str(mod_entry.get("name", "Character")), _current_form_display_name(player_id)]
+	)
 
 	var labels: Array[String] = ["Base"]
 	var forms: Array[String] = mod_entry.get("forms", [])
@@ -670,14 +677,16 @@ func _refresh_folder_panel_for_player(player_id: int, panel: Panel, title_label:
 
 	for i in range(labels.size()):
 		var b := Button.new()
-		b.custom_minimum_size = Vector2(120, 30)
-		b.text = labels[i]
+		b.custom_minimum_size = Vector2(106, 30)
+		var label_text: String = labels[i]
 		if i == selected_idx:
-			b.modulate = Color(1.0, 0.95, 0.55, 1.0)
+			label_text = "> %s <" % label_text
+		b.text = label_text
+		b.focus_mode = Control.FOCUS_NONE
 		b.pressed.connect(_on_variant_pressed.bind(player_id, i))
 		row.add_child(b)
 		cache.append(b)
-	var forms_width: float = maxf(0.0, (120.0 * labels.size()) + (8.0 * max(0, labels.size() - 1)))
+	var forms_width: float = maxf(0.0, (106.0 * labels.size()) + (8.0 * max(0, labels.size() - 1)))
 	row.custom_minimum_size = Vector2(forms_width, 30.0)
 	call_deferred("_scroll_variant_row_to_selected", row, selected_idx)
 
@@ -752,11 +761,15 @@ func _refresh_overlay_and_status() -> void:
 		if lock_overlay.visible:
 			_set_label_text(lock_overlay_label, "Teams locked. Press Attack(P) to continue.")
 	if folder_open:
-		_set_label_text(status_label, "Folder open: choose Base/Form with H/S or click, then Attack(P) to lock.")
+		_set_label_text(
+			status_label,
+			"Folder open: current form is %s. Use H/S or click to change forms, then press Attack(P) to lock it."
+			% _current_form_display_name(folder_player)
+		)
 	elif game_mode == "team":
-		_set_label_text(status_label, "Team draft: open character folder, pick Base/Form, lock each slot.")
+		_set_label_text(status_label, "Team draft: open a character folder, choose the form, and lock each team slot.")
 	else:
-		_set_label_text(status_label, "Draft flow: Attack(P) opens folder, Attack(P) confirms selected Base/Form.")
+		_set_label_text(status_label, "Attack(P) opens the character folder, then Attack(P) locks the highlighted Base/Form.")
 
 
 func _mod_name_at(index: int) -> String:
@@ -1015,65 +1028,21 @@ func _play_preview_animation(root: Node) -> void:
 
 
 func _is_valid_mod_folder(mod_path: String) -> bool:
-	var required_files: Array[String] = ["states.json", "commands.json", "physics.json", "character.def"]
-	for file_name in required_files:
-		if not FileAccess.file_exists("%s%s" % [mod_path, file_name]):
-			return false
-	return _has_any_model_file(mod_path)
+	return bool(ContentResolver.build_character_entry(mod_path.trim_suffix("/").get_file(), mod_path).get("is_playable", false))
 
 
 func _has_any_model_file(mod_path: String) -> bool:
-	var def_model_path: String = _resolve_model_path_from_def(mod_path)
-	if _is_candidate_model_file(def_model_path):
-		return true
-	var dir := DirAccess.open(mod_path)
-	if dir == null:
-		return false
-	dir.list_dir_begin()
-	var item := dir.get_next()
-	while not item.is_empty():
-		if not dir.current_is_dir():
-			var lower := item.to_lower()
-			if lower.ends_with(".glb") or lower.ends_with(".gltf"):
-				dir.list_dir_end()
-				return true
-		item = dir.get_next()
-	dir.list_dir_end()
-	return false
+	return not ContentResolver.find_character_model_path(mod_path, _load_character_def("%scharacter.def" % mod_path)).is_empty()
 
 
 func _find_model_file(mod_path: String) -> String:
-	var def_model_path: String = _resolve_model_path_from_def(mod_path)
-	if _is_candidate_model_file(def_model_path):
-		return def_model_path
-	var dir := DirAccess.open(mod_path)
-	if dir == null:
-		return ""
-	dir.list_dir_begin()
-	var item: String = dir.get_next()
-	while not item.is_empty():
-		if not dir.current_is_dir():
-			var lower: String = item.to_lower()
-			if lower.ends_with(".glb") or lower.ends_with(".gltf"):
-				var path: String = "%s%s" % [mod_path, item]
-				if _is_candidate_model_file(path):
-					dir.list_dir_end()
-					return path
-		item = dir.get_next()
-	dir.list_dir_end()
-	return ""
+	return ContentResolver.find_character_model_path(mod_path, _load_character_def("%scharacter.def" % mod_path))
 
 
 func _resolve_model_path_from_def(mod_path: String) -> String:
 	var def_data: Dictionary = _load_character_def("%scharacter.def" % mod_path)
-	var raw_path: String = str(def_data.get("model_path", "")).strip_edges()
-	if raw_path.is_empty():
-		raw_path = str(def_data.get("model_file", "")).strip_edges()
-	if raw_path.is_empty():
-		return ""
-	if raw_path.begins_with("res://") or raw_path.begins_with("user://"):
-		return raw_path
-	return "%s%s" % [mod_path, raw_path]
+	var raw_path: String = str(def_data.get("model_path", def_data.get("model_file", ""))).strip_edges()
+	return ContentResolver.resolve_relative_or_absolute_path(mod_path, raw_path)
 
 
 func _load_mod_forms_data(mod_path: String) -> Dictionary:
@@ -1136,20 +1105,7 @@ func _load_texture_from_path(path: String) -> Texture2D:
 
 
 func _load_character_def(path: String) -> Dictionary:
-	if not FileAccess.file_exists(path):
-		return {}
-	var result: Dictionary = {}
-	var file := FileAccess.open(path, FileAccess.READ)
-	if file == null:
-		return result
-	while not file.eof_reached():
-		var line: String = file.get_line().strip_edges()
-		if line.is_empty() or line.begins_with(";") or line.begins_with("#"):
-			continue
-		var split: PackedStringArray = line.split("=", false, 1)
-		if split.size() == 2:
-			result[split[0].strip_edges()] = split[1].strip_edges()
-	return result
+	return ContentResolver.load_character_def(path)
 
 
 func _extract_model_scale(def_data: Dictionary) -> Vector3:
@@ -1170,23 +1126,7 @@ func _normalize_root(root: String) -> String:
 
 
 func _is_candidate_model_file(path: String) -> bool:
-	if not FileAccess.file_exists(path):
-		return false
-	var file := FileAccess.open(path, FileAccess.READ)
-	if file == null:
-		return false
-	if file.get_length() <= 0:
-		return false
-	var lower: String = path.to_lower()
-	if lower.ends_with(".glb"):
-		if file.get_length() < 4:
-			return false
-		var magic: PackedByteArray = file.get_buffer(4)
-		return magic.size() == 4 and magic[0] == 0x67 and magic[1] == 0x6C and magic[2] == 0x54 and magic[3] == 0x46
-	if lower.ends_with(".gltf"):
-		var text: String = file.get_as_text().strip_edges()
-		return text.begins_with("{")
-	return false
+	return ContentResolver.is_candidate_model_file(path)
 
 
 func _bind_ui_nodes() -> void:
@@ -1212,6 +1152,7 @@ func _bind_ui_nodes() -> void:
 	p1_cursor_label = _find_child_from(p1_ui, "Cursor") as Label
 	p1_roster_scroll = _find_child_from(p1_ui, "RosterScroll") as Control
 	p1_roster_row = _find_child_from(p1_ui, "RosterRow") as Control
+	p1_roster_cursor_marker = _find_child_from(p1_ui, "RosterCursorMarkerP1") as Control
 	p1_panel = _find_child_from(p1_ui, "P1Panel") as Panel
 
 	var p2_ui_node: Node = p2_ui
@@ -1219,6 +1160,7 @@ func _bind_ui_nodes() -> void:
 	p2_cursor_label = _find_child_from(p2_ui_node, "Cursor") as Label
 	p2_roster_scroll = _find_child_from(p2_ui_node, "RosterScroll") as Control
 	p2_roster_row = _find_child_from(p2_ui_node, "RosterRow") as Control
+	p2_roster_cursor_marker = _find_child_from(p2_ui_node, "RosterCursorMarkerP2") as Control
 	p2_panel = _find_child_from(p2_ui_node, "P2Panel") as Panel
 	p1_preview_texture = _find_child_from(p1_ui, "PreviewTexture") as TextureRect
 	p2_preview_texture = _find_child_from(p2_ui_node, "PreviewTexture") as TextureRect
@@ -1241,11 +1183,6 @@ func _bind_ui_nodes() -> void:
 	preview_fill_light_p1_source = get_node_or_null("FillLightP1") as OmniLight3D
 	preview_fill_light_p2_source = get_node_or_null("FillLightP2") as OmniLight3D
 
-	if p1_roster_scroll != null:
-		p1_roster_scroll.clip_contents = true
-	if p2_roster_scroll != null:
-		p2_roster_scroll.clip_contents = true
-
 
 func _find_node_by_name(node_name: String) -> Node:
 	return find_child(node_name, true, false)
@@ -1265,14 +1202,6 @@ func _set_label_text(label: Label, value: String) -> void:
 func _configure_preview_texture(tex: TextureRect) -> void:
 	if tex == null:
 		return
-	tex.set_anchors_preset(Control.PRESET_FULL_RECT)
-	tex.offset_left = 0.0
-	tex.offset_top = 0.0
-	tex.offset_right = 0.0
-	tex.offset_bottom = 0.0
-	var parent_ctrl := tex.get_parent() as Control
-	if parent_ctrl != null:
-		parent_ctrl.clip_contents = true
 
 
 func _setup_preview_viewports() -> void:
@@ -1335,6 +1264,7 @@ func _sync_preview_viewport_sizes() -> void:
 		var size2: Vector2 = p2_preview_texture.size
 		if size2.x > 1.0 and size2.y > 1.0:
 			p2_preview_viewport.size = Vector2i(maxi(1, int(size2.x)), maxi(1, int(size2.y)))
+	call_deferred("_refresh_visual_roster_cursors")
 
 
 func _roster_total_pages() -> int:
@@ -1364,3 +1294,20 @@ func _scroll_variant_row_to_selected(row: Control, selected_idx: int) -> void:
 		scroll.scroll_horizontal = int(left)
 	elif right > current + viewport_width:
 		scroll.scroll_horizontal = int(right - viewport_width)
+
+
+func _current_form_display_name(player_id: int) -> String:
+	if player_id != 1 and player_id != 2:
+		return "BASE"
+	var cursor_index: int = _get_cursor(player_id)
+	if cursor_index < 0 or cursor_index >= available_mods.size():
+		return "BASE"
+	var mod_entry: Dictionary = available_mods[cursor_index]
+	if folder_open and folder_player == player_id and folder_mod_index == cursor_index:
+		var folder_form: String = _folder_selected_form(mod_entry)
+		return "BASE" if folder_form.is_empty() else folder_form.to_upper()
+	if player_id == 1 and p1_locked:
+		return "BASE" if p1_selected_form.is_empty() else p1_selected_form.to_upper()
+	if player_id == 2 and p2_locked:
+		return "BASE" if p2_selected_form.is_empty() else p2_selected_form.to_upper()
+	return "BASE"

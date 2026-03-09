@@ -1,5 +1,8 @@
 extends Control
 
+signal embedded_close_requested
+signal box_data_applied(states_data: Dictionary, persistent_hurtboxes: Array)
+
 const BOX_TYPE_KEYS: Array[String] = ["hitboxes", "persistent_hurtboxes", "throwboxes", "pushboxes"]
 const STATE_BOX_TYPE_KEYS: Array[String] = ["hitboxes", "throwboxes", "pushboxes"]
 
@@ -88,6 +91,7 @@ func _ready() -> void:
 	_setup_preview_box_material()
 	_setup_preview_camera_defaults()
 	_setup_animation_controls_defaults()
+	_make_timing_controls_prominent()
 	_update_preview_box()
 	_update_hit_data_controls_state()
 	_apply_embedded_mode()
@@ -139,37 +143,15 @@ func _process(_delta: float) -> void:
 func _scan_mods() -> void:
 	mod_entries.clear()
 	mod_option.clear()
-	var seen_names: Dictionary = {}
-	for root in mods_roots:
-		var normalized_root: String = _normalize_root(root)
-		if normalized_root.is_empty():
-			continue
-		if normalized_root.begins_with("user://"):
-			var root_abs: String = ProjectSettings.globalize_path(normalized_root)
-			if not DirAccess.dir_exists_absolute(root_abs):
-				DirAccess.make_dir_recursive_absolute(root_abs)
-		var dir := DirAccess.open(normalized_root)
-		if dir == null:
-			continue
-		dir.list_dir_begin()
-		var item := dir.get_next()
-		while not item.is_empty():
-			if dir.current_is_dir() and item != "." and item != ".." and not seen_names.has(item):
-				var mod_path := "%s%s/" % [normalized_root, item]
-				var states_path := "%sstates.json" % mod_path
-				if FileAccess.file_exists(states_path):
-					mod_entries.append(
-						{
-							"name": item,
-							"mod_path": mod_path,
-							"states_path": states_path,
-							"model_path": _find_model_path(mod_path)
-						}
-					)
-					seen_names[item] = true
-			item = dir.get_next()
-		dir.list_dir_end()
-
+	for entry in ContentResolver.scan_character_entries(mods_roots, "states"):
+		mod_entries.append(
+			{
+				"name": str(entry.get("name", "")),
+				"mod_path": str(entry.get("mod_path", "")),
+				"states_path": str(entry.get("states_path", "")),
+				"model_path": str(entry.get("model_path", ""))
+			}
+		)
 	mod_entries.sort_custom(func(a, b): return str(a.get("name", "")) < str(b.get("name", "")))
 
 	for i in range(mod_entries.size()):
@@ -323,6 +305,7 @@ func _on_apply_pressed() -> void:
 	box_index_option.select(index)
 	status_label.text = "Applied current values."
 	_update_preview_box()
+	box_data_applied.emit(loaded_states.duplicate(true), persistent_hurtboxes.duplicate(true))
 
 
 func _on_save_pressed() -> void:
@@ -366,6 +349,7 @@ func _get_res_mirror_path(source_path: String) -> String:
 
 func _on_close_pressed() -> void:
 	if embedded_mode:
+		embedded_close_requested.emit()
 		return
 	get_tree().change_scene_to_file("res://ui/MainMenu.tscn")
 
@@ -377,7 +361,8 @@ func set_embedded_mode(enabled: bool) -> void:
 
 func _apply_embedded_mode() -> void:
 	if close_button != null:
-		close_button.visible = not embedded_mode
+		close_button.visible = true
+		close_button.text = "Back" if embedded_mode else "Close"
 
 
 func select_mod_by_name(mod_name: String) -> bool:
@@ -389,6 +374,28 @@ func select_mod_by_name(mod_name: String) -> bool:
 			_on_mod_selected(i)
 			return true
 	return false
+
+
+func select_state_by_name(state_id: String, preferred_box_key: String = "hitboxes") -> bool:
+	if state_id.is_empty():
+		return false
+	if not preferred_box_key.is_empty():
+		select_box_type_by_key(preferred_box_key)
+	for i in range(state_option.item_count):
+		if state_option.get_item_text(i) == state_id:
+			state_option.select(i)
+			_on_state_selected(i)
+			return true
+	return false
+
+
+func select_box_type_by_key(box_key: String) -> bool:
+	var idx: int = BOX_TYPE_KEYS.find(box_key)
+	if idx < 0:
+		return false
+	box_type_option.select(idx)
+	_on_box_type_selected(idx)
+	return true
 
 
 func reload_current() -> void:
@@ -617,26 +624,7 @@ func _update_hit_data_controls_state() -> void:
 
 
 func _find_model_path(mod_path: String) -> String:
-	var preferred: Array[String] = ["model.glb", "model.gltf"]
-	for file_name in preferred:
-		var candidate: String = "%s%s" % [mod_path, file_name]
-		if _is_candidate_model_file(candidate):
-			return candidate
-	var dir := DirAccess.open(mod_path)
-	if dir == null:
-		return ""
-	dir.list_dir_begin()
-	var item := dir.get_next()
-	while not item.is_empty():
-		if not dir.current_is_dir():
-			var lower := item.to_lower()
-			var candidate_path := "%s%s" % [mod_path, item]
-			if (lower.ends_with(".gltf") or lower.ends_with(".glb")) and _is_candidate_model_file(candidate_path):
-				dir.list_dir_end()
-				return candidate_path
-		item = dir.get_next()
-	dir.list_dir_end()
-	return ""
+	return ContentResolver.find_character_model_path(mod_path, _load_character_def("%scharacter.def" % mod_path))
 
 
 func _refresh_preview_model() -> void:
@@ -724,6 +712,18 @@ func _has_selected_box_entry() -> bool:
 		return false
 	var selected_index: int = box_index_option.get_selected()
 	return selected_index >= 0 and selected_index < boxes.size()
+
+
+func _get_selected_box_entry() -> Dictionary:
+	var boxes: Array = _get_current_box_array()
+	if boxes.is_empty():
+		return {}
+	var selected_index: int = box_index_option.get_selected()
+	if selected_index < 0 or selected_index >= boxes.size():
+		return {}
+	if typeof(boxes[selected_index]) != TYPE_DICTIONARY:
+		return {}
+	return boxes[selected_index] as Dictionary
 
 
 func _get_preview_box_color() -> Color:
@@ -836,46 +836,11 @@ func _get_preview_state_frame() -> int:
 
 
 func _load_character_def(path: String) -> Dictionary:
-	if not FileAccess.file_exists(path):
-		return {}
-	var file := FileAccess.open(path, FileAccess.READ)
-	if file == null:
-		return {}
-	var result: Dictionary = {}
-	while not file.eof_reached():
-		var line := file.get_line().strip_edges()
-		if line.is_empty() or line.begins_with(";") or line.begins_with("#"):
-			continue
-		var split := line.split("=", false, 1)
-		if split.size() == 2:
-			result[split[0].strip_edges()] = split[1].strip_edges()
-	return result
+	return ContentResolver.load_character_def(path)
 
 
 func _is_candidate_model_file(path: String) -> bool:
-	if not FileAccess.file_exists(path):
-		return false
-	var file := FileAccess.open(path, FileAccess.READ)
-	if file == null:
-		return false
-	if file.get_length() <= 0:
-		return false
-	var lower := path.to_lower()
-	if lower.ends_with(".glb"):
-		if file.get_length() < 4:
-			return false
-		var magic := file.get_buffer(4)
-		return (
-			magic.size() == 4
-			and magic[0] == 0x67
-			and magic[1] == 0x6C
-			and magic[2] == 0x54
-			and magic[3] == 0x46
-		)
-	if lower.ends_with(".gltf"):
-		var text := file.get_as_text().strip_edges()
-		return text.begins_with("{")
-	return false
+	return ContentResolver.is_candidate_model_file(path)
 
 
 func _find_skeleton_recursive(root: Node) -> Skeleton3D:
@@ -1044,6 +1009,17 @@ func _setup_animation_controls_defaults() -> void:
 	_update_animation_ui()
 
 
+func _make_timing_controls_prominent() -> void:
+	if content_vbox == null:
+		return
+	if animation_controls_row != null and animation_controls_row.get_parent() == content_vbox:
+		content_vbox.move_child(animation_controls_row, preview_panel.get_index())
+	if animation_timeline_row != null and animation_timeline_row.get_parent() == content_vbox:
+		content_vbox.move_child(animation_timeline_row, preview_panel.get_index())
+	if preview_panel != null:
+		preview_panel.custom_minimum_size.y = 240.0 if embedded_mode else 280.0
+
+
 func _on_play_pressed() -> void:
 	if preview_animation_player == null:
 		return
@@ -1156,7 +1132,7 @@ func _update_animation_ui() -> void:
 	var fps: float = _get_preview_fps(anim)
 	var frame: int = int(round(current_time * fps))
 	var total_frames: int = int(ceil(length * fps))
-	frame_label.text = "Frame: %d / %d" % [frame, total_frames]
+	frame_label.text = "Frame: %d / %d | %s" % [frame, total_frames, _describe_selected_box_activity(frame)]
 	time_label.text = "Time: %.2f / %.2f" % [current_time, length]
 	if not timeline_dragging:
 		timeline_slider.value = current_time / length
@@ -1165,3 +1141,20 @@ func _update_animation_ui() -> void:
 func _get_preview_fps(anim: Animation) -> float:
 	var fps: float = (1.0 / float(anim.step)) if anim.step > 0.0001 else 60.0
 	return maxf(1.0, fps)
+
+
+func _describe_selected_box_activity(frame_now: int) -> String:
+	var entry: Dictionary = _get_selected_box_entry()
+	if entry.is_empty():
+		return "No box selected"
+	var start_frame: int = int(entry.get("start", 0))
+	var end_frame: int = int(entry.get("end", -1))
+	if _is_box_active_on_frame(entry, frame_now):
+		if end_frame >= 0:
+			return "ACTIVE [%d-%d]" % [start_frame, end_frame]
+		return "ACTIVE [%d-...]" % start_frame
+	if frame_now < start_frame:
+		return "Starts at %d" % start_frame
+	if end_frame >= 0:
+		return "Ended at %d" % end_frame
+	return "Inactive"

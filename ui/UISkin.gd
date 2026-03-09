@@ -7,9 +7,6 @@ const UI_AUDIO_DIR: String = "user://ui-skin/audio/ui/"
 const BATTLE_AUDIO_DIR: String = "user://ui-skin/audio/battle/"
 const IMAGE_EXTS: Array[String] = [".png", ".webp", ".jpg", ".jpeg"]
 const AUDIO_EXTS: Array[String] = [".ogg", ".wav", ".mp3"]
-const UI_DESIGN_SIZE: Vector2i = Vector2i(1280, 720)
-
-
 static func ensure_skin_dirs() -> void:
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(TEXTURES_DIR))
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(UI_AUDIO_DIR))
@@ -95,26 +92,13 @@ static func ensure_ui_fits_screen() -> void:
 	if tree.root == null:
 		return
 	var window: Window = tree.root
-	window.content_scale_mode = Window.CONTENT_SCALE_MODE_CANVAS_ITEMS
-	window.content_scale_aspect = Window.CONTENT_SCALE_ASPECT_IGNORE
-	window.content_scale_size = UI_DESIGN_SIZE
-	window.min_size = UI_DESIGN_SIZE
-	window.size = _load_window_resolution_from_settings()
+	window.min_size = _project_viewport_size()
 
 
-static func _load_window_resolution_from_settings() -> Vector2i:
-	var choices: Array[Vector2i] = [
-		Vector2i(1280, 720),
-		Vector2i(1366, 768),
-		Vector2i(1600, 900),
-		Vector2i(1920, 1080)
-	]
-	var selected_index: int = 0
-	var cfg := ConfigFile.new()
-	if cfg.load("user://options.cfg") == OK:
-		selected_index = int(cfg.get_value("video", "resolution_index", 0))
-	selected_index = clampi(selected_index, 0, choices.size() - 1)
-	return choices[selected_index]
+static func _project_viewport_size() -> Vector2i:
+	var width: int = int(ProjectSettings.get_setting("display/window/size/viewport_width", 1280))
+	var height: int = int(ProjectSettings.get_setting("display/window/size/viewport_height", 720))
+	return Vector2i(maxi(1, width), maxi(1, height))
 
 
 static func layout_legacy_controls(root_control: Control) -> void:

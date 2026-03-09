@@ -34,7 +34,7 @@ grow_horizontal = 2
 grow_vertical = 2
 
 [node name="Panel" type="Panel" parent="Root/CenterContainer"]
-custom_minimum_size = Vector2(540, 430)
+custom_minimum_size = Vector2(540, 560)
 layout_mode = 0
 
 [node name="Content" type="Control" parent="Root/CenterContainer/Panel"]
@@ -49,42 +49,74 @@ offset_bottom = -16.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="MainVBox" type="VBoxContainer" parent="Root/CenterContainer/Panel/Content"]
+[node name="MainScroll" type="ScrollContainer" parent="Root/CenterContainer/Panel/Content"]
 layout_mode = 0
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+horizontal_scroll_mode = 0
+follow_focus = true
+
+[node name="MainVBox" type="VBoxContainer" parent="Root/CenterContainer/Panel/Content/MainScroll"]
+layout_mode = 0
+size_flags_horizontal = 3
 theme_override_constants/separation = 10
 
-[node name="TitleLabel" type="Label" parent="Root/CenterContainer/Panel/Content/MainVBox"]
+[node name="TitleLabel" type="Label" parent="Root/CenterContainer/Panel/Content/MainScroll/MainVBox"]
 layout_mode = 0
 theme_override_font_sizes/font_size = 24
 text = "Pause Menu"
 horizontal_alignment = 1
 
-[node name="ResumeButton" type="Button" parent="Root/CenterContainer/Panel/Content/MainVBox"]
+[node name="DebugStateLabel" type="Label" parent="Root/CenterContainer/Panel/Content/MainScroll/MainVBox"]
+layout_mode = 0
+text = "Debug View: Hitboxes + Hurtboxes ON"
+horizontal_alignment = 1
+
+[node name="ToggleHitboxButton" type="Button" parent="Root/CenterContainer/Panel/Content/MainScroll/MainVBox"]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 0
+text = "Hitboxes + Hurtboxes: ON"
+
+[node name="HitboxEditStatusLabel" type="Label" parent="Root/CenterContainer/Panel/Content/MainScroll/MainVBox"]
+layout_mode = 0
+text = "Open the full hitbox editor for the current fighter and state."
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="ToggleHitboxEditButton" type="Button" parent="Root/CenterContainer/Panel/Content/MainScroll/MainVBox"]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 0
+text = "Open Hitbox Editor"
+
+[node name="ResumeButton" type="Button" parent="Root/CenterContainer/Panel/Content/MainScroll/MainVBox"]
 custom_minimum_size = Vector2(0, 44)
 layout_mode = 0
 text = "Continue / Resume"
 
-[node name="MoveListButton" type="Button" parent="Root/CenterContainer/Panel/Content/MainVBox"]
+[node name="MoveListButton" type="Button" parent="Root/CenterContainer/Panel/Content/MainScroll/MainVBox"]
 custom_minimum_size = Vector2(0, 44)
 layout_mode = 0
 text = "Move List / Skill List"
 
-[node name="ButtonConfigButton" type="Button" parent="Root/CenterContainer/Panel/Content/MainVBox"]
+[node name="ButtonConfigButton" type="Button" parent="Root/CenterContainer/Panel/Content/MainScroll/MainVBox"]
 custom_minimum_size = Vector2(0, 44)
 layout_mode = 0
 text = "Button Configuration"
 
-[node name="SoundConfigButton" type="Button" parent="Root/CenterContainer/Panel/Content/MainVBox"]
+[node name="SoundConfigButton" type="Button" parent="Root/CenterContainer/Panel/Content/MainScroll/MainVBox"]
 custom_minimum_size = Vector2(0, 44)
 layout_mode = 0
 text = "Sound Configuration"
 
-[node name="ExitCharacterSelectButton" type="Button" parent="Root/CenterContainer/Panel/Content/MainVBox"]
+[node name="ExitCharacterSelectButton" type="Button" parent="Root/CenterContainer/Panel/Content/MainScroll/MainVBox"]
 custom_minimum_size = Vector2(0, 44)
 layout_mode = 0
 text = "Exit to Character Select"
 
-[node name="ExitMainMenuButton" type="Button" parent="Root/CenterContainer/Panel/Content/MainVBox"]
+[node name="ExitMainMenuButton" type="Button" parent="Root/CenterContainer/Panel/Content/MainScroll/MainVBox"]
 custom_minimum_size = Vector2(0, 44)
 layout_mode = 0
 text = "Exit to Main Menu"

@@ -5,13 +5,15 @@
 
 [node name="CharacterSelect" type="Node3D" unique_id=2100262875]
 script = ExtResource("1_character_select_script")
+metadata/_edit_horizontal_guides_ = [-1.0]
 
 [node name="CharacterPreviewP1" type="Node3D" parent="." unique_id=306715756]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -16.095177)
 
 [node name="PreviewSpawnPointP1" type="Marker3D" parent="CharacterPreviewP1" unique_id=318172962]
 
 [node name="CharacterPreviewP2" type="Node3D" parent="." unique_id=1867130886]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0, -15.8864975)
 
 [node name="PreviewSpawnPointP2" type="Marker3D" parent="CharacterPreviewP2" unique_id=19489911]
 
@@ -50,10 +52,9 @@ light_energy = 0.8
 [node name="Root" type="Control" parent="UI" unique_id=1022668757]
 layout_direction = 1
 layout_mode = 3
+anchors_preset = 15
 anchor_right = 1.0
-anchor_bottom = 0.5
-offset_right = 2.0
-offset_bottom = 240.0
+anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 theme = ExtResource("2_global_theme")
@@ -63,26 +64,178 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_top = -2.0
-offset_right = 4.0
-offset_bottom = 14.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.05, 0.08, 0.12, 0.78)
+color = Color(0.0352941, 0.0470588, 0.0784314, 1)
+
+[node name="BackdropTopGlow" type="ColorRect" parent="UI/Root" unique_id=543940789]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 180.0
+grow_horizontal = 2
+color = Color(0.105882, 0.282353, 0.494118, 0.5)
+
+[node name="BackdropBottomGlow" type="ColorRect" parent="UI/Root" unique_id=1908327048]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -180.0
+grow_horizontal = 2
+grow_vertical = 0
+color = Color(0.478431, 0.145098, 0.313726, 0.42)
+
+[node name="BackdropCenterBand" type="ColorRect" parent="UI/Root" unique_id=699755913]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -520.0
+offset_top = -210.0
+offset_right = 520.0
+offset_bottom = 210.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.0588235, 0.0705882, 0.109804, 0.86)
+
+[node name="TopHudBand" type="Panel" parent="UI/Root" unique_id=496280081]
+visible = false
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 24.0
+offset_top = 18.0
+offset_right = -24.0
+offset_bottom = 88.0
+grow_horizontal = 2
+
+[node name="ModeLabel" type="Label" parent="UI/Root/TopHudBand" unique_id=1453909323]
+layout_mode = 1
+offset_left = 18.0
+offset_top = 12.0
+offset_right = 220.0
+offset_bottom = 54.0
+theme_override_font_sizes/font_size = 26
+text = "TRAINING"
+vertical_alignment = 1
+
+[node name="InstructionLabel" type="Label" parent="UI/Root/TopHudBand" unique_id=67786908]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -360.0
+offset_top = -18.0
+offset_right = 360.0
+offset_bottom = 18.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "Training Mode - P1 Draft"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="PageHintLabel" type="Label" parent="UI/Root/TopHudBand" unique_id=2065721009]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -250.0
+offset_top = 12.0
+offset_right = -18.0
+offset_bottom = 54.0
+grow_horizontal = 0
+text = "UP/DOWN page  LEFT/RIGHT move  P confirm  K cancel"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="CenterSeam" type="ColorRect" parent="UI/Root" unique_id=2103686413]
+layout_mode = 0
+offset_left = 627.0
+offset_top = 180.0
+offset_right = 656.0
+offset_bottom = 780.0
+color = Color(0.890196, 0.858824, 0.670588, 0.65)
 
 [node name="Player1UI" type="Control" parent="UI/Root" unique_id=1607823793]
-layout_mode = 1
-anchors_preset = 0
-offset_left = 20.0
-offset_top = 56.0
-offset_right = 620.0
-offset_bottom = 634.0
-
-[node name="P1Panel" type="Panel" parent="UI/Root/Player1UI" unique_id=235584282]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="TopStripPanel" type="Panel" parent="UI/Root/Player1UI" unique_id=1994562569]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 28.0
+offset_top = 40.0
+offset_right = -40.0
+offset_bottom = 148.0
+grow_horizontal = 2
+
+[node name="RosterHeaderP1" type="Label" parent="UI/Root/Player1UI/TopStripPanel" unique_id=73679536]
+layout_mode = 1
+offset_left = 16.0
+offset_top = 10.0
+offset_right = 140.0
+offset_bottom = 36.0
+theme_override_font_sizes/font_size = 20
+text = "P1 ROSTER"
+vertical_alignment = 1
+
+[node name="RosterScroll" type="Control" parent="UI/Root/Player1UI/TopStripPanel" unique_id=1082596094]
+clip_contents = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 12.0
+offset_top = 38.0
+offset_right = -12.0
+offset_bottom = -12.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="RosterRow" type="HBoxContainer" parent="UI/Root/Player1UI/TopStripPanel/RosterScroll" unique_id=1527660832]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 12
+alignment = 1
+
+[node name="RosterCursorMarkerP1" type="Label" parent="UI/Root/Player1UI/TopStripPanel" unique_id=1801848283]
+visible = false
+layout_mode = 0
+offset_left = 420.0
+offset_top = 92.0
+offset_right = 468.0
+offset_bottom = 112.0
+theme_override_font_sizes/font_size = 18
+text = "▼ P1"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="P1Panel" type="Panel" parent="UI/Root/Player1UI" unique_id=235584282]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -619.0
+offset_top = -285.0
+offset_right = -34.0
+offset_bottom = 289.0
 grow_horizontal = 2
 grow_vertical = 2
 
@@ -91,113 +244,224 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 10.0
-offset_top = 10.0
-offset_right = -10.0
-offset_bottom = -10.0
+offset_left = 14.0
+offset_top = 14.0
+offset_right = -14.0
+offset_bottom = -14.0
 grow_horizontal = 2
 grow_vertical = 2
 
+[node name="PlayerLabelP1" type="Label" parent="UI/Root/Player1UI/P1Panel/P1VBox" unique_id=135494526]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 30.0
+grow_horizontal = 2
+theme_override_font_sizes/font_size = 24
+text = "PLAYER 1"
+vertical_alignment = 1
+
 [node name="PreviewFrame" type="Panel" parent="UI/Root/Player1UI/P1Panel/P1VBox" unique_id=1101695131]
-custom_minimum_size = Vector2(0, 126)
-layout_mode = 0
-offset_right = 570.0
-offset_bottom = 210.0
+clip_contents = true
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 38.0
+offset_bottom = 425.0
+grow_horizontal = 2
 
-[node name="PreviewTexture" type="TextureRect" parent="UI/Root/Player1UI/P1Panel/P1VBox/PreviewFrame" unique_id=1894743781]
-layout_mode = 0
-size_flags_horizontal = 3
-size_flags_vertical = 3
-expand_mode = 1
-stretch_mode = 6
-
-[node name="TeamSlots" type="HBoxContainer" parent="UI/Root/Player1UI/P1Panel/P1VBox" unique_id=815532735]
-anchors_preset = 0
-offset_top = 216.0
-offset_right = 570.0
-offset_bottom = 252.0
-theme_override_constants/separation = 8
-
-[node name="Cursor" type="Label" parent="UI/Root/Player1UI/P1Panel/P1VBox" unique_id=2103462663]
-layout_mode = 0
-offset_top = 256.0
-offset_right = 570.0
-offset_bottom = 286.0
-text = "P1 Cursor"
-horizontal_alignment = 1
-
-[node name="RosterScroll" type="Control" parent="UI/Root/Player1UI/P1Panel/P1VBox" unique_id=1082596094]
-custom_minimum_size = Vector2(0, 78)
-anchors_preset = 0
-offset_top = 376.0
-offset_right = 570.0
-offset_bottom = 454.0
-size_flags_vertical = 3
-
-[node name="RosterRow" type="HBoxContainer" parent="UI/Root/Player1UI/P1Panel/P1VBox/RosterScroll" unique_id=1527660832]
+[node name="PreviewShadeP1" type="ColorRect" parent="UI/Root/Player1UI/P1Panel/P1VBox/PreviewFrame" unique_id=73846059]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = -8.0
+offset_bottom = -11.0
 grow_horizontal = 2
 grow_vertical = 2
+color = Color(0.0705882, 0.109804, 0.168627, 1)
+
+[node name="PreviewTexture" type="TextureRect" parent="UI/Root/Player1UI/P1Panel/P1VBox/PreviewFrame" unique_id=1894743781]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = -8.0
+offset_bottom = -11.0
+grow_horizontal = 2
+grow_vertical = 2
+expand_mode = 1
+stretch_mode = 6
+
+[node name="TeamLabelP1" type="Label" parent="UI/Root/Player1UI/P1Panel/P1VBox" unique_id=1967328891]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = -24.0
+offset_top = -209.0
+offset_right = -49.0
+offset_bottom = -175.0
+grow_horizontal = 2
+text = "TEAM"
+vertical_alignment = 1
+
+[node name="TeamSlots" type="HBoxContainer" parent="UI/Root/Player1UI/P1Panel/P1VBox" unique_id=815532735]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 620.0
+offset_top = -66.0
+offset_right = 686.0
+offset_bottom = -36.0
+grow_horizontal = 2
 theme_override_constants/separation = 8
 
+[node name="Cursor" type="Label" parent="UI/Root/Player1UI/P1Panel/P1VBox" unique_id=2103462663]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = -23.0
+offset_top = -63.0
+offset_right = 37.0
+offset_bottom = -35.0
+grow_horizontal = 2
+text = "P1 Cursor"
+horizontal_alignment = 1
+vertical_alignment = 1
+
 [node name="CharacterFolderPanelP1" type="Panel" parent="UI/Root/Player1UI/P1Panel/P1VBox" unique_id=81179495]
-layout_mode = 0
-offset_top = 292.0
-offset_right = 570.0
-offset_bottom = 370.0
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -102.0
+grow_horizontal = 2
+grow_vertical = 0
 
 [node name="FolderP1Root" type="Control" parent="UI/Root/Player1UI/P1Panel/P1VBox/CharacterFolderPanelP1" unique_id=634062282]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 8.0
-offset_top = 6.0
-offset_right = -8.0
-offset_bottom = -6.0
+offset_left = 10.0
+offset_top = 8.0
+offset_right = -10.0
+offset_bottom = -8.0
 grow_horizontal = 2
 grow_vertical = 2
 
 [node name="FolderTitleP1" type="Label" parent="UI/Root/Player1UI/P1Panel/P1VBox/CharacterFolderPanelP1/FolderP1Root" unique_id=1507770560]
-layout_mode = 0
-offset_right = 554.0
-offset_bottom = 24.0
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 22.0
+grow_horizontal = 2
+theme_override_font_sizes/font_size = 12
 text = "P1 Character Folder"
 horizontal_alignment = 1
 
 [node name="VariantP1Host" type="ScrollContainer" parent="UI/Root/Player1UI/P1Panel/P1VBox/CharacterFolderPanelP1/FolderP1Root" unique_id=1527344416]
-custom_minimum_size = Vector2(0, 44)
-anchors_preset = 0
-offset_top = 26.0
-offset_right = 554.0
-offset_bottom = 64.0
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -52.0
+grow_horizontal = 2
+grow_vertical = 0
+vertical_scroll_mode = 0
 
 [node name="VariantRowP1" type="HBoxContainer" parent="UI/Root/Player1UI/P1Panel/P1VBox/CharacterFolderPanelP1/FolderP1Root/VariantP1Host" unique_id=1276913035]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Player2UI" type="Control" parent="UI/Root" unique_id=257376514]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/separation = 8
 
-[node name="Player2UI" type="Control" parent="UI/Root" unique_id=257376514]
+[node name="BottomStripPanel" type="Panel" parent="UI/Root/Player2UI" unique_id=1389728958]
 layout_mode = 1
-anchors_preset = 0
-offset_left = 629.0
-offset_top = 50.0
-offset_right = 1139.0
-offset_bottom = 636.0
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 34.0
+offset_top = -158.0
+offset_right = -34.0
+offset_bottom = -50.0
+grow_horizontal = 2
+grow_vertical = 0
 
-[node name="P2Panel" type="Panel" parent="UI/Root/Player2UI" unique_id=1820902764]
+[node name="RosterHeaderP2" type="Label" parent="UI/Root/Player2UI/BottomStripPanel" unique_id=1684071571]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -140.0
+offset_top = 10.0
+offset_right = -16.0
+offset_bottom = 36.0
+grow_horizontal = 0
+theme_override_font_sizes/font_size = 20
+text = "P2 ROSTER"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="RosterScroll" type="Control" parent="UI/Root/Player2UI/BottomStripPanel" unique_id=131513250]
+clip_contents = true
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_right = 76.0
+offset_left = 12.0
+offset_top = 12.0
+offset_right = -12.0
+offset_bottom = -42.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="RosterRow" type="HBoxContainer" parent="UI/Root/Player2UI/BottomStripPanel/RosterScroll" unique_id=755834988]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 12
+alignment = 1
+
+[node name="RosterCursorMarkerP2" type="Label" parent="UI/Root/Player2UI/BottomStripPanel" unique_id=1377020591]
+visible = false
+layout_mode = 0
+offset_left = 420.0
+offset_top = 6.0
+offset_right = 468.0
+offset_bottom = 26.0
+theme_override_font_sizes/font_size = 18
+text = "▲ P2"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="P2Panel" type="Panel" parent="UI/Root/Player2UI" unique_id=1820902764]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = 26.0
+offset_top = -290.0
+offset_right = 630.0
+offset_bottom = 291.0
 grow_horizontal = 2
 grow_vertical = 2
 
@@ -206,127 +470,182 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 10.0
-offset_top = 10.0
-offset_right = -10.0
-offset_bottom = -10.0
+offset_left = 14.0
+offset_top = 14.0
+offset_right = -14.0
+offset_bottom = -14.0
 grow_horizontal = 2
 grow_vertical = 2
 
+[node name="PlayerLabelP2" type="Label" parent="UI/Root/Player2UI/P2Panel/P2VBox" unique_id=122181139]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 30.0
+grow_horizontal = 2
+theme_override_font_sizes/font_size = 24
+text = "PLAYER 2"
+horizontal_alignment = 2
+vertical_alignment = 1
+
 [node name="PreviewFrame" type="Panel" parent="UI/Root/Player2UI/P2Panel/P2VBox" unique_id=280934436]
-custom_minimum_size = Vector2(0, 126)
-layout_mode = 0
-offset_right = 561.0
-offset_bottom = 210.0
+clip_contents = true
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 38.0
+offset_bottom = 440.0
+grow_horizontal = 2
 
-[node name="PreviewTexture" type="TextureRect" parent="UI/Root/Player2UI/P2Panel/P2VBox/PreviewFrame" unique_id=1792620574]
-layout_mode = 0
-size_flags_horizontal = 3
-size_flags_vertical = 3
-expand_mode = 1
-stretch_mode = 6
-
-[node name="TeamSlots" type="HBoxContainer" parent="UI/Root/Player2UI/P2Panel/P2VBox" unique_id=1715181371]
-anchors_preset = 0
-offset_top = 216.0
-offset_right = 570.0
-offset_bottom = 252.0
-theme_override_constants/separation = 8
-
-[node name="Cursor" type="Label" parent="UI/Root/Player2UI/P2Panel/P2VBox" unique_id=1867691082]
-layout_mode = 0
-offset_top = 256.0
-offset_right = 570.0
-offset_bottom = 286.0
-text = "P2 Cursor"
-horizontal_alignment = 1
-
-[node name="RosterScroll" type="Control" parent="UI/Root/Player2UI/P2Panel/P2VBox" unique_id=131513250]
-custom_minimum_size = Vector2(0, 78)
-anchors_preset = 0
-offset_top = 376.0
-offset_right = 570.0
-offset_bottom = 454.0
-size_flags_vertical = 3
-
-[node name="RosterRow" type="HBoxContainer" parent="UI/Root/Player2UI/P2Panel/P2VBox/RosterScroll" unique_id=755834988]
+[node name="PreviewShadeP2" type="ColorRect" parent="UI/Root/Player2UI/P2Panel/P2VBox/PreviewFrame" unique_id=1768427488]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = -8.0
+offset_bottom = -8.0
 grow_horizontal = 2
 grow_vertical = 2
+color = Color(0.160784, 0.0705882, 0.133333, 1)
+
+[node name="PreviewTexture" type="TextureRect" parent="UI/Root/Player2UI/P2Panel/P2VBox/PreviewFrame" unique_id=1792620574]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = -8.0
+offset_bottom = -8.0
+grow_horizontal = 2
+grow_vertical = 2
+expand_mode = 1
+stretch_mode = 6
+
+[node name="TeamLabelP2" type="Label" parent="UI/Root/Player2UI/P2Panel/P2VBox" unique_id=816987455]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 21.0
+offset_top = 721.0
+offset_right = 21.0
+offset_bottom = 747.0
+grow_horizontal = 2
+text = "TEAM"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="TeamSlots" type="HBoxContainer" parent="UI/Root/Player2UI/P2Panel/P2VBox" unique_id=1715181371]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = -637.0
+offset_top = 714.0
+offset_right = -637.0
+offset_bottom = 744.0
+grow_horizontal = 2
 theme_override_constants/separation = 8
+alignment = 2
+
+[node name="Cursor" type="Label" parent="UI/Root/Player2UI/P2Panel/P2VBox" unique_id=1867691082]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 4.0
+offset_top = 569.0
+offset_right = 4.0
+offset_bottom = 597.0
+grow_horizontal = 2
+text = "P2 Cursor"
+horizontal_alignment = 1
+vertical_alignment = 1
 
 [node name="CharacterFolderPanelP2" type="Panel" parent="UI/Root/Player2UI/P2Panel/P2VBox" unique_id=147819475]
-layout_mode = 0
-offset_top = 292.0
-offset_right = 570.0
-offset_bottom = 370.0
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -102.0
+grow_horizontal = 2
+grow_vertical = 0
 
 [node name="FolderP2Root" type="Control" parent="UI/Root/Player2UI/P2Panel/P2VBox/CharacterFolderPanelP2" unique_id=1994179871]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 8.0
-offset_top = 6.0
-offset_right = -8.0
-offset_bottom = -6.0
+offset_left = 10.0
+offset_top = 8.0
+offset_right = -10.0
+offset_bottom = -8.0
 grow_horizontal = 2
 grow_vertical = 2
 
 [node name="FolderTitleP2" type="Label" parent="UI/Root/Player2UI/P2Panel/P2VBox/CharacterFolderPanelP2/FolderP2Root" unique_id=1659955556]
-layout_mode = 0
-offset_right = 554.0
-offset_bottom = 24.0
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 22.0
+grow_horizontal = 2
+theme_override_font_sizes/font_size = 12
 text = "P2 Character Folder"
 horizontal_alignment = 1
 
 [node name="VariantP2Host" type="ScrollContainer" parent="UI/Root/Player2UI/P2Panel/P2VBox/CharacterFolderPanelP2/FolderP2Root" unique_id=736579329]
-custom_minimum_size = Vector2(0, 44)
-anchors_preset = 0
-offset_top = 26.0
-offset_right = 554.0
-offset_bottom = 64.0
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -52.0
+grow_horizontal = 2
+grow_vertical = 0
+vertical_scroll_mode = 0
 
 [node name="VariantRowP2" type="HBoxContainer" parent="UI/Root/Player2UI/P2Panel/P2VBox/CharacterFolderPanelP2/FolderP2Root/VariantP2Host" unique_id=1251247593]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="StatusLabel" type="Label" parent="UI/Root" unique_id=1462489820]
+visible = false
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 60.0
+offset_top = -42.0
+offset_right = -60.0
+offset_bottom = -12.0
+grow_horizontal = 2
+grow_vertical = 0
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="LockInOverlay" type="ColorRect" parent="UI/Root" unique_id=1816769380]
+visible = false
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/separation = 8
-
-[node name="StatusLabel" type="Label" parent="UI/Root" unique_id=1462489820]
-layout_mode = 1
-offset_left = 20.0
-offset_top = 10.0
-offset_right = 1260.0
-offset_bottom = 38.0
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="LockInOverlay" type="ColorRect" parent="UI/Root" unique_id=1816769380]
-visible = false
-layout_mode = 0
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-color = Color(0, 0, 0, 0.62)
+color = Color(0, 0, 0, 0.7)
 
 [node name="LockLabel" type="Label" parent="UI/Root/LockInOverlay" unique_id=36000711]
-layout_mode = 0
+layout_mode = 1
+anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -280.0
-offset_top = -22.0
-offset_right = 280.0
-offset_bottom = 22.0
+offset_left = -320.0
+offset_top = -30.0
+offset_right = 320.0
+offset_bottom = 30.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_font_sizes/font_size = 28

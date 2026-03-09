@@ -2,6 +2,16 @@
 
 This is the fastest way to create a playable character for this project.
 
+If you already have a `.glb`, `.gltf`, or a folder with a model inside it, you can now skip the manual starter setup:
+
+- Open the main menu
+- Choose `Import Character`
+- Pick the model file or folder
+- The game copies it into `user://mods/<name>/` and auto-generates the missing starter files
+- Open the post-import report to jump straight into `Character Editor`
+
+The generated starter gives you a playable baseline with `idle`, `walk`, `run`, `crouch`, `jump`, `fall`, `hitstun`, `ko`, `victory`, and simple attack states.
+
 ### 1) Create a mod folder
 
 Create:
@@ -55,6 +65,7 @@ Notes:
 
 - `model_path` can be relative (`model.glb`) or absolute (`res://...`, `user://...`).
 - `hurtboxes_file` is for persistent bone hurtboxes (recommended).
+- `hurtbox_source = mesh_derived` generates persistent hurtboxes from the loaded runtime mesh when you do not want to author `hurtboxes.json` by hand.
 
 ---
 
@@ -190,6 +201,23 @@ or:
 ```
 
 These are always active and bone-following in runtime.
+
+---
+
+### 6.5) Mesh-derived persistent hurtboxes
+
+If you want the engine to build the baseline hurtboxes from the character mesh at runtime, add this to `character.def`:
+
+```ini
+hurtbox_source = mesh_derived
+```
+
+Notes:
+
+- This uses the loaded model mesh plus the runtime skeleton to generate a small persistent body profile.
+- The generated profile is intended as a baseline for gameplay and training-mode debugging, not exact triangle collision.
+- `hurtboxes_file` still wins if you provide both. Use `mesh_derived` when you want automatic baseline hurtboxes instead of hand-authored ones.
+- `CesiumMan` now uses this mode as the sample baseline.
 
 ---
 

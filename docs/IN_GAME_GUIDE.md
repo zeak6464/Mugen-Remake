@@ -27,6 +27,10 @@ Current menu entries:
 - `Model Viewer`
 - `Character Editor`
 - `Stage Editor`
+- `Open Mods Folder`
+- `Open Stages Folder`
+- `Import Character`
+- `Import Stage`
 - `Options`
 - `Quit Game`
 
@@ -36,6 +40,14 @@ Navigation:
 - Confirm: `p1_p` / `p2_p`
 - Cancel/back: `p1_k` / `p2_k`
 - Ring page switch: `p1_h` / `p2_h` (previous), `p1_s` / `p2_s` (next)
+
+Import workflow:
+
+- `Import Character` and `Import Stage` accept either a single `.glb` / `.gltf` file or a whole folder
+- Imported content is copied into `user://mods/` or `user://stages/`
+- Missing starter files are auto-generated so the content is immediately visible in select/editor/runtime
+- A post-import report lists generated files, warnings, and provides a direct button into the relevant editor
+- Dragging a stage-like folder onto the main menu imports it as a stage; other dropped content is treated as a character starter by default
 
 ## 3) Character Select
 

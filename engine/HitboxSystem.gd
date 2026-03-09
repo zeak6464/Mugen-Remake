@@ -12,7 +12,10 @@ var active_hurtboxes: Dictionary = {}
 var active_throwboxes: Dictionary = {}
 var persistent_hurtbox_entries: Dictionary = {}
 var persistent_hurtboxes: Dictionary = {}
+var confirmed_hit_targets: Dictionary = {}
+var confirmed_throw_targets: Dictionary = {}
 var debug_visuals_enabled: bool = false
+var debug_root: Node3D = null
 
 const DEBUG_HITBOX_ACTIVE_COLOR := Color(1.0, 0.05, 0.05, 1.0)
 const DEBUG_HITBOX_INACTIVE_COLOR := Color(0.55, 0.08, 0.08, 0.95)
@@ -26,6 +29,16 @@ func setup(p_fighter: Node, p_skeleton: Skeleton3D, p_hitboxes_root: Node3D, p_h
 	skeleton = p_skeleton
 	hitboxes_root = p_hitboxes_root
 	hurtboxes_root = p_hurtboxes_root
+	_ensure_debug_root()
+
+
+func set_skeleton(p_skeleton: Skeleton3D) -> void:
+	skeleton = p_skeleton
+
+
+func _physics_process(_delta: float) -> void:
+	_poll_active_hitbox_overlaps()
+	_poll_active_throwbox_overlaps()
 
 
 func set_debug_visuals_enabled(enabled: bool) -> void:
@@ -220,12 +233,11 @@ func _ensure_hitbox_node(hitbox_id: String, entry: Dictionary) -> void:
 
 	var area := Area3D.new()
 	area.name = hitbox_id
-	area.monitoring = true
+	area.monitoring = false
 	area.monitorable = true
 	area.set_meta("is_hitbox", true)
 	area.set_meta("owner_fighter", fighter)
 	area.set_meta("hit_data", entry.get("data", {}))
-	area.area_entered.connect(_on_hitbox_area_entered.bind(area))
 
 	var shape_node := CollisionShape3D.new()
 	var shape := BoxShape3D.new()
@@ -244,6 +256,10 @@ func _update_hitbox_transform(hitbox_id: String, entry: Dictionary) -> void:
 	var area: Area3D = active_hitboxes.get(hitbox_id, null)
 	if area == null:
 		return
+	var shape_node := area.get_node_or_null("CollisionShape3D") as CollisionShape3D
+	if shape_node != null and shape_node.shape is BoxShape3D:
+		(shape_node.shape as BoxShape3D).size = _scale_size_for_collision(_to_vector3(entry.get("size", Vector3.ONE)))
+		_ensure_area_debug_mesh(area, DEBUG_HITBOX_ACTIVE_COLOR)
 
 	var local_offset: Vector3 = _resolve_offset_with_facing(_to_vector3(entry.get("offset", Vector3.ZERO)))
 	var bone_name: String = str(entry.get("bone", ""))
@@ -251,13 +267,15 @@ func _update_hitbox_transform(hitbox_id: String, entry: Dictionary) -> void:
 		var bone_idx: int = skeleton.find_bone(bone_name)
 		if bone_idx != -1:
 			var bone_transform: Transform3D = skeleton.global_transform * skeleton.get_bone_global_pose(bone_idx)
-			var world_pos: Vector3 = bone_transform.origin + local_offset
+			var world_pos: Vector3 = bone_transform.origin + (bone_transform.basis * local_offset)
 			area.global_transform = Transform3D(Basis.IDENTITY, world_pos)
 			area.set_meta("hit_data", entry.get("data", {}))
+			_sync_area_debug_mesh_transform(area)
 			return
 
 	area.global_transform = Transform3D(Basis.IDENTITY, _get_fighter_origin() + local_offset)
 	area.set_meta("hit_data", entry.get("data", {}))
+	_sync_area_debug_mesh_transform(area)
 
 
 func _set_hitbox_enabled(hitbox_id: String, enabled: bool) -> void:
@@ -265,6 +283,11 @@ func _set_hitbox_enabled(hitbox_id: String, enabled: bool) -> void:
 	if area == null:
 		return
 	area.monitoring = enabled
+	if enabled:
+		if not confirmed_hit_targets.has(hitbox_id):
+			confirmed_hit_targets[hitbox_id] = {}
+	else:
+		confirmed_hit_targets.erase(hitbox_id)
 	_set_area_debug_mesh_visible(area, debug_visuals_enabled)
 	_set_area_debug_mesh_color(area, DEBUG_HITBOX_ACTIVE_COLOR if enabled else DEBUG_HITBOX_INACTIVE_COLOR)
 
@@ -300,7 +323,7 @@ func _ensure_hurtbox_node(hurtbox_id: String, entry: Dictionary) -> void:
 		return
 	var area := Area3D.new()
 	area.name = hurtbox_id
-	area.monitoring = true
+	area.monitoring = false
 	area.monitorable = true
 	area.set_meta("is_hurtbox", true)
 	area.set_meta("owner_fighter", fighter)
@@ -330,10 +353,12 @@ func _update_hurtbox_transform(hurtbox_id: String, entry: Dictionary) -> void:
 		var bone_idx: int = skeleton.find_bone(bone_name)
 		if bone_idx != -1:
 			var bone_transform: Transform3D = skeleton.global_transform * skeleton.get_bone_global_pose(bone_idx)
-			var world_pos: Vector3 = bone_transform.origin + local_offset
+			var world_pos: Vector3 = bone_transform.origin + (bone_transform.basis * local_offset)
 			area.global_transform = Transform3D(Basis.IDENTITY, world_pos)
+			_sync_area_debug_mesh_transform(area)
 			return
 	area.global_transform = Transform3D(Basis.IDENTITY, _get_fighter_origin() + local_offset)
+	_sync_area_debug_mesh_transform(area)
 
 
 func _set_hurtbox_enabled(hurtbox_id: String, enabled: bool) -> void:
@@ -351,13 +376,12 @@ func _ensure_throwbox_node(throwbox_id: String, entry: Dictionary) -> void:
 		return
 	var area := Area3D.new()
 	area.name = throwbox_id
-	area.monitoring = true
+	area.monitoring = false
 	area.monitorable = true
 	area.set_meta("is_hitbox", true)
 	area.set_meta("is_throwbox", true)
 	area.set_meta("owner_fighter", fighter)
 	area.set_meta("hit_data", _build_throw_hit_data(entry))
-	area.area_entered.connect(_on_throwbox_area_entered.bind(area))
 	var shape_node := CollisionShape3D.new()
 	var shape := BoxShape3D.new()
 	shape.size = _scale_size_for_collision(_to_vector3(entry.get("size", Vector3.ONE)))
@@ -383,12 +407,14 @@ func _update_throwbox_transform(throwbox_id: String, entry: Dictionary) -> void:
 		var bone_idx: int = skeleton.find_bone(bone_name)
 		if bone_idx != -1:
 			var bone_transform: Transform3D = skeleton.global_transform * skeleton.get_bone_global_pose(bone_idx)
-			var world_pos: Vector3 = bone_transform.origin + local_offset
+			var world_pos: Vector3 = bone_transform.origin + (bone_transform.basis * local_offset)
 			area.global_transform = Transform3D(Basis.IDENTITY, world_pos)
 			area.set_meta("hit_data", _build_throw_hit_data(entry))
+			_sync_area_debug_mesh_transform(area)
 			return
 	area.global_transform = Transform3D(Basis.IDENTITY, _get_fighter_origin() + local_offset)
 	area.set_meta("hit_data", _build_throw_hit_data(entry))
+	_sync_area_debug_mesh_transform(area)
 
 
 func _set_throwbox_enabled(throwbox_id: String, enabled: bool) -> void:
@@ -396,6 +422,11 @@ func _set_throwbox_enabled(throwbox_id: String, enabled: bool) -> void:
 	if area == null:
 		return
 	area.monitoring = enabled
+	if enabled:
+		if not confirmed_throw_targets.has(throwbox_id):
+			confirmed_throw_targets[throwbox_id] = {}
+	else:
+		confirmed_throw_targets.erase(throwbox_id)
 	area.monitorable = true
 	_set_area_debug_mesh_visible(area, debug_visuals_enabled and enabled)
 	_set_area_debug_mesh_color(area, DEBUG_THROWBOX_ACTIVE_COLOR if enabled else DEBUG_THROWBOX_INACTIVE_COLOR)
@@ -408,7 +439,7 @@ func _ensure_persistent_hurtbox_node(hurtbox_id: String, entry: Dictionary) -> v
 		return
 	var area := Area3D.new()
 	area.name = "Persistent_%s" % hurtbox_id
-	area.monitoring = true
+	area.monitoring = false
 	area.monitorable = true
 	area.set_meta("is_hurtbox", true)
 	area.set_meta("owner_fighter", fighter)
@@ -439,10 +470,12 @@ func _update_persistent_hurtbox_transform(hurtbox_id: String, entry: Dictionary)
 		var bone_idx: int = skeleton.find_bone(bone_name)
 		if bone_idx != -1:
 			var bone_transform: Transform3D = skeleton.global_transform * skeleton.get_bone_global_pose(bone_idx)
-			var world_pos: Vector3 = bone_transform.origin + local_offset
+			var world_pos: Vector3 = bone_transform.origin + (bone_transform.basis * local_offset)
 			area.global_transform = Transform3D(Basis.IDENTITY, world_pos)
+			_sync_area_debug_mesh_transform(area)
 			return
 	area.global_transform = Transform3D(Basis.IDENTITY, _get_fighter_origin() + local_offset)
+	_sync_area_debug_mesh_transform(area)
 
 
 func _set_persistent_hurtbox_enabled(hurtbox_id: String, enabled: bool) -> void:
@@ -484,26 +517,43 @@ func _get_fighter_origin() -> Vector3:
 	return Vector3.ZERO
 
 
-func _on_hitbox_area_entered(other_area: Area3D, hitbox_area: Area3D) -> void:
-	if other_area == null or not other_area.has_meta("is_hurtbox"):
-		return
+func _poll_active_hitbox_overlaps() -> void:
+	for hitbox_id in active_hitboxes.keys():
+		var hitbox_area: Area3D = active_hitboxes.get(hitbox_id, null)
+		if hitbox_area == null or not is_instance_valid(hitbox_area) or not hitbox_area.monitoring:
+			continue
+		_poll_hitbox_overlap_for_area(hitbox_id, hitbox_area, confirmed_hit_targets)
+
+
+func _poll_active_throwbox_overlaps() -> void:
+	for throwbox_id in active_throwboxes.keys():
+		var throwbox_area: Area3D = active_throwboxes.get(throwbox_id, null)
+		if throwbox_area == null or not is_instance_valid(throwbox_area) or not throwbox_area.monitoring:
+			continue
+		_poll_hitbox_overlap_for_area(throwbox_id, throwbox_area, confirmed_throw_targets)
+
+
+func _poll_hitbox_overlap_for_area(box_id: String, hitbox_area: Area3D, confirmed_targets_store: Dictionary) -> void:
 	var attacker: Node = hitbox_area.get_meta("owner_fighter", null)
-	var defender: Node = other_area.get_meta("owner_fighter", null)
-	if attacker == null or defender == null or attacker == defender:
+	if attacker == null:
 		return
-	var hit_data: Dictionary = hitbox_area.get_meta("hit_data", {})
-	hit_confirmed.emit(attacker, defender, hit_data)
-
-
-func _on_throwbox_area_entered(other_area: Area3D, throwbox_area: Area3D) -> void:
-	if other_area == null or not other_area.has_meta("is_hurtbox"):
-		return
-	var attacker: Node = throwbox_area.get_meta("owner_fighter", null)
-	var defender: Node = other_area.get_meta("owner_fighter", null)
-	if attacker == null or defender == null or attacker == defender:
-		return
-	var hit_data: Dictionary = throwbox_area.get_meta("hit_data", {})
-	hit_confirmed.emit(attacker, defender, hit_data)
+	var confirmed_for_box: Dictionary = confirmed_targets_store.get(box_id, {})
+	for other_area in hitbox_area.get_overlapping_areas():
+		if not (other_area is Area3D):
+			continue
+		var hurtbox_area := other_area as Area3D
+		if not hurtbox_area.has_meta("is_hurtbox"):
+			continue
+		var defender: Node = hurtbox_area.get_meta("owner_fighter", null)
+		if defender == null or defender == attacker:
+			continue
+		var defender_id: int = defender.get_instance_id()
+		if confirmed_for_box.has(defender_id):
+			continue
+		confirmed_for_box[defender_id] = true
+		var hit_data: Dictionary = hitbox_area.get_meta("hit_data", {})
+		hit_confirmed.emit(attacker, defender, hit_data)
+	confirmed_targets_store[box_id] = confirmed_for_box
 
 
 func _to_vector3(value) -> Vector3:
@@ -532,17 +582,23 @@ func _scale_size_for_collision(size: Vector3) -> Vector3:
 
 
 func _ensure_area_debug_mesh(area: Area3D, color: Color) -> void:
-	var debug_mesh := area.get_node_or_null("DebugMesh") as MeshInstance3D
+	_ensure_debug_root()
+	var debug_mesh := _get_area_debug_mesh(area)
 	var collision_shape := area.get_node_or_null("CollisionShape3D") as CollisionShape3D
 	if collision_shape == null:
 		return
 	if debug_mesh == null:
 		debug_mesh = MeshInstance3D.new()
-		debug_mesh.name = "DebugMesh"
-		area.add_child(debug_mesh)
+		debug_mesh.name = _get_debug_mesh_name(area)
+		debug_mesh.top_level = true
+		if debug_root != null:
+			debug_root.add_child(debug_mesh)
+		area.set_meta("debug_mesh_name", debug_mesh.name)
+		if not area.tree_exiting.is_connected(_on_area_tree_exiting):
+			area.tree_exiting.connect(_on_area_tree_exiting.bind(area))
 
 	var box_mesh := BoxMesh.new()
-	box_mesh.size = _collision_shape_to_box_size(collision_shape.shape) * 1.45
+	box_mesh.size = _collision_shape_to_box_size(collision_shape.shape)
 	debug_mesh.mesh = box_mesh
 
 	var mat := StandardMaterial3D.new()
@@ -556,16 +612,17 @@ func _ensure_area_debug_mesh(area: Area3D, color: Color) -> void:
 	mat.emission_energy_multiplier = 1.4
 	debug_mesh.material_override = mat
 	debug_mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_sync_area_debug_mesh_transform(area)
 
 
 func _set_area_debug_mesh_visible(area: Area3D, visible_value: bool) -> void:
-	var debug_mesh := area.get_node_or_null("DebugMesh") as MeshInstance3D
+	var debug_mesh := _get_area_debug_mesh(area)
 	if debug_mesh != null:
 		debug_mesh.visible = visible_value
 
 
 func _set_area_debug_mesh_color(area: Area3D, color: Color) -> void:
-	var debug_mesh := area.get_node_or_null("DebugMesh") as MeshInstance3D
+	var debug_mesh := _get_area_debug_mesh(area)
 	if debug_mesh == null:
 		return
 	var mat := debug_mesh.material_override as StandardMaterial3D
@@ -573,6 +630,51 @@ func _set_area_debug_mesh_color(area: Area3D, color: Color) -> void:
 		return
 	mat.albedo_color = color
 	mat.emission = color
+
+
+func _sync_area_debug_mesh_transform(area: Area3D) -> void:
+	var debug_mesh := _get_area_debug_mesh(area)
+	if debug_mesh == null:
+		return
+	debug_mesh.global_transform = area.global_transform
+
+
+func _ensure_debug_root() -> void:
+	if debug_root != null and is_instance_valid(debug_root):
+		return
+	if fighter == null or not (fighter is Node3D):
+		return
+	var fighter_node: Node3D = fighter as Node3D
+	var existing := fighter_node.get_node_or_null("DebugBoxesRoot")
+	if existing is Node3D:
+		debug_root = existing as Node3D
+		return
+	debug_root = Node3D.new()
+	debug_root.name = "DebugBoxesRoot"
+	fighter_node.add_child(debug_root)
+
+
+func _get_debug_mesh_name(area: Area3D) -> String:
+	return "DebugMesh_%s" % str(area.get_instance_id())
+
+
+func _get_area_debug_mesh(area: Area3D) -> MeshInstance3D:
+	if area == null:
+		return null
+	var mesh_name: String = str(area.get_meta("debug_mesh_name", ""))
+	if mesh_name.is_empty():
+		mesh_name = _get_debug_mesh_name(area)
+	if debug_root == null:
+		return null
+	return debug_root.get_node_or_null(mesh_name) as MeshInstance3D
+
+
+func _on_area_tree_exiting(area: Area3D) -> void:
+	if area == null or debug_root == null:
+		return
+	var debug_mesh := _get_area_debug_mesh(area)
+	if debug_mesh != null and is_instance_valid(debug_mesh):
+		debug_mesh.queue_free()
 
 
 func _collision_shape_to_box_size(shape: Shape3D) -> Vector3:

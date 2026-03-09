@@ -180,6 +180,16 @@ custom_minimum_size = Vector2(320, 36)
 layout_mode = 2
 text = "Open Stages Folder"
 
+[node name="ImportCharacterButton" type="Button" parent="CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(320, 36)
+layout_mode = 2
+text = "Import Character"
+
+[node name="ImportStageButton" type="Button" parent="CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(320, 36)
+layout_mode = 2
+text = "Import Stage"
+
 [node name="OptionsButton" type="Button" parent="CenterContainer/VBoxContainer" unique_id=1591722274]
 custom_minimum_size = Vector2(320, 36)
 layout_mode = 2
@@ -194,3 +204,74 @@ horizontal_alignment = 1
 custom_minimum_size = Vector2(320, 36)
 layout_mode = 2
 text = "Quit Game"
+
+[node name="ImportSummaryPanel" type="Panel" parent="."]
+visible = false
+anchors_preset = 10
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -460.0
+offset_top = -250.0
+offset_right = -24.0
+offset_bottom = -24.0
+grow_horizontal = 0
+grow_vertical = 0
+
+[node name="MarginContainer" type="MarginContainer" parent="ImportSummaryPanel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 12.0
+offset_top = 12.0
+offset_right = -12.0
+offset_bottom = -12.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="ImportSummaryPanel/MarginContainer"]
+layout_mode = 2
+
+[node name="ImportSummaryLabel" type="RichTextLabel" parent="ImportSummaryPanel/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 150)
+layout_mode = 2
+bbcode_enabled = true
+fit_content = true
+scroll_following = true
+
+[node name="ActionsRow" type="HBoxContainer" parent="ImportSummaryPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="OpenCharacterEditorButton" type="Button" parent="ImportSummaryPanel/MarginContainer/VBoxContainer/ActionsRow"]
+custom_minimum_size = Vector2(0, 36)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Open Character Editor"
+
+[node name="OpenStageEditorButton" type="Button" parent="ImportSummaryPanel/MarginContainer/VBoxContainer/ActionsRow"]
+custom_minimum_size = Vector2(0, 36)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Open Stage Editor"
+
+[node name="CloseImportSummaryButton" type="Button" parent="ImportSummaryPanel/MarginContainer/VBoxContainer/ActionsRow"]
+custom_minimum_size = Vector2(0, 36)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Close"
+
+[node name="ImportCharacterDialog" type="FileDialog" parent="."]
+title = "Import Character File Or Folder"
+size = Vector2i(900, 520)
+file_mode = 3
+access = 2
+filters = PackedStringArray("*.glb ; glTF Binary", "*.gltf ; glTF")
+
+[node name="ImportStageDialog" type="FileDialog" parent="."]
+title = "Import Stage File Or Folder"
+size = Vector2i(900, 520)
+file_mode = 3
+access = 2
+filters = PackedStringArray("*.glb ; glTF Binary", "*.gltf ; glTF")

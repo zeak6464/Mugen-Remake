@@ -1,6 +1,19 @@
 extends Node
 class_name TestArenaController
 
+const BOX_EDITOR_SCENE: PackedScene = preload("res://ui/Battle/HITBOX/BoxEditor.tscn")
+const CPU_MELEE_RANGE: float = 1.35
+const CPU_THROW_RANGE: float = 0.8
+const CPU_PROJECTILE_RANGE: float = 3.4
+const CPU_APPROACH_RANGE: float = 1.1
+const CPU_GUARD_RANGE: float = 2.2
+const CPU_PROJECTILE_GUARD_RANGE: float = 7.5
+const CPU_VERTICAL_COMMIT_RANGE: float = 1.5
+const CPU_ATTACK_COOLDOWN_FRAMES: int = 9
+const CPU_COMBO_COOLDOWN_FRAMES: int = 4
+const CPU_PROJECTILE_COOLDOWN_FRAMES: int = 18
+const CPU_GUARD_HOLD_FRAMES: int = 5
+
 @export var bootstrap_sample_mod: bool = true
 @export var sample_mod_name: String = "sample_fighter"
 @export var reset_action: StringName = &"round_reset"
@@ -52,6 +65,8 @@ class_name TestArenaController
 var mod_loader: ModLoader
 var active_fighter_a: FighterBase = null
 var active_fighter_b: FighterBase = null
+var training_box_editor_layer: CanvasLayer = null
+var training_box_editor: Control = null
 var fighter_a_spawn: Vector3 = Vector3(-1.25, 0.0, 0.0)
 var fighter_b_spawn: Vector3 = Vector3(1.25, 0.0, 0.0)
 var dummy_uses_local_input: bool = false
@@ -105,6 +120,7 @@ var team_tag_active_idx_p2: int = 0
 var tag_swap_cooldown_frames: int = 0
 var simul_ko_retire_timers: Dictionary = {}
 var cpu_rng: RandomNumberGenerator = RandomNumberGenerator.new()
+var cpu_brains: Dictionary = {}
 var smash_mode_enabled: bool = false
 var smash_blast_left_default: float = -32.0
 var smash_blast_right_default: float = 32.0
@@ -397,6 +413,7 @@ func _apply_runtime_links(fighter_a: FighterBase, fighter_b: FighterBase) -> voi
 	if camera_controller != null:
 		camera_controller.fighter_a_path = camera_controller.get_path_to(fighter_a)
 		camera_controller.fighter_b_path = camera_controller.get_path_to(fighter_b)
+		_refresh_camera_tracked_fighters()
 	if input_buffer_viewer != null:
 		input_buffer_viewer.target_fighter_path = input_buffer_viewer.get_path_to(fighter_a)
 	_apply_hitbox_debug_state()
@@ -450,8 +467,7 @@ func _setup_training_options_menu() -> void:
 	if training_options_menu == null:
 		return
 	training_options_menu.process_mode = Node.PROCESS_MODE_ALWAYS
-	training_options_menu.call("set_menu_state", dummy_uses_local_input, show_hitbox_debug)
-	training_options_menu.call("set_move_list_text", _build_pause_move_list_text())
+	_refresh_training_options_menu_state()
 	training_options_menu.call("hide_menu")
 	if training_options_menu.has_signal("resume_requested"):
 		training_options_menu.resume_requested.connect(_on_training_resume_requested)
@@ -463,11 +479,16 @@ func _setup_training_options_menu() -> void:
 		training_options_menu.toggle_dummy_requested.connect(_on_training_toggle_dummy_requested)
 	if training_options_menu.has_signal("toggle_hitbox_requested"):
 		training_options_menu.toggle_hitbox_requested.connect(_on_training_toggle_hitbox_requested)
+	if training_options_menu.has_signal("open_hitbox_editor_requested"):
+		training_options_menu.open_hitbox_editor_requested.connect(_on_training_open_hitbox_editor_requested)
 	if training_options_menu.has_signal("return_to_menu_requested"):
 		training_options_menu.return_to_menu_requested.connect(_on_training_return_to_menu_requested)
 
 
 func _toggle_training_options_menu() -> void:
+	if _is_training_box_editor_open():
+		_close_training_box_editor_overlay()
+		return
 	if training_options_open:
 		_set_training_options_visible(false)
 	else:
@@ -483,11 +504,11 @@ func _set_training_options_visible(visible_value: bool) -> void:
 		round_active = false
 		_set_training_inputs_enabled(false)
 		get_tree().paused = true
-		training_options_menu.call("set_menu_state", dummy_uses_local_input, show_hitbox_debug)
-		training_options_menu.call("set_move_list_text", _build_pause_move_list_text())
+		_refresh_training_options_menu_state()
 		training_options_menu.call("show_menu")
 	else:
 		get_tree().paused = false
+		_close_training_box_editor_overlay(false)
 		training_options_menu.call("hide_menu")
 		if not round_reset_pending:
 			round_active = round_active_before_menu
@@ -525,20 +546,120 @@ func _on_training_reset_round_requested() -> void:
 
 func _on_training_toggle_dummy_requested() -> void:
 	_toggle_dummy_control()
-	if training_options_menu != null:
-		training_options_menu.call("set_menu_state", dummy_uses_local_input, show_hitbox_debug)
+	_refresh_training_options_menu_state()
 
 
 func _on_training_toggle_hitbox_requested() -> void:
 	show_hitbox_debug = not show_hitbox_debug
 	_apply_hitbox_debug_state()
+	_refresh_training_options_menu_state()
+
+
+func _on_training_open_hitbox_editor_requested() -> void:
+	if game_mode != "training":
+		return
+	_ensure_training_box_editor()
+	_sync_training_box_editor_target()
 	if training_options_menu != null:
-		training_options_menu.call("set_menu_state", dummy_uses_local_input, show_hitbox_debug)
+		training_options_menu.call("hide_menu")
+	if training_box_editor_layer != null:
+		training_box_editor_layer.visible = true
 
 
 func _on_training_return_to_menu_requested() -> void:
 	get_tree().paused = false
 	get_tree().change_scene_to_file("res://ui/MainMenu.tscn")
+
+
+func _refresh_training_options_menu_state() -> void:
+	if training_options_menu == null:
+		return
+	training_options_menu.call("set_menu_state", game_mode == "training", dummy_uses_local_input, show_hitbox_debug)
+	training_options_menu.call("set_move_list_text", _build_pause_move_list_text())
+
+
+func _ensure_training_box_editor() -> void:
+	if training_box_editor != null and is_instance_valid(training_box_editor):
+		return
+	training_box_editor_layer = CanvasLayer.new()
+	training_box_editor_layer.name = "TrainingBoxEditorLayer"
+	training_box_editor_layer.process_mode = Node.PROCESS_MODE_ALWAYS
+	training_box_editor_layer.visible = false
+	get_parent().add_child(training_box_editor_layer)
+	var instance: Node = BOX_EDITOR_SCENE.instantiate()
+	if not (instance is Control):
+		if instance != null:
+			instance.queue_free()
+		return
+	training_box_editor = instance as Control
+	training_box_editor.process_mode = Node.PROCESS_MODE_ALWAYS
+	training_box_editor_layer.add_child(training_box_editor)
+	if training_box_editor.has_method("set_embedded_mode"):
+		training_box_editor.call("set_embedded_mode", true)
+	if training_box_editor.has_signal("embedded_close_requested"):
+		training_box_editor.embedded_close_requested.connect(_on_training_box_editor_close_requested)
+	if training_box_editor.has_signal("box_data_applied"):
+		training_box_editor.box_data_applied.connect(_on_training_box_editor_data_applied)
+
+
+func _sync_training_box_editor_target() -> void:
+	if training_box_editor == null or not is_instance_valid(training_box_editor):
+		return
+	if active_fighter_a == null:
+		return
+	var mod_name: String = _derive_mod_name_from_path(active_fighter_a.get_mod_directory())
+	if not mod_name.is_empty() and training_box_editor.has_method("select_mod_by_name"):
+		training_box_editor.call("select_mod_by_name", mod_name)
+	if training_box_editor.has_method("select_box_type_by_key"):
+		training_box_editor.call("select_box_type_by_key", "hitboxes")
+	var state_id: String = active_fighter_a.state_controller.current_state if active_fighter_a.state_controller != null else ""
+	if state_id.is_empty():
+		state_id = "idle"
+	if training_box_editor.has_method("select_state_by_name"):
+		training_box_editor.call("select_state_by_name", state_id, "hitboxes")
+
+
+func _derive_mod_name_from_path(path: String) -> String:
+	var trimmed: String = path.strip_edges().trim_suffix("/")
+	if trimmed.is_empty():
+		return ""
+	var parts: PackedStringArray = trimmed.split("/")
+	return parts[parts.size() - 1] if not parts.is_empty() else ""
+
+
+func _is_training_box_editor_open() -> bool:
+	return training_box_editor_layer != null and is_instance_valid(training_box_editor_layer) and training_box_editor_layer.visible
+
+
+func _close_training_box_editor_overlay(show_training_menu: bool = true) -> void:
+	if training_box_editor_layer != null and is_instance_valid(training_box_editor_layer):
+		training_box_editor_layer.visible = false
+	if show_training_menu and training_options_open and training_options_menu != null:
+		_refresh_training_options_menu_state()
+		training_options_menu.call("show_menu")
+
+
+func _on_training_box_editor_close_requested() -> void:
+	_close_training_box_editor_overlay()
+
+
+func _on_training_box_editor_data_applied(states_data: Dictionary, persistent_hurtboxes: Array) -> void:
+	if active_fighter_a == null:
+		return
+	var states_copy: Dictionary = states_data.duplicate(true)
+	active_fighter_a.state_data = states_copy
+	active_fighter_a.base_state_data = states_copy.duplicate(true)
+	active_fighter_a.character_data["states"] = states_copy.duplicate(true)
+	if active_fighter_a.state_controller != null:
+		active_fighter_a.state_controller.set_states_data(states_copy)
+	if persistent_hurtboxes.is_empty():
+		if active_fighter_a.has_method("_configure_persistent_hurtboxes"):
+			active_fighter_a.call("_configure_persistent_hurtboxes", active_fighter_a.character_data.get("def", {}))
+	else:
+		if active_fighter_a.hitbox_system != null and active_fighter_a.hitbox_system.has_method("set_persistent_hurtboxes"):
+			active_fighter_a.hitbox_system.call("set_persistent_hurtboxes", persistent_hurtboxes.duplicate(true))
+		active_fighter_a.persistent_debug_hurtbox_profile = persistent_hurtboxes.duplicate(true)
+	_apply_hitbox_debug_state()
 
 
 func _on_pause_button_config_requested() -> void:
@@ -848,8 +969,7 @@ func _configure_player_input_bindings() -> void:
 
 
 func _apply_hitbox_debug_state() -> void:
-	var debug_visible: bool = true
-	show_hitbox_debug = true
+	var debug_visible: bool = game_mode == "training" and show_hitbox_debug
 	if team_mode_enabled and team_mode_subtype == "simul":
 		for fighter in team_fighters_p1:
 			if fighter != null and is_instance_valid(fighter):
@@ -885,7 +1005,7 @@ func _handle_hitbox_editor_input(event: InputEvent) -> void:
 		return
 
 	if key_event.keycode == KEY_TAB:
-		hitbox_edit_index = (hitbox_edit_index + 1) % hitboxes.size()
+		_advance_training_hitbox_selection()
 		return
 
 	hitbox_edit_index = clampi(hitbox_edit_index, 0, hitboxes.size() - 1)
@@ -947,6 +1067,34 @@ func _sync_hitbox_editor_target() -> void:
 	if hitbox_edit_state_id != current_state:
 		hitbox_edit_state_id = current_state
 		hitbox_edit_index = 0
+
+
+func _advance_training_hitbox_selection() -> void:
+	_sync_hitbox_editor_target()
+	if active_fighter_a == null or hitbox_edit_state_id.is_empty():
+		return
+	var state_data: Dictionary = active_fighter_a.state_data.get(hitbox_edit_state_id, {})
+	var hitboxes: Array = state_data.get("hitboxes", [])
+	if hitboxes.is_empty():
+		hitbox_edit_index = 0
+		return
+	hitbox_edit_index = (hitbox_edit_index + 1) % hitboxes.size()
+
+
+func _build_hitbox_edit_status_text() -> String:
+	if game_mode != "training":
+		return "Live Hitbox Edit: Training Only"
+	if not hitbox_edit_mode:
+		return "Live Hitbox Edit: OFF"
+	_sync_hitbox_editor_target()
+	if active_fighter_a == null or hitbox_edit_state_id.is_empty():
+		return "Live Hitbox Edit: ON | No active state"
+	var state_data: Dictionary = active_fighter_a.state_data.get(hitbox_edit_state_id, {})
+	var hitboxes: Array = state_data.get("hitboxes", [])
+	if hitboxes.is_empty():
+		return "Live Hitbox Edit: ON | %s has no hitboxes" % hitbox_edit_state_id
+	var selected_index: int = clampi(hitbox_edit_index, 0, hitboxes.size() - 1)
+	return "Live Hitbox Edit: ON | %s | Box %d/%d" % [hitbox_edit_state_id, selected_index + 1, hitboxes.size()]
 
 
 func _save_active_fighter_states_to_mod() -> void:
@@ -1026,25 +1174,7 @@ func _apply_selected_stage() -> void:
 
 
 func _find_stage_model_path(folder: String) -> String:
-	var preferred: Array[String] = ["stage.glb", "stage.gltf", "model.glb", "model.gltf", "Test.glb", "Test.gltf"]
-	for file_name in preferred:
-		var candidate: String = "%s/%s" % [folder, file_name]
-		if FileAccess.file_exists(candidate):
-			return candidate
-	var dir := DirAccess.open(folder)
-	if dir == null:
-		return ""
-	dir.list_dir_begin()
-	var item: String = dir.get_next()
-	while not item.is_empty():
-		if not dir.current_is_dir():
-			var lower: String = item.to_lower()
-			if lower.ends_with(".glb") or lower.ends_with(".gltf"):
-				dir.list_dir_end()
-				return "%s/%s" % [folder, item]
-		item = dir.get_next()
-	dir.list_dir_end()
-	return ""
+	return ContentResolver.find_stage_model_path(folder, _load_stage_def("%s/stage.def" % folder))
 
 
 func _load_stage_node(path: String) -> Node:
@@ -1168,19 +1298,25 @@ func _apply_stage_configuration() -> void:
 	smash_blast_bottom = float(current_stage_def.get("smash_blast_bottom", current_stage_def.get("blast_bottom", smash_blast_bottom_default)))
 
 	var stage_offset: Vector3 = _stage_vector3_from_value(current_stage_def.get("stage_offset", Vector3.ZERO), Vector3.ZERO)
-	_apply_stage_offset(stage_offset)
+	var stage_rotation: Vector3 = _stage_vector3_from_value(current_stage_def.get("stage_rotation", Vector3.ZERO), Vector3.ZERO)
+	var stage_scale: Vector3 = _stage_vector3_from_value(current_stage_def.get("stage_scale", Vector3.ONE), Vector3.ONE)
+	_apply_stage_transform(stage_offset, stage_rotation, stage_scale)
 	_set_floor_top_y(stage_floor_y_level)
 	_apply_stage_camera_overrides()
 	_apply_stage_shader_overrides()
 	_apply_stage_animation_overrides()
 
 
-func _apply_stage_offset(offset: Vector3) -> void:
+func _apply_stage_transform(offset: Vector3, rotation_degrees: Vector3, scale_value: Vector3) -> void:
 	if stage_root_fallback != null:
 		stage_root_fallback.position = fallback_stage_base_position + offset
+		stage_root_fallback.rotation_degrees = rotation_degrees
+		stage_root_fallback.scale = scale_value
 	if loaded_stage_instance != null and loaded_stage_instance is Node3D:
 		var runtime_stage := loaded_stage_instance as Node3D
-		runtime_stage.position += offset
+		runtime_stage.position = offset
+		runtime_stage.rotation_degrees = rotation_degrees
+		runtime_stage.scale = scale_value
 
 
 func _set_floor_top_y(_top_y: float) -> void:
@@ -1202,28 +1338,14 @@ func _apply_stage_camera_overrides() -> void:
 	var camera_pos: Vector3 = _stage_vector3_from_value(current_stage_def.get("camera_position", camera_base_position), camera_base_position)
 	var camera_look: Vector3 = _stage_vector3_from_value(current_stage_def.get("camera_look_target", camera_base_look_target), camera_base_look_target)
 	camera_controller.global_position = camera_pos
+	if camera_controller.has_method("set_stage_camera_anchor"):
+		camera_controller.call("set_stage_camera_anchor", camera_pos, camera_look)
 	camera_controller.look_target = camera_look
 	camera_controller.look_at(camera_look, Vector3.UP)
 
 
 func _load_stage_def(path: String) -> Dictionary:
-	if not FileAccess.file_exists(path):
-		return {}
-	var result: Dictionary = {}
-	var file := FileAccess.open(path, FileAccess.READ)
-	if file == null:
-		return result
-	while not file.eof_reached():
-		var line := file.get_line().strip_edges()
-		if line.is_empty() or line.begins_with(";") or line.begins_with("#"):
-			continue
-		var split := line.split("=", false, 1)
-		if split.size() != 2:
-			continue
-		var key: String = split[0].strip_edges()
-		var value: String = split[1].strip_edges()
-		result[key] = _parse_stage_def_value(value)
-	return result
+	return ContentResolver.load_stage_def(path)
 
 
 func _parse_stage_def_value(raw_value: String):
@@ -1609,6 +1731,9 @@ func _snap_fighter_to_mesh_ground(fighter: FighterBase) -> void:
 	var hit: Dictionary = world.direct_space_state.intersect_ray(query)
 	if hit.is_empty():
 		return
+	var hit_normal: Vector3 = hit.get("normal", Vector3.UP)
+	if hit_normal.angle_to(Vector3.UP) > deg_to_rad(60.0):
+		return
 	var hit_pos: Vector3 = hit.get("position", origin)
 	var target_y: float = hit_pos.y + float(fighter.ground_offset_y)
 	# Only snap when very close to ground and moving downward/idle.
@@ -1705,6 +1830,11 @@ func _resolve_fighter_pushbox() -> void:
 
 	var pos_a: Vector3 = active_fighter_a.global_position
 	var pos_b: Vector3 = active_fighter_b.global_position
+	var vertical_gap: float = absf(pos_b.y - pos_a.y)
+	if vertical_gap > _fighter_push_vertical_overlap_gap(active_fighter_a, active_fighter_b):
+		return
+	if vertical_gap >= _fighter_airborne_cross_gap(active_fighter_a, active_fighter_b) and _fighters_are_in_airborne_cross(active_fighter_a, active_fighter_b):
+		return
 	var dx: float = pos_b.x - pos_a.x
 	var distance: float = absf(dx)
 	var min_distance: float = _fighter_push_radius(active_fighter_a) + _fighter_push_radius(active_fighter_b)
@@ -1755,6 +1885,11 @@ func _resolve_simul_pushboxes() -> void:
 				continue
 			var pos_a: Vector3 = a.global_position
 			var pos_b: Vector3 = b.global_position
+			var vertical_gap: float = absf(pos_b.y - pos_a.y)
+			if vertical_gap > _fighter_push_vertical_overlap_gap(a, b):
+				continue
+			if vertical_gap >= _fighter_airborne_cross_gap(a, b) and _fighters_are_in_airborne_cross(a, b):
+				continue
 			var dx: float = pos_b.x - pos_a.x
 			var distance: float = absf(dx)
 			var min_distance: float = _fighter_push_radius(a) + _fighter_push_radius(b)
@@ -1780,6 +1915,43 @@ func _fighter_push_radius(fighter: FighterBase) -> float:
 		return (front + back) * 0.5 * 0.01
 	var scale: float = maxf(0.1, float(fighter.collision_scale))
 	return 0.45 * scale
+
+
+func _fighter_push_vertical_overlap_gap(fighter_a: FighterBase, fighter_b: FighterBase) -> float:
+	return (_single_fighter_push_height(fighter_a) + _single_fighter_push_height(fighter_b)) * 0.5
+
+
+func _single_fighter_push_height(fighter: FighterBase) -> float:
+	if fighter == null:
+		return 1.05
+	var scale: float = maxf(0.1, float(fighter.collision_scale))
+	return 1.05 * scale
+
+
+func _fighter_airborne_cross_gap(fighter_a: FighterBase, fighter_b: FighterBase) -> float:
+	var gap_a: float = _single_fighter_airborne_cross_gap(fighter_a)
+	var gap_b: float = _single_fighter_airborne_cross_gap(fighter_b)
+	return maxf(0.35, minf(gap_a, gap_b))
+
+
+func _single_fighter_airborne_cross_gap(fighter: FighterBase) -> float:
+	if fighter == null:
+		return 0.75
+	var scale: float = maxf(0.1, float(fighter.collision_scale))
+	return 0.75 * scale
+
+
+func _fighters_are_in_airborne_cross(fighter_a: FighterBase, fighter_b: FighterBase) -> bool:
+	return _fighter_is_rising_airborne(fighter_a) or _fighter_is_rising_airborne(fighter_b)
+
+
+func _fighter_is_rising_airborne(fighter: FighterBase) -> bool:
+	if fighter == null:
+		return false
+	var grounded: bool = fighter.has_method("is_grounded_for_juggle") and bool(fighter.call("is_grounded_for_juggle"))
+	if grounded:
+		return false
+	return fighter.velocity.y > 0.05
 
 
 func _start_round() -> void:
@@ -1808,6 +1980,7 @@ func _restore_camera_targets_for_round() -> void:
 		return
 	camera_controller.fighter_a_path = camera_controller.get_path_to(active_fighter_a)
 	camera_controller.fighter_b_path = camera_controller.get_path_to(active_fighter_b)
+	_refresh_camera_tracked_fighters()
 
 
 func _is_team_side_eliminated(is_p1: bool) -> bool:
@@ -1861,6 +2034,7 @@ func _relink_active_fighters() -> void:
 	if camera_controller != null:
 		camera_controller.fighter_a_path = camera_controller.get_path_to(active_fighter_a)
 		camera_controller.fighter_b_path = camera_controller.get_path_to(active_fighter_b)
+		_refresh_camera_tracked_fighters()
 	if input_buffer_viewer != null:
 		input_buffer_viewer.target_fighter_path = input_buffer_viewer.get_path_to(active_fighter_a)
 	_configure_smash_mode_for_fighters()
@@ -2121,6 +2295,28 @@ func _focus_camera_on_winner(winner: int) -> void:
 	var winner_path: NodePath = camera_controller.get_path_to(winner_fighter)
 	camera_controller.fighter_a_path = winner_path
 	camera_controller.fighter_b_path = winner_path
+	if camera_controller.has_method("set_tracked_fighter_paths"):
+		var winner_paths: Array[NodePath] = [winner_path]
+		camera_controller.set_tracked_fighter_paths(winner_paths)
+
+
+func _refresh_camera_tracked_fighters() -> void:
+	if camera_controller == null or not camera_controller.has_method("set_tracked_fighter_paths"):
+		return
+	var tracked_paths: Array[NodePath] = []
+	if team_mode_enabled and team_mode_subtype == "simul":
+		for fighter in team_fighters_p1:
+			if fighter != null and is_instance_valid(fighter) and fighter.health > 0:
+				tracked_paths.append(camera_controller.get_path_to(fighter))
+		for fighter in team_fighters_p2:
+			if fighter != null and is_instance_valid(fighter) and fighter.health > 0:
+				tracked_paths.append(camera_controller.get_path_to(fighter))
+	else:
+		if active_fighter_a != null and is_instance_valid(active_fighter_a):
+			tracked_paths.append(camera_controller.get_path_to(active_fighter_a))
+		if active_fighter_b != null and is_instance_valid(active_fighter_b):
+			tracked_paths.append(camera_controller.get_path_to(active_fighter_b))
+	camera_controller.set_tracked_fighter_paths(tracked_paths)
 
 
 func _prepare_next_round() -> void:
@@ -2205,27 +2401,396 @@ func _drive_cpu_fighter(cpu: FighterBase, target: FighterBase) -> void:
 		return
 	if cpu.command_interpreter == null:
 		return
+	var brain: Dictionary = _cpu_brain(cpu)
+	_tick_cpu_brain(brain)
 	var dx: float = target.global_position.x - cpu.global_position.x
 	var abs_dx: float = absf(dx)
-	var move_x: float = 0.0
-	if abs_dx > 1.35:
-		move_x = signf(dx)
-	elif abs_dx < 0.8 and cpu_rng.randf() < 0.45:
-		move_x = -signf(dx)
+	var abs_dy: float = absf(target.global_position.y - cpu.global_position.y)
+	var target_attacking: bool = target.has_method("get_runtime_movetype") and str(target.call("get_runtime_movetype")) == "A"
+	var target_in_hitstun: bool = target.has_method("get_runtime_movetype") and str(target.call("get_runtime_movetype")) == "H"
+	var target_has_projectile: bool = target.has_method("get_num_projectiles") and int(target.call("get_num_projectiles")) > 0
+	var can_control: bool = bool(cpu.get("state_control_enabled"))
 
+	if _cpu_should_guard(cpu, target, abs_dx, abs_dy, target_attacking, target_has_projectile):
+		brain["guard_frames"] = maxi(int(brain.get("guard_frames", 0)), CPU_GUARD_HOLD_FRAMES)
+	if int(brain.get("guard_frames", 0)) > 0:
+		_cpu_submit_ai_frame(cpu, _cpu_guard_frame(cpu, target))
+		return
+
+	if not can_control:
+		_cpu_submit_ai_frame(cpu, _cpu_input_frame(Vector2.ZERO))
+		return
+
+	var action_cooldown: int = int(brain.get("action_cooldown", 0))
+	var command_entry: Dictionary = {}
+	if abs_dy <= CPU_VERTICAL_COMMIT_RANGE:
+		if abs_dx >= CPU_PROJECTILE_RANGE and action_cooldown <= 0 and not target_in_hitstun and not _cpu_has_active_projectile(cpu):
+			command_entry = _cpu_pick_projectile_command(cpu)
+			if _cpu_try_use_command(cpu, command_entry):
+				brain["action_cooldown"] = CPU_PROJECTILE_COOLDOWN_FRAMES
+				return
+		if abs_dx <= CPU_THROW_RANGE and action_cooldown <= 0 and not target_in_hitstun and cpu_rng.randf() < 0.18:
+			command_entry = _cpu_pick_throw_command(cpu)
+			if _cpu_try_use_command(cpu, command_entry):
+				brain["action_cooldown"] = CPU_ATTACK_COOLDOWN_FRAMES
+				return
+		if abs_dx <= CPU_MELEE_RANGE and action_cooldown <= 0:
+			command_entry = _cpu_pick_melee_command(cpu, target_in_hitstun)
+			if _cpu_try_use_command(cpu, command_entry):
+				brain["action_cooldown"] = CPU_COMBO_COOLDOWN_FRAMES if target_in_hitstun else CPU_ATTACK_COOLDOWN_FRAMES
+				return
+
+	_cpu_submit_ai_frame(cpu, _cpu_input_frame(Vector2(_cpu_move_toward_target(dx, abs_dx, target_in_hitstun, action_cooldown), 0.0)))
+
+
+func _cpu_brain(cpu: FighterBase) -> Dictionary:
+	var key: int = cpu.get_instance_id()
+	if not cpu_brains.has(key):
+		cpu_brains[key] = {
+			"action_cooldown": 0,
+			"guard_frames": 0
+		}
+	return cpu_brains[key]
+
+
+func _tick_cpu_brain(brain: Dictionary) -> void:
+	var action_cooldown: int = int(brain.get("action_cooldown", 0))
+	if action_cooldown > 0:
+		brain["action_cooldown"] = action_cooldown - 1
+	var guard_frames: int = int(brain.get("guard_frames", 0))
+	if guard_frames > 0:
+		brain["guard_frames"] = guard_frames - 1
+
+
+func _cpu_should_guard(cpu: FighterBase, target: FighterBase, abs_dx: float, abs_dy: float, target_attacking: bool, target_has_projectile: bool) -> bool:
+	if abs_dy > CPU_VERTICAL_COMMIT_RANGE * 1.35:
+		return false
+	if target_attacking and abs_dx <= CPU_GUARD_RANGE:
+		return true
+	if target_has_projectile and abs_dx <= CPU_PROJECTILE_GUARD_RANGE:
+		return true
+	if target_attacking and target.global_position.y > cpu.global_position.y and abs_dx <= CPU_GUARD_RANGE * 1.2:
+		return true
+	return false
+
+
+func _cpu_guard_frame(cpu: FighterBase, target: FighterBase) -> Dictionary:
+	var raw_back: float = _cpu_back_axis(cpu)
+	var guard_y: float = 0.0
+	if target.has_method("get_runtime_statetype") and str(target.call("get_runtime_statetype")) != "A":
+		guard_y = 1.0
+	return _cpu_input_frame(Vector2(raw_back, guard_y))
+
+
+func _cpu_move_toward_target(dx: float, abs_dx: float, target_in_hitstun: bool, action_cooldown: int) -> float:
+	if target_in_hitstun and abs_dx > 0.7:
+		return signf(dx)
+	if abs_dx > CPU_MELEE_RANGE:
+		return signf(dx)
+	if abs_dx < 0.65 and action_cooldown > 0:
+		return -signf(dx)
+	if abs_dx > CPU_APPROACH_RANGE:
+		return signf(dx)
+	return 0.0
+
+
+func _cpu_pick_projectile_command(cpu: FighterBase) -> Dictionary:
+	var candidates: Array = []
+	for entry_variant in _cpu_command_entries(cpu):
+		if typeof(entry_variant) != TYPE_DICTIONARY:
+			continue
+		var entry: Dictionary = entry_variant
+		if not _cpu_command_is_projectile(cpu, entry):
+			continue
+		if _cpu_build_command_frames(cpu, entry).is_empty():
+			continue
+		candidates.append(entry)
+	if candidates.is_empty():
+		return {}
+	candidates.sort_custom(func(a, b): return _cpu_command_score(str(a.get("id", "")), true) < _cpu_command_score(str(b.get("id", "")), true))
+	return candidates[0]
+
+
+func _cpu_pick_throw_command(cpu: FighterBase) -> Dictionary:
+	var candidates: Array = []
+	for entry_variant in _cpu_command_entries(cpu):
+		if typeof(entry_variant) != TYPE_DICTIONARY:
+			continue
+		var entry: Dictionary = entry_variant
+		if not _cpu_command_is_throw(cpu, entry):
+			continue
+		if _cpu_build_command_frames(cpu, entry).is_empty():
+			continue
+		candidates.append(entry)
+	if candidates.is_empty():
+		return {}
+	return candidates[0]
+
+
+func _cpu_pick_melee_command(cpu: FighterBase, prefer_fast: bool) -> Dictionary:
+	var candidates: Array = []
+	for entry_variant in _cpu_command_entries(cpu):
+		if typeof(entry_variant) != TYPE_DICTIONARY:
+			continue
+		var entry: Dictionary = entry_variant
+		if not _cpu_command_is_melee(cpu, entry):
+			continue
+		if _cpu_build_command_frames(cpu, entry).is_empty():
+			continue
+		candidates.append(entry)
+	if candidates.is_empty():
+		return {}
+	candidates.sort_custom(
+		func(a, b):
+			return _cpu_command_score(_cpu_command_label(a), prefer_fast) < _cpu_command_score(_cpu_command_label(b), prefer_fast)
+	)
+	var best_count: int = mini(candidates.size(), 2)
+	return candidates[cpu_rng.randi_range(0, best_count - 1)]
+
+
+func _cpu_command_entries(cpu: FighterBase) -> Array:
+	if cpu.command_data.has("commands") and cpu.command_data.get("commands") is Array:
+		return cpu.command_data.get("commands", [])
+	return []
+
+
+func _cpu_command_is_projectile(cpu: FighterBase, entry: Dictionary) -> bool:
+	if bool(entry.get("revert_transform", false)) or entry.has("transform_to"):
+		return false
+	var state_info: Dictionary = _cpu_target_state_info(cpu, entry)
+	var projectiles = state_info.get("projectiles", [])
+	if projectiles is Array and not (projectiles as Array).is_empty():
+		return true
+	var label: String = _cpu_command_label(entry)
+	return (
+		label.find("projectile") != -1
+		or label.find("qcf") != -1
+		or label.find("fireball") != -1
+		or label.find("blast") != -1
+		or label.find("beam") != -1
+		or label.find("special") != -1
+		or label.find("shoot") != -1
+	)
+
+
+func _cpu_command_is_throw(cpu: FighterBase, entry: Dictionary) -> bool:
+	var state_info: Dictionary = _cpu_target_state_info(cpu, entry)
+	var throwboxes = state_info.get("throwboxes", [])
+	if throwboxes is Array and not (throwboxes as Array).is_empty():
+		return true
+	var label: String = _cpu_command_label(entry)
+	return label.find("throw") != -1 or label.find("grapple") != -1 or label.find("grab") != -1
+
+
+func _cpu_command_is_melee(cpu: FighterBase, entry: Dictionary) -> bool:
+	if _cpu_command_is_projectile(cpu, entry) or _cpu_command_is_throw(cpu, entry):
+		return false
+	if bool(entry.get("revert_transform", false)) or entry.has("transform_to"):
+		return false
+	var label: String = _cpu_command_label(entry)
+	if label.find("parry") != -1 or label.find("guard") != -1:
+		return false
+	var state_info: Dictionary = _cpu_target_state_info(cpu, entry)
+	var hitboxes = state_info.get("hitboxes", [])
+	return hitboxes is Array and not (hitboxes as Array).is_empty()
+
+
+func _cpu_target_state_info(cpu: FighterBase, entry: Dictionary) -> Dictionary:
+	var target_state: String = str(entry.get("target_state", ""))
+	if target_state.is_empty():
+		return {}
+	if not cpu.state_data.has(target_state):
+		return {}
+	var state_info = cpu.state_data.get(target_state, {})
+	return state_info if state_info is Dictionary else {}
+
+
+func _cpu_command_label(entry: Dictionary) -> String:
+	return ("%s %s" % [str(entry.get("id", "")), str(entry.get("target_state", ""))]).to_lower()
+
+
+func _cpu_command_score(label: String, prefer_fast: bool) -> int:
+	var score: int = 100
+	if label.find("light") != -1 or label.find("jab") != -1 or label.find("p_light") != -1:
+		score -= 35
+	if label.find("punch") != -1 or label.find("kick") != -1:
+		score -= 10
+	if label.find("heavy") != -1 or label.find("strong") != -1:
+		score += 18
+	if label.find("qcf") != -1 or label.find("special") != -1:
+		score += 10 if prefer_fast else -6
+	if prefer_fast:
+		score -= 12
+	return score
+
+
+func _cpu_try_use_command(cpu: FighterBase, entry: Dictionary) -> bool:
+	if entry.is_empty() or cpu.state_controller == null:
+		return false
+	var command_id: String = str(entry.get("id", ""))
+	var target_state: String = str(entry.get("target_state", ""))
+	if command_id.is_empty() or target_state.is_empty():
+		return false
+	if not cpu._can_enter_state_from_current(target_state):
+		return false
+	var before_state: String = cpu.state_controller.current_state
+	cpu._on_command_matched(command_id, entry)
+	return cpu.state_controller.current_state != before_state
+
+
+func _cpu_build_command_frames(cpu: FighterBase, entry: Dictionary) -> Array:
+	var pattern = entry.get("pattern", [])
+	if not (pattern is Array) or (pattern as Array).is_empty():
+		return []
+	var source_pattern: Array = pattern
+	if source_pattern.size() >= 6 and str(source_pattern[0]).to_lower() == "hold":
+		return []
+	var frames: Array = []
+	for token in source_pattern:
+		var frame: Dictionary = _cpu_frame_for_pattern_token(cpu, token)
+		if frame.is_empty():
+			return []
+		frames.append(frame)
+	return frames
+
+
+func _cpu_frame_for_pattern_token(cpu: FighterBase, token) -> Dictionary:
+	if typeof(token) == TYPE_INT:
+		return _cpu_input_frame(_cpu_raw_vector_from_numpad(cpu, int(token)))
+	if typeof(token) != TYPE_STRING:
+		return {}
+	var text: String = str(token).strip_edges()
+	if text.is_empty():
+		return {}
+	var direction: Vector2 = Vector2.ZERO
 	var pressed: Array[String] = []
-	if abs_dx <= 1.2:
-		var roll: float = cpu_rng.randf()
-		if roll < 0.12:
-			pressed.append("P")
-		elif roll < 0.18:
-			pressed.append("K")
-		elif roll < 0.22:
-			pressed.append("H")
-	elif abs_dx <= 2.5 and cpu_rng.randf() < 0.06:
-		pressed.append("S")
+	var held: Array[String] = []
+	var released: Array[String] = []
+	for part in text.split("+", false):
+		var trimmed: String = str(part).strip_edges()
+		if trimmed.is_empty():
+			continue
+		var upper: String = trimmed.to_upper()
+		var direction_token: int = _cpu_direction_token_to_numpad(upper)
+		if direction_token != -1:
+			direction = _cpu_raw_vector_from_numpad(cpu, direction_token)
+			continue
+		if upper.begins_with("HOLD:"):
+			var held_button: String = _cpu_button_token(upper.substr(5))
+			if held_button.is_empty():
+				return {}
+			held.append(held_button)
+			continue
+		if upper.begins_with("RELEASE:"):
+			var released_button: String = _cpu_button_token(upper.substr(8))
+			if released_button.is_empty():
+				return {}
+			released.append(released_button)
+			continue
+		var button: String = _cpu_button_token(upper)
+		if button.is_empty():
+			return {}
+		pressed.append(button)
+	return _cpu_input_frame(direction, pressed, held, released)
 
-	cpu.command_interpreter.enqueue_external_input(Vector2(move_x, 0.0), pressed, pressed, [])
+
+func _cpu_button_token(token: String) -> String:
+	match token.strip_edges().to_upper():
+		"P", "PUNCH":
+			return "P"
+		"K", "KICK":
+			return "K"
+		"S", "SPECIAL":
+			return "S"
+		"H", "HEAVY":
+			return "H"
+	return ""
+
+
+func _cpu_direction_token_to_numpad(token: String) -> int:
+	var text: String = token.strip_edges().to_upper()
+	if text.is_valid_int():
+		var value: int = int(text)
+		if value >= 1 and value <= 9:
+			return value
+	match text:
+		"U", "UP":
+			return 8
+		"D", "DOWN":
+			return 2
+		"L", "LEFT", "B", "BACK":
+			return 4
+		"R", "RIGHT", "F", "FORWARD":
+			return 6
+		"UB", "UPBACK", "UP-BACK":
+			return 7
+		"UF", "UPFORWARD", "UP-FORWARD":
+			return 9
+		"DB", "DOWNBACK", "DOWN-BACK":
+			return 1
+		"DF", "DOWNFORWARD", "DOWN-FORWARD":
+			return 3
+		"N", "NEUTRAL":
+			return 5
+	return -1
+
+
+func _cpu_raw_vector_from_numpad(cpu: FighterBase, numpad: int) -> Vector2:
+	var facing_right: bool = cpu.command_interpreter == null or cpu.command_interpreter.get_facing_right()
+	var x: float = 0.0
+	var y: float = 0.0
+	match numpad:
+		1:
+			x = -1.0
+			y = 1.0
+		2:
+			y = 1.0
+		3:
+			x = 1.0
+			y = 1.0
+		4:
+			x = -1.0
+		6:
+			x = 1.0
+		7:
+			x = -1.0
+			y = -1.0
+		8:
+			y = -1.0
+		9:
+			x = 1.0
+			y = -1.0
+	if not facing_right:
+		x *= -1.0
+	return Vector2(x, y)
+
+
+func _cpu_back_axis(cpu: FighterBase) -> float:
+	if cpu.command_interpreter == null or cpu.command_interpreter.get_facing_right():
+		return -1.0
+	return 1.0
+
+
+func _cpu_has_active_projectile(cpu: FighterBase) -> bool:
+	return cpu.has_method("get_num_projectiles") and int(cpu.call("get_num_projectiles")) > 0
+
+
+func _cpu_input_frame(direction: Vector2, pressed: Array[String] = [], held: Array[String] = [], released: Array[String] = []) -> Dictionary:
+	return {
+		"direction": direction,
+		"pressed": pressed.duplicate(),
+		"held": held.duplicate(),
+		"released": released.duplicate()
+	}
+
+
+func _cpu_submit_ai_frame(cpu: FighterBase, frame: Dictionary) -> void:
+	cpu.command_interpreter.enqueue_external_input(
+		frame.get("direction", Vector2.ZERO),
+		frame.get("pressed", []),
+		frame.get("held", []),
+		frame.get("released", [])
+	)
 
 
 func _update_hud() -> void:

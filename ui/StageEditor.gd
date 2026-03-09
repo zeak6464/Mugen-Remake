@@ -30,6 +30,12 @@ extends Control
 @onready var stage_offset_x_spin: SpinBox = $MarginContainer/VBoxContainer/ContentScroll/ContentVBox/FormGrid/StageOffsetXSpin
 @onready var stage_offset_y_spin: SpinBox = $MarginContainer/VBoxContainer/ContentScroll/ContentVBox/FormGrid/StageOffsetYSpin
 @onready var stage_offset_z_spin: SpinBox = $MarginContainer/VBoxContainer/ContentScroll/ContentVBox/FormGrid/StageOffsetZSpin
+@onready var stage_rotation_x_spin: SpinBox = $MarginContainer/VBoxContainer/ContentScroll/ContentVBox/FormGrid/StageRotationXSpin
+@onready var stage_rotation_y_spin: SpinBox = $MarginContainer/VBoxContainer/ContentScroll/ContentVBox/FormGrid/StageRotationYSpin
+@onready var stage_rotation_z_spin: SpinBox = $MarginContainer/VBoxContainer/ContentScroll/ContentVBox/FormGrid/StageRotationZSpin
+@onready var stage_scale_x_spin: SpinBox = $MarginContainer/VBoxContainer/ContentScroll/ContentVBox/FormGrid/StageScaleXSpin
+@onready var stage_scale_y_spin: SpinBox = $MarginContainer/VBoxContainer/ContentScroll/ContentVBox/FormGrid/StageScaleYSpin
+@onready var stage_scale_z_spin: SpinBox = $MarginContainer/VBoxContainer/ContentScroll/ContentVBox/FormGrid/StageScaleZSpin
 @onready var floor_y_spin: SpinBox = $MarginContainer/VBoxContainer/ContentScroll/ContentVBox/FormGrid/FloorYSpin
 @onready var arena_left_spin: SpinBox = $MarginContainer/VBoxContainer/ContentScroll/ContentVBox/FormGrid/ArenaLeftSpin
 @onready var arena_right_spin: SpinBox = $MarginContainer/VBoxContainer/ContentScroll/ContentVBox/FormGrid/ArenaRightSpin
@@ -93,6 +99,8 @@ func _connect_signals() -> void:
 		p1_x_spin, p1_y_spin, p1_z_spin,
 		p2_x_spin, p2_y_spin, p2_z_spin,
 		stage_offset_x_spin, stage_offset_y_spin, stage_offset_z_spin,
+		stage_rotation_x_spin, stage_rotation_y_spin, stage_rotation_z_spin,
+		stage_scale_x_spin, stage_scale_y_spin, stage_scale_z_spin,
 		floor_y_spin, arena_left_spin, arena_right_spin,
 		smash_blast_left_spin, smash_blast_right_spin, smash_blast_top_spin, smash_blast_bottom_spin
 	]
@@ -109,28 +117,8 @@ func _connect_signals() -> void:
 func _scan_stages() -> void:
 	stage_entries.clear()
 	stage_option.clear()
-	var seen_names: Dictionary = {}
-	for root in stages_roots:
-		var normalized_root: String = _normalize_root(root)
-		if normalized_root.is_empty():
-			continue
-		if normalized_root.begins_with("user://"):
-			var root_abs: String = ProjectSettings.globalize_path(normalized_root)
-			if not DirAccess.dir_exists_absolute(root_abs):
-				DirAccess.make_dir_recursive_absolute(root_abs)
-		var dir := DirAccess.open(normalized_root)
-		if dir == null:
-			continue
-		dir.list_dir_begin()
-		var item: String = dir.get_next()
-		while not item.is_empty():
-			if dir.current_is_dir() and item != "." and item != ".." and not seen_names.has(item):
-				var folder: String = "%s%s" % [normalized_root, item]
-				if _is_stage_folder(folder):
-					stage_entries.append({"name": item, "folder": folder})
-					seen_names[item] = true
-			item = dir.get_next()
-		dir.list_dir_end()
+	for entry in ContentResolver.scan_stage_entries(stages_roots):
+		stage_entries.append({"name": str(entry.get("name", "")), "folder": str(entry.get("folder_path", ""))})
 	stage_entries.sort_custom(func(a, b): return str(a.get("name", "")) < str(b.get("name", "")))
 	for i in range(stage_entries.size()):
 		stage_option.add_item(str(stage_entries[i].get("name", "")), i)
@@ -139,30 +127,22 @@ func _scan_stages() -> void:
 
 
 func _is_stage_folder(folder: String) -> bool:
-	if FileAccess.file_exists("%s/stage.def" % folder):
-		return true
-	var dir := DirAccess.open(folder)
-	if dir == null:
-		return false
-	dir.list_dir_begin()
-	var item: String = dir.get_next()
-	while not item.is_empty():
-		if not dir.current_is_dir():
-			var lower: String = item.to_lower()
-			if lower.ends_with(".glb") or lower.ends_with(".gltf"):
-				dir.list_dir_end()
-				return true
-		item = dir.get_next()
-	dir.list_dir_end()
-	return false
+	return ContentResolver.is_stage_folder(folder)
 
 
 func _select_first_stage() -> void:
 	if stage_entries.is_empty():
 		status_label.text = "No stage folders found."
 		return
-	stage_option.select(0)
-	_on_stage_selected(0)
+	var selected_index: int = 0
+	var preferred_stage_name: String = str(get_tree().get_meta("stage_editor_stage_name", ""))
+	if not preferred_stage_name.is_empty():
+		for i in range(stage_entries.size()):
+			if str(stage_entries[i].get("name", "")) == preferred_stage_name:
+				selected_index = i
+				break
+	stage_option.select(selected_index)
+	_on_stage_selected(selected_index)
 
 
 func _on_stage_selected(index: int) -> void:
@@ -202,6 +182,8 @@ func _on_save_pressed() -> void:
 	_write_ordered_key(out_lines, "spawn_p1", current_stage_def.get("spawn_p1", Vector3(-1.25, 0.0, 0.0)))
 	_write_ordered_key(out_lines, "spawn_p2", current_stage_def.get("spawn_p2", Vector3(1.25, 0.0, 0.0)))
 	_write_ordered_key(out_lines, "stage_offset", current_stage_def.get("stage_offset", Vector3.ZERO))
+	_write_ordered_key(out_lines, "stage_rotation", current_stage_def.get("stage_rotation", Vector3.ZERO))
+	_write_ordered_key(out_lines, "stage_scale", current_stage_def.get("stage_scale", Vector3.ONE))
 	_write_ordered_key(out_lines, "floor_y", current_stage_def.get("floor_y", 0.0))
 	_write_ordered_key(out_lines, "arena_left", current_stage_def.get("arena_left", -30.0))
 	_write_ordered_key(out_lines, "arena_right", current_stage_def.get("arena_right", 30.0))
@@ -258,6 +240,8 @@ func _apply_def_to_form() -> void:
 	var p1: Vector3 = _to_vector3(current_stage_def.get("spawn_p1", Vector3(-1.25, 0.0, 0.0)))
 	var p2: Vector3 = _to_vector3(current_stage_def.get("spawn_p2", Vector3(1.25, 0.0, 0.0)))
 	var stage_offset: Vector3 = _to_vector3(current_stage_def.get("stage_offset", Vector3.ZERO))
+	var stage_rotation: Vector3 = _to_vector3(current_stage_def.get("stage_rotation", Vector3.ZERO))
+	var stage_scale: Vector3 = _to_vector3(current_stage_def.get("stage_scale", Vector3.ONE))
 	var cam_pos: Vector3 = _to_vector3(current_stage_def.get("camera_position", Vector3(0.0, 4.1319685, 12.0)))
 	var look_target: Vector3 = _to_vector3(current_stage_def.get("camera_look_target", Vector3(0.0, 1.0, 0.0)))
 	p1_x_spin.value = p1.x
@@ -269,6 +253,12 @@ func _apply_def_to_form() -> void:
 	stage_offset_x_spin.value = stage_offset.x
 	stage_offset_y_spin.value = stage_offset.y
 	stage_offset_z_spin.value = stage_offset.z
+	stage_rotation_x_spin.value = stage_rotation.x
+	stage_rotation_y_spin.value = stage_rotation.y
+	stage_rotation_z_spin.value = stage_rotation.z
+	stage_scale_x_spin.value = stage_scale.x
+	stage_scale_y_spin.value = stage_scale.y
+	stage_scale_z_spin.value = stage_scale.z
 	floor_y_spin.value = float(current_stage_def.get("floor_y", 0.0))
 	arena_left_spin.value = float(current_stage_def.get("arena_left", -30.0))
 	arena_right_spin.value = float(current_stage_def.get("arena_right", 30.0))
@@ -289,6 +279,16 @@ func _collect_form_to_def() -> void:
 	current_stage_def["spawn_p1"] = Vector3(p1_x_spin.value, p1_y_spin.value, p1_z_spin.value)
 	current_stage_def["spawn_p2"] = Vector3(p2_x_spin.value, p2_y_spin.value, p2_z_spin.value)
 	current_stage_def["stage_offset"] = Vector3(stage_offset_x_spin.value, stage_offset_y_spin.value, stage_offset_z_spin.value)
+	current_stage_def["stage_rotation"] = Vector3(
+		stage_rotation_x_spin.value,
+		stage_rotation_y_spin.value,
+		stage_rotation_z_spin.value
+	)
+	current_stage_def["stage_scale"] = Vector3(
+		stage_scale_x_spin.value,
+		stage_scale_y_spin.value,
+		stage_scale_z_spin.value
+	)
 	current_stage_def["floor_y"] = floor_y_spin.value
 	current_stage_def["arena_left"] = arena_left_spin.value
 	current_stage_def["arena_right"] = arena_right_spin.value
@@ -324,6 +324,8 @@ func _update_preview() -> void:
 	var p1: Vector3 = _to_vector3(current_stage_def.get("spawn_p1", Vector3(-1.25, 0.0, 0.0)))
 	var p2: Vector3 = _to_vector3(current_stage_def.get("spawn_p2", Vector3(1.25, 0.0, 0.0)))
 	var stage_offset: Vector3 = _to_vector3(current_stage_def.get("stage_offset", Vector3.ZERO))
+	var stage_rotation: Vector3 = _to_vector3(current_stage_def.get("stage_rotation", Vector3.ZERO))
+	var stage_scale: Vector3 = _to_vector3(current_stage_def.get("stage_scale", Vector3.ONE))
 	var floor_y: float = float(current_stage_def.get("floor_y", 0.0))
 	var arena_left: float = float(current_stage_def.get("arena_left", -30.0))
 	var arena_right: float = float(current_stage_def.get("arena_right", 30.0))
@@ -343,7 +345,10 @@ func _update_preview() -> void:
 	camera_marker.position = cam_pos
 	floor_mesh.position.y = floor_y
 	if preview_stage_instance is Node3D:
-		(preview_stage_instance as Node3D).position = stage_offset
+		var preview_stage_node := preview_stage_instance as Node3D
+		preview_stage_node.position = stage_offset
+		preview_stage_node.rotation_degrees = stage_rotation
+		preview_stage_node.scale = stage_scale
 	_rebuild_collision_debug()
 	if not user_camera_dirty:
 		camera_target = look_target
@@ -385,27 +390,7 @@ func _on_show_collision_toggled(enabled: bool) -> void:
 
 
 func _find_stage_model_path(folder: String) -> String:
-	if folder.is_empty():
-		return ""
-	var preferred: Array[String] = ["stage.glb", "stage.gltf", "model.glb", "model.gltf", "Test.glb", "Test.gltf"]
-	for file_name in preferred:
-		var candidate: String = "%s/%s" % [folder, file_name]
-		if FileAccess.file_exists(candidate):
-			return candidate
-	var dir := DirAccess.open(folder)
-	if dir == null:
-		return ""
-	dir.list_dir_begin()
-	var item: String = dir.get_next()
-	while not item.is_empty():
-		if not dir.current_is_dir():
-			var lower: String = item.to_lower()
-			if lower.ends_with(".glb") or lower.ends_with(".gltf"):
-				dir.list_dir_end()
-				return "%s/%s" % [folder, item]
-		item = dir.get_next()
-	dir.list_dir_end()
-	return ""
+	return ContentResolver.find_stage_model_path(folder, _load_stage_def("%s/stage.def" % folder))
 
 
 func _normalize_root(root: String) -> String:
@@ -565,23 +550,7 @@ func _apply_character_visual_settings(model_node: Node3D, def_data: Dictionary) 
 
 
 func _load_stage_def(path: String) -> Dictionary:
-	if not FileAccess.file_exists(path):
-		return {}
-	var result: Dictionary = {}
-	var file := FileAccess.open(path, FileAccess.READ)
-	if file == null:
-		return result
-	while not file.eof_reached():
-		var line: String = file.get_line().strip_edges()
-		if line.is_empty() or line.begins_with(";") or line.begins_with("#"):
-			continue
-		var split: PackedStringArray = line.split("=", false, 1)
-		if split.size() != 2:
-			continue
-		var key: String = split[0].strip_edges()
-		var value: String = split[1].strip_edges()
-		result[key] = _parse_stage_def_value(value)
-	return result
+	return ContentResolver.load_stage_def(path)
 
 
 func _parse_stage_def_value(raw_value: String):

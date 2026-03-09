@@ -1,0 +1,25 @@
+{
+  "forms": {
+    "power_form": {
+      "resource_cost": 25,
+      "enter_state": "transform_start",
+      "revert_state": "transform_end",
+      "enter_sound": "transform_on",
+      "revert_sound": "transform_off",
+      "physics_overrides": {
+        "walk_speed": 3.8,
+        "run_speed": 6.0,
+        "jump_speed": 8.2
+      },
+      "model_scale_multiplier": 1.08,
+      "sounds_overrides": {
+        "swing_heavy": {
+          "path": "sounds/swing_heavy.ogg",
+          "volume_db": 1.0,
+          "pitch_scale": 0.9,
+          "bus": "Battle"
+        }
+      }
+    }
+  }
+}

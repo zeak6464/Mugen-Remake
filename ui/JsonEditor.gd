@@ -38,27 +38,8 @@ func _connect_signals() -> void:
 func _scan_mods() -> void:
 	mod_entries.clear()
 	mod_option.clear()
-	var seen_names: Dictionary = {}
-	for root in mods_roots:
-		var normalized_root: String = _normalize_root(root)
-		if normalized_root.is_empty():
-			continue
-		if normalized_root.begins_with("user://"):
-			var root_abs: String = ProjectSettings.globalize_path(normalized_root)
-			if not DirAccess.dir_exists_absolute(root_abs):
-				DirAccess.make_dir_recursive_absolute(root_abs)
-		var dir := DirAccess.open(normalized_root)
-		if dir == null:
-			continue
-		dir.list_dir_begin()
-		var item: String = dir.get_next()
-		while not item.is_empty():
-			if dir.current_is_dir() and item != "." and item != ".." and not seen_names.has(item):
-				var mod_path: String = "%s%s/" % [normalized_root, item]
-				mod_entries.append({"name": item, "path": mod_path})
-				seen_names[item] = true
-			item = dir.get_next()
-		dir.list_dir_end()
+	for entry in ContentResolver.scan_character_entries(mods_roots, "any"):
+		mod_entries.append({"name": str(entry.get("name", "")), "path": str(entry.get("path", ""))})
 	mod_entries.sort_custom(func(a, b): return str(a.get("name", "")) < str(b.get("name", "")))
 
 	for i in range(mod_entries.size()):

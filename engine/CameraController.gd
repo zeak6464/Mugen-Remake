@@ -3,6 +3,7 @@ class_name CameraController
 
 @export var fighter_a_path: NodePath
 @export var fighter_b_path: NodePath
+@export var tracked_fighter_paths: Array[NodePath] = []
 @export var follow_height: float = 4.0
 @export var min_depth: float = 9.0
 @export var max_depth: float = 16.0
@@ -16,8 +17,14 @@ class_name CameraController
 @export var stage_right_limit: float = 100.0
 @export var min_fov: float = 48.0
 @export var max_fov: float = 72.0
+@export var stage_anchor_follow_strength: float = 0.85
+@export var distance_depth_factor: float = 0.7
+@export var look_height_offset: float = 1.0
+@export var distance_height_factor: float = 0.22
 
 var look_target: Vector3 = Vector3.ZERO
+var stage_anchor_position: Vector3 = Vector3.ZERO
+var stage_anchor_look_target: Vector3 = Vector3.ZERO
 var shake_time_remaining: float = 0.0
 var shake_freq: float = 60.0
 var shake_ampl: float = -0.16
@@ -36,31 +43,56 @@ func request_screen_shake(time_ticks: int, freq: float = 60.0, ampl: float = -0.
 
 func _ready() -> void:
 	look_target = global_position + -global_transform.basis.z * 8.0
+	stage_anchor_position = global_position
+	stage_anchor_look_target = look_target
+
+
+func set_stage_camera_anchor(position_value: Vector3, look_value: Vector3) -> void:
+	stage_anchor_position = position_value
+	stage_anchor_look_target = look_value
+	look_target = look_value
+
+
+func set_tracked_fighter_paths(paths: Array[NodePath]) -> void:
+	tracked_fighter_paths = paths.duplicate()
 
 
 func _process(delta: float) -> void:
-	var fighter_a := get_node_or_null(fighter_a_path) as Node3D
-	var fighter_b := get_node_or_null(fighter_b_path) as Node3D
-	if fighter_a == null or fighter_b == null:
+	var tracked_fighters: Array[Node3D] = _get_tracked_fighters()
+	if tracked_fighters.is_empty():
 		return
 
-	var midpoint: Vector3 = (fighter_a.global_position + fighter_b.global_position) * 0.5
-	var spread_x: float = absf(fighter_a.global_position.x - fighter_b.global_position.x)
-	var depth_t: float = clampf((spread_x - horizontal_deadzone) / maxf(0.01, max_tracked_distance - horizontal_deadzone), 0.0, 1.0)
-	var spread_y: float = absf(fighter_a.global_position.y - fighter_b.global_position.y)
+	var midpoint: Vector3 = Vector3.ZERO
+	for fighter in tracked_fighters:
+		midpoint += fighter.global_position
+	midpoint /= float(tracked_fighters.size())
+
+	var same_focus_target: bool = tracked_fighters.size() <= 1
+	var furthest_distance: float = _furthest_tracked_distance(tracked_fighters)
+	var spread_y: float = _tracked_vertical_span(tracked_fighters)
+	var depth_t: float = clampf((furthest_distance - horizontal_deadzone) / maxf(0.01, max_tracked_distance - horizontal_deadzone), 0.0, 1.0)
 	var vertical_t: float = clampf(spread_y / maxf(0.01, max_vertical_span), 0.0, 1.0)
-	var frame_t: float = maxf(depth_t, vertical_t)
-	var desired_depth: float = lerpf(min_depth, max_depth, frame_t)
+	var frame_t: float = 1.0 if same_focus_target else maxf(depth_t, vertical_t)
+	var desired_depth: float = clampf(min_depth + (furthest_distance * distance_depth_factor), min_depth, max_depth)
 
 	var clamped_mid_x: float = clampf(midpoint.x, stage_left_limit, stage_right_limit)
-	var target_position := Vector3(clamped_mid_x, midpoint.y + follow_height + spread_y * 0.4, midpoint.z + desired_depth)
+	var target_position := Vector3(
+		clamped_mid_x,
+		midpoint.y + follow_height + (furthest_distance * distance_height_factor),
+		midpoint.z + desired_depth
+	)
 	var clean_position: Vector3 = global_position.lerp(target_position, clampf(delta * position_smoothing, 0.0, 1.0))
 
 	var avg_velocity_x: float = 0.0
-	if fighter_a is CharacterBody3D and fighter_b is CharacterBody3D:
-		avg_velocity_x = ((fighter_a as CharacterBody3D).velocity.x + (fighter_b as CharacterBody3D).velocity.x) * 0.5
+	var velocity_sources: int = 0
+	for fighter in tracked_fighters:
+		if fighter is CharacterBody3D:
+			avg_velocity_x += (fighter as CharacterBody3D).velocity.x
+			velocity_sources += 1
+	if velocity_sources > 0:
+		avg_velocity_x /= float(velocity_sources)
 
-	var desired_look := Vector3(clamped_mid_x + avg_velocity_x * velocity_look_lead, midpoint.y + 1.0 + spread_y * 0.2, midpoint.z)
+	var desired_look := Vector3(clamped_mid_x + avg_velocity_x * velocity_look_lead, midpoint.y + look_height_offset, midpoint.z)
 	look_target = look_target.lerp(desired_look, clampf(delta * look_smoothing, 0.0, 1.0))
 	look_at(look_target, Vector3.UP)
 
@@ -75,3 +107,43 @@ func _process(delta: float) -> void:
 			shake_time_remaining = 0.0
 
 	global_position = clean_position
+
+
+func _get_tracked_fighters() -> Array[Node3D]:
+	var result: Array[Node3D] = []
+	var paths: Array[NodePath] = tracked_fighter_paths
+	if paths.is_empty():
+		paths = [fighter_a_path, fighter_b_path]
+	for fighter_path in paths:
+		if fighter_path.is_empty():
+			continue
+		var fighter := get_node_or_null(fighter_path) as Node3D
+		if fighter == null:
+			continue
+		if result.has(fighter):
+			continue
+		result.append(fighter)
+	return result
+
+
+func _furthest_tracked_distance(fighters: Array[Node3D]) -> float:
+	var furthest: float = 0.0
+	for i in range(fighters.size()):
+		for j in range(i + 1, fighters.size()):
+			var a: Node3D = fighters[i]
+			var b: Node3D = fighters[j]
+			var dx: float = a.global_position.x - b.global_position.x
+			var dy: float = a.global_position.y - b.global_position.y
+			furthest = maxf(furthest, sqrt((dx * dx) + (dy * dy)))
+	return furthest
+
+
+func _tracked_vertical_span(fighters: Array[Node3D]) -> float:
+	if fighters.is_empty():
+		return 0.0
+	var min_y: float = fighters[0].global_position.y
+	var max_y: float = min_y
+	for fighter in fighters:
+		min_y = minf(min_y, fighter.global_position.y)
+		max_y = maxf(max_y, fighter.global_position.y)
+	return max_y - min_y

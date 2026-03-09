@@ -1,0 +1,663 @@
+{
+	"controller_demo": {
+		"allow_movement": false,
+		"animation": "anim_0",
+		"cancel_into": [],
+		"controllers": [
+			{
+				"persistent": 0.0,
+				"type": "CtrlSet",
+				"value": 0.0
+			},
+			{
+				"persistent": 0.0,
+				"trigger1": "time = 0",
+				"type": "Turn"
+			},
+			{
+				"persistent": 1.0,
+				"type": "VelSet",
+				"x": 2.0,
+				"y": 0.0
+			},
+			{
+				"facing_relative": true,
+				"persistent": 1.0,
+				"type": "PosAdd",
+				"value": [
+					0.05,
+					0.0,
+					0.0
+				]
+			},
+			{
+				"ignorehitpause": true,
+				"persistent": 2.0,
+				"type": "VelMul",
+				"x": 0.92
+			},
+			{
+				"persistent": 1.0,
+				"type": "PowerAdd",
+				"value": 1.0
+			},
+			{
+				"persistent": 0.0,
+				"trigger1": "time = 0",
+				"type": "PowerSet",
+				"value": 50.0
+			},
+			{
+				"kill": false,
+				"persistent": 0.0,
+				"trigger1": "time = 0",
+				"type": "LifeAdd",
+				"value": 5.0
+			},
+			{
+				"channel": "sfx",
+				"id": "swing_light",
+				"persistent": 0.0,
+				"trigger1": "time = 0",
+				"type": "PlaySnd"
+			},
+			{
+				"anim": "anim_0",
+				"loop": true,
+				"persistent": 0.0,
+				"trigger1": "time = 0",
+				"type": "ChangeAnim"
+			},
+			{
+				"id": "fireball_light",
+				"persistent": 0.0,
+				"trigger1": "time = 0 && numproj = 0",
+				"type": "Projectile"
+			},
+			{
+				"persistent": 1.0,
+				"type": "Null"
+			},
+			{
+				"persistent": 0.0,
+				"trigger1": "time = 0",
+				"type": "VarSet",
+				"v": 0.0,
+				"value": 0.0
+			},
+			{
+				"persistent": 1.0,
+				"type": "VarAdd",
+				"v": 0.0,
+				"value": 1.0
+			},
+			{
+				"persistent": 0.0,
+				"trigger1": "time = 0",
+				"type": "FVarSet",
+				"v": 0.0,
+				"value": 0.0
+			},
+			{
+				"persistent": 1.0,
+				"type": "FVarAdd",
+				"v": 0.0,
+				"value": 0.1
+			},
+			{
+				"movetype": "A",
+				"persistent": 1.0,
+				"physics": "S",
+				"statetype": "S",
+				"trigger1": "statetype = S && ctrl = 0",
+				"type": "StateTypeSet"
+			},
+			{
+				"ctrl": 0.0,
+				"persistent": 0.0,
+				"state": "hitstun",
+				"trigger1": "time = 0 && p2alive = 1",
+				"type": "TargetState"
+			},
+			{
+				"kill": false,
+				"persistent": 0.0,
+				"trigger1": "time = 0 && p2alive = 1",
+				"type": "TargetLifeAdd",
+				"value": -10.0
+			},
+			{
+				"persistent": 0.0,
+				"trigger1": "time = 0 && p2alive = 1",
+				"type": "TargetPowerAdd",
+				"value": 5.0
+			},
+			{
+				"persistent": 0.0,
+				"trigger1": "numtarget >= 1",
+				"type": "TargetVelSet",
+				"value": [
+					2.0,
+					2.5,
+					0.0
+				]
+			},
+			{
+				"persistent": 0.0,
+				"trigger1": "numtarget >= 1",
+				"type": "TargetVelAdd",
+				"value": [
+					0.5,
+					0.0,
+					0.0
+				]
+			},
+			{
+				"facing_relative": true,
+				"persistent": 0.0,
+				"trigger1": "numtarget >= 1",
+				"type": "TargetPosAdd",
+				"value": [
+					0.5,
+					0.0,
+					0.0
+				]
+			},
+			{
+				"persistent": 0.0,
+				"time": [
+					6.0,
+					8.0
+				],
+				"trigger1": "time = 0 && numtarget >= 1",
+				"type": "Pause"
+			},
+			{
+				"ctrl": 1.0,
+				"persistent": 0.0,
+				"trigger1": "var(0) >= 6",
+				"type": "ChangeState",
+				"value": "idle"
+			}
+		],
+		"hitboxes": [],
+		"hurtboxes": [],
+		"next": {
+
+		},
+		"pushboxes": [],
+		"throwboxes": [],
+		"velocity": [
+			0.0,
+			0.0,
+			0.0
+		]
+	},
+	"grabbed": {
+		"allow_movement": false,
+		"animation": "anim_0",
+		"cancel_into": [],
+		"hitboxes": [],
+		"hurtboxes": [],
+		"next": {
+
+		},
+		"pushboxes": [],
+		"throw_invuln": true,
+		"throwboxes": [],
+		"velocity": [
+			0.0,
+			0.0,
+			0.0
+		]
+	},
+	"guard": {
+		"allow_movement": false,
+		"animation": "anim_0",
+		"cancel_into": [],
+		"guard_active": true,
+		"hitboxes": [],
+		"hurtboxes": [],
+		"next": {
+			"frame": 8.0,
+			"id": "idle"
+		},
+		"pushboxes": [],
+		"throwboxes": [],
+		"velocity": [
+			0.0,
+			0.0,
+			0.0
+		]
+	},
+	"hitstun": {
+		"allow_movement": false,
+		"animation": "anim_0",
+		"cancel_into": [],
+		"hitboxes": [],
+		"hurtboxes": [],
+		"next": {
+			"frame": 22.0,
+			"id": "idle"
+		},
+		"pushboxes": [],
+		"throwboxes": [],
+		"velocity": [
+			0.0,
+			0.0,
+			0.0
+		]
+	},
+	"idle": {
+		"allow_movement": true,
+		"animation": "anim_0",
+		"cancel_into": [
+			"p_light",
+			"qcf_p",
+			"run",
+			"parry",
+			"throw"
+		],
+		"hitboxes": [],
+		"next": {
+
+		},
+		"pushboxes": [],
+		"throwboxes": [],
+		"velocity": [
+			0.0,
+			0.0,
+			0.0
+		]
+	},
+	"ko": {
+		"allow_movement": false,
+		"animation": "anim_0",
+		"cancel_into": [],
+		"hitboxes": [],
+		"hurtboxes": [],
+		"next": {
+
+		},
+		"pushboxes": [],
+		"throwboxes": [],
+		"velocity": [
+			0.0,
+			0.0,
+			0.0
+		]
+	},
+	"p_light": {
+		"allow_movement": false,
+		"animation": "anim_0",
+		"cancel_into": [],
+		"cancel_windows": [
+			{
+				"end": 24.0,
+				"into": [
+					"qcf_p"
+				],
+				"on": "hit",
+				"start": 7.0
+			},
+			{
+				"end": 20.0,
+				"into": [
+					"parry"
+				],
+				"on": "block",
+				"start": 10.0
+			}
+		],
+		"hitboxes": [
+			{
+				"bone": "",
+				"data": {
+					"attack_level": "mid",
+					"blockstun_frames": 10.0,
+					"damage": 35,
+					"guard_lock_frames": 10.0,
+					"guard_pausetime": [
+						6.0,
+						8.0
+					],
+					"hit_sound": "hit_light",
+					"hitstun_frames": 14.0,
+					"hitstun_state": "hitstun",
+					"juggle_cost": 1.0,
+					"on_block_adv": -5.0,
+					"on_hit_adv": 2.0,
+					"pausetime": [
+						8.0,
+						10.0
+					],
+					"pushback": [
+						0.0,
+						0.0,
+						0.0
+					]
+				},
+				"end": 5,
+				"id": "p_light_1",
+				"offset": [
+					0.0,
+					1.0,
+					0.0
+				],
+				"size": [
+					1.0,
+					1.0,
+					1.0
+				],
+				"start": 3
+			}
+		],
+		"hurtboxes": [],
+		"next": {
+			"frame": 51.0,
+			"id": "idle"
+		},
+		"pushboxes": [],
+		"sounds": [
+			{
+				"channel": "sfx",
+				"frame": 3.0,
+				"id": "swing_light"
+			}
+		],
+		"throwboxes": [],
+		"velocity": [
+			0.0,
+			0.0,
+			0.0
+		]
+	},
+	"parry": {
+		"allow_movement": false,
+		"animation": "anim_0",
+		"cancel_into": [],
+		"hitboxes": [],
+		"hurtboxes": [],
+		"next": {
+			"frame": 7.0,
+			"id": "idle"
+		},
+		"parry_active": true,
+		"pushboxes": [],
+		"throwboxes": [],
+		"velocity": [
+			0.0,
+			0.0,
+			0.0
+		]
+	},
+	"qcf_p": {
+		"allow_movement": false,
+		"animation": "anim_0",
+		"cancel_into": [],
+		"cancel_windows": [
+			{
+				"end": 16.0,
+				"into": [
+					"parry"
+				],
+				"on": "any",
+				"start": 11.0
+			}
+		],
+		"hitboxes": [
+			{
+				"bone": "",
+				"data": {
+					"attack_level": "high",
+					"blockstun_frames": 15.0,
+					"damage": 80.0,
+					"force_juggle": true,
+					"guard_lock_frames": 12.0,
+					"guard_pausetime": [
+						8.0,
+						10.0
+					],
+					"hit_sound": "hit_heavy",
+					"hitstun_frames": 20.0,
+					"hitstun_state": "hitstun",
+					"juggle_cost": 2.0,
+					"knockdown": true,
+					"knockdown_frames": 28.0,
+					"knockdown_state": "knockdown",
+					"launch_velocity": [
+						1.4,
+						7.2,
+						0.0
+					],
+					"on_block_adv": -14.0,
+					"on_hit_adv": 6.0,
+					"pausetime": [
+						11.0,
+						13.0
+					],
+					"pushback": [
+						1.8,
+						0.0,
+						0.0
+					],
+					"wakeup_state": "wakeup"
+				},
+				"end": 7.0,
+				"id": "qcf_p_1",
+				"offset": [
+					0.95,
+					1.0,
+					0.0
+				],
+				"size": [
+					0.7,
+					0.55,
+					0.7
+				],
+				"start": 6.0
+			}
+		],
+		"hurtboxes": [],
+		"next": {
+			"frame": 18.0,
+			"id": "idle"
+		},
+		"projectiles": [
+			{
+				"frame": 8.0,
+				"id": "fireball_light"
+			}
+		],
+		"pushboxes": [],
+		"throwboxes": [],
+		"sounds": [
+			{
+				"channel": "sfx",
+				"frame": 4.0,
+				"id": "swing_heavy"
+			}
+		],
+		"velocity": [
+			0.0,
+			0.0,
+			0.0
+		]
+	},
+	"run": {
+		"allow_movement": true,
+		"animation": "anim_0",
+		"cancel_into": [
+			"p_light",
+			"qcf_p",
+			"parry",
+			"throw"
+		],
+		"hitboxes": [],
+		"hurtboxes": [],
+		"next": {
+
+		},
+		"pushboxes": [],
+		"throwboxes": [],
+		"velocity": [
+			0.0,
+			0.0,
+			0.0
+		]
+	},
+	"throw": {
+		"allow_movement": false,
+		"animation": "anim_0",
+		"cancel_into": [],
+		"hitboxes": [],
+		"hurtboxes": [],
+		"next": {
+			"frame": 14.0,
+			"id": "idle"
+		},
+		"pushboxes": [],
+		"throwboxes": [
+			{
+				"bone": "",
+				"data": {
+					"attack_type": "grapple",
+					"damage": 110.0,
+					"grab_duration_frames": 12.0,
+					"grab_offset": [
+						0.75,
+						1.0,
+						0.0
+					],
+					"grabbed_state": "grabbed",
+					"grapple": true,
+					"grapple_hold": true,
+					"grapple_state": "hitstun",
+					"hit_sound": "hit_heavy",
+					"meter_gain_on_hit": 25.0,
+					"meter_gain_on_taken": 0.0,
+					"pausetime": [
+						9.0,
+						12.0
+					],
+					"pushback": [
+						0.7,
+						0.0,
+						0.0
+					],
+					"throw_tech_command": "throw",
+					"throw_tech_enabled": true,
+					"throw_tech_window": 6.0
+				},
+				"end": 6.0,
+				"id": "throw_1",
+				"offset": [
+					1.0,
+					1.0,
+					0.0
+				],
+				"size": [
+					1.0,
+					0.9,
+					0.9
+				],
+				"start": 4.0
+			}
+		],
+		"velocity": [
+			0.0,
+			0.0,
+			0.0
+		]
+	},
+	"transform_end": {
+		"allow_movement": false,
+		"animation": "anim_0",
+		"cancel_into": [],
+		"hitboxes": [],
+		"hurtboxes": [],
+		"next": {
+			"frame": 10.0,
+			"id": "idle"
+		},
+		"pushboxes": [],
+		"sounds": [
+			{
+				"channel": "sfx",
+				"frame": 0.0,
+				"id": "transform_off"
+			}
+		],
+		"throwboxes": [],
+		"velocity": [
+			0.0,
+			0.0,
+			0.0
+		]
+	},
+	"transform_start": {
+		"allow_movement": false,
+		"animation": "anim_0",
+		"cancel_into": [],
+		"hitboxes": [],
+		"hurtboxes": [],
+		"next": {
+			"frame": 12.0,
+			"id": "idle"
+		},
+		"pushboxes": [],
+		"sounds": [
+			{
+				"channel": "sfx",
+				"frame": 0.0,
+				"id": "transform_on"
+			}
+		],
+		"throwboxes": [],
+		"velocity": [
+			0.0,
+			0.0,
+			0.0
+		]
+	},
+	"victory": {
+		"allow_movement": false,
+		"animation": "anim_0",
+		"cancel_into": [],
+		"hitboxes": [],
+		"hurtboxes": [],
+		"next": {
+
+		},
+		"pushboxes": [],
+		"throwboxes": [],
+		"velocity": [
+			0.0,
+			0.0,
+			0.0
+		]
+	},
+	"walk": {
+		"allow_movement": true,
+		"animation": "anim_0",
+		"cancel_into": [
+			"p_light",
+			"qcf_p",
+			"run",
+			"parry",
+			"throw"
+		],
+		"hitboxes": [],
+		"hurtboxes": [],
+		"next": {
+
+		},
+		"pushboxes": [],
+		"throwboxes": [],
+		"velocity": [
+			0.0,
+			0.0,
+			0.0
+		]
+	}
+}

@@ -179,26 +179,8 @@ func _connect_signals() -> void:
 func _scan_mods() -> void:
 	mod_entries.clear()
 	mod_option.clear()
-	var seen_names: Dictionary = {}
-	for root in mods_roots:
-		var normalized_root: String = _normalize_root(root)
-		if normalized_root.is_empty():
-			continue
-		if normalized_root.begins_with("user://"):
-			var root_abs: String = ProjectSettings.globalize_path(normalized_root)
-			if not DirAccess.dir_exists_absolute(root_abs):
-				DirAccess.make_dir_recursive_absolute(root_abs)
-		var dir := DirAccess.open(normalized_root)
-		if dir == null:
-			continue
-		dir.list_dir_begin()
-		var item := dir.get_next()
-		while not item.is_empty():
-			if dir.current_is_dir() and item != "." and item != ".." and not seen_names.has(item):
-				mod_entries.append({"name": item, "path": "%s%s/" % [normalized_root, item]})
-				seen_names[item] = true
-			item = dir.get_next()
-		dir.list_dir_end()
+	for entry in ContentResolver.scan_character_entries(mods_roots, "any"):
+		mod_entries.append({"name": str(entry.get("name", "")), "path": str(entry.get("path", ""))})
 	mod_entries.sort_custom(func(a, b): return str(a.get("name", "")) < str(b.get("name", "")))
 	for i in range(mod_entries.size()):
 		mod_option.add_item(str(mod_entries[i].get("name", "")), i)
@@ -209,8 +191,9 @@ func _select_default_mod() -> void:
 		status_label.text = "No mods found."
 		return
 	var selected_index: int = 0
+	var preferred_mod_name: String = str(get_tree().get_meta("character_editor_mod_name", default_mod_name))
 	for i in range(mod_entries.size()):
-		if str(mod_entries[i].get("name", "")) == default_mod_name:
+		if str(mod_entries[i].get("name", "")) == preferred_mod_name:
 			selected_index = i
 			break
 	mod_option.select(selected_index)
@@ -229,6 +212,7 @@ func _on_mod_selected(index: int) -> void:
 	_reload_commands_for_mod(index)
 	_reload_preview_tools_for_mod(index)
 	_reload_frame_data_for_mod(index)
+	_sync_box_editor_to_selected_state()
 	status_label.text = "Loaded mod: %s" % mod_name
 
 
@@ -411,6 +395,7 @@ func _on_state_maker_selected(_index: int) -> void:
 	selected_state_maker_key = state_id
 	var state_data: Dictionary = state_maker_data.get(state_id, {})
 	_apply_state_maker_to_form(state_id, state_data)
+	_sync_box_editor_to_selected_state()
 
 
 func _on_state_maker_add_pressed() -> void:
@@ -481,6 +466,7 @@ func _on_state_maker_apply_pressed() -> void:
 			state_maker_option.select(i)
 			_on_state_maker_selected(i)
 			break
+	_sync_box_editor_to_selected_state()
 	status_label.text = "Applied state values."
 
 
@@ -926,12 +912,51 @@ func _update_state_maker_timeline_text(state_data: Dictionary) -> void:
 	var controllers: Array = state_data.get("controllers", [])
 	lines.append("Hitboxes: %d | Throwboxes: %d" % [hitboxes.size(), throwboxes.size()])
 	lines.append("Sounds: %d | Projectiles: %d | Controllers: %d" % [sounds.size(), projectiles.size(), controllers.size()])
+	var hitbox_windows: PackedStringArray = []
+	for hitbox in hitboxes:
+		if typeof(hitbox) != TYPE_DICTIONARY:
+			continue
+		var hitbox_data: Dictionary = hitbox as Dictionary
+		hitbox_windows.append(
+			"%s [%s-%s]" % [
+				str(hitbox_data.get("id", "hitbox")),
+				str(hitbox_data.get("start", 0)),
+				str(hitbox_data.get("end", -1))
+			]
+		)
+	if not hitbox_windows.is_empty():
+		lines.append("Hitbox Windows: %s" % " | ".join(hitbox_windows))
+	var throwbox_windows: PackedStringArray = []
+	for throwbox in throwboxes:
+		if typeof(throwbox) != TYPE_DICTIONARY:
+			continue
+		var throwbox_data: Dictionary = throwbox as Dictionary
+		throwbox_windows.append(
+			"%s [%s-%s]" % [
+				str(throwbox_data.get("id", "throwbox")),
+				str(throwbox_data.get("start", 0)),
+				str(throwbox_data.get("end", -1))
+			]
+		)
+	if not throwbox_windows.is_empty():
+		lines.append("Throw Windows: %s" % " | ".join(throwbox_windows))
 	var next_data: Dictionary = state_data.get("next", {})
 	if not next_data.is_empty():
 		lines.append("Next: frame %s -> %s" % [str(next_data.get("frame", "-")), str(next_data.get("id", "-"))])
 	var cancel_windows = state_data.get("cancel_windows", [])
 	lines.append("Cancel Windows: %s" % str(cancel_windows))
+	lines.append("Tip: open `Box Tools`, scrub the timeline, and the selected state's hitbox will only show during its active frames.")
 	state_maker_timeline_text.text = "\n".join(lines)
+
+
+func _sync_box_editor_to_selected_state() -> void:
+	if box_editor_instance == null:
+		return
+	if selected_state_maker_key.is_empty():
+		return
+	if not box_editor_instance.has_method("select_state_by_name"):
+		return
+	box_editor_instance.call("select_state_by_name", selected_state_maker_key, "hitboxes")
 
 
 func _reload_commands_for_mod(index: int) -> void:

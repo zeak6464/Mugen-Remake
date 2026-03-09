@@ -1,0 +1,99 @@
+{
+  "commands": [
+    {
+      "id": "p_light",
+      "pattern": ["P"],
+      "max_window": 8,
+      "min_repeat_frames": 6,
+      "target_state": "p_light"
+    },
+    {
+      "id": "qcf_p",
+      "pattern": [2, 3, 6, "P"],
+      "max_window": 20,
+      "min_repeat_frames": 10,
+      "target_state": "qcf_p"
+    },
+    {
+      "id": "special",
+      "pattern": [2, 3, 6, "K"],
+      "max_window": 20,
+      "min_repeat_frames": 10,
+      "target_state": "qcf_p"
+    },
+    {
+      "id": "projectile",
+      "pattern": ["K"],
+      "max_window": 8,
+      "min_repeat_frames": 8,
+      "target_state": "qcf_p"
+    },
+    {
+      "id": "projectile_test",
+      "pattern": ["K"],
+      "max_window": 8,
+      "min_repeat_frames": 8,
+      "target_state": "qcf_p"
+    },
+    {
+      "id": "parry",
+      "pattern": ["S"],
+      "max_window": 8,
+      "min_repeat_frames": 6,
+      "target_state": "parry"
+    },
+    {
+      "id": "throw",
+      "pattern": ["H"],
+      "max_window": 8,
+      "min_repeat_frames": 8,
+      "target_state": "throw"
+    },
+    {
+      "id": "grapple",
+      "pattern": [6, "H"],
+      "max_window": 10,
+      "min_repeat_frames": 8,
+      "target_state": "throw"
+    },
+    {
+      "id": "transform_on",
+      "pattern": [2, 1, 4, "S"],
+      "max_window": 20,
+      "min_repeat_frames": 12,
+      "transform_to": "power_form",
+      "transform_state": "transform_start"
+    },
+    {
+      "id": "transform_on_alt",
+      "pattern": [2, 1, 4, "H"],
+      "max_window": 20,
+      "min_repeat_frames": 12,
+      "transform_to": "power_form",
+      "transform_state": "transform_start"
+    },
+    {
+      "id": "transform_off",
+      "pattern": [2, 3, 6, "S"],
+      "max_window": 20,
+      "min_repeat_frames": 12,
+      "revert_transform": true,
+      "transform_state": "transform_end"
+    },
+    {
+      "id": "transform_off_alt",
+      "pattern": [2, 3, 6, "H"],
+      "max_window": 20,
+      "min_repeat_frames": 12,
+      "revert_transform": true,
+      "transform_state": "transform_end"
+    },
+    {
+      "id": "run_forward",
+      "pattern": [6, 6],
+      "max_window": 10,
+      "min_repeat_frames": 10,
+      "target_state": "run"
+    }
+  ]
+}

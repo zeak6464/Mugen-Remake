@@ -1,6 +1,7 @@
 extends Control
 
 const RING_MENU_SCENE: PackedScene = preload("res://ui/components/RingMenu.tscn")
+const CONTENT_IMPORT_SERVICE = preload("res://engine/ContentImportService.gd")
 
 @export var training_scene_path: String = "res://ui/CharacterSelect.tscn"
 @export var options_scene_path: String = "res://ui/OptionsMenu.tscn"
@@ -38,12 +39,22 @@ const RING_MENU_SCENE: PackedScene = preload("res://ui/components/RingMenu.tscn"
 @onready var stage_editor_button: Button = $CenterContainer/VBoxContainer/StageEditorButton
 @onready var open_mods_folder_button: Button = $CenterContainer/VBoxContainer/OpenModsFolderButton
 @onready var open_stages_folder_button: Button = $CenterContainer/VBoxContainer/OpenStagesFolderButton
+@onready var import_character_button: Button = $CenterContainer/VBoxContainer/ImportCharacterButton
+@onready var import_stage_button: Button = $CenterContainer/VBoxContainer/ImportStageButton
 @onready var quit_button: Button = $CenterContainer/VBoxContainer/QuitGameButton
 @onready var options_status_label: Label = $CenterContainer/VBoxContainer/OptionsStatusLabel
+@onready var import_summary_panel: Panel = $ImportSummaryPanel
+@onready var import_summary_label: RichTextLabel = $ImportSummaryPanel/MarginContainer/VBoxContainer/ImportSummaryLabel
+@onready var import_open_character_button: Button = $ImportSummaryPanel/MarginContainer/VBoxContainer/ActionsRow/OpenCharacterEditorButton
+@onready var import_open_stage_button: Button = $ImportSummaryPanel/MarginContainer/VBoxContainer/ActionsRow/OpenStageEditorButton
+@onready var import_summary_close_button: Button = $ImportSummaryPanel/MarginContainer/VBoxContainer/ActionsRow/CloseImportSummaryButton
+@onready var import_character_dialog: FileDialog = $ImportCharacterDialog
+@onready var import_stage_dialog: FileDialog = $ImportStageDialog
 
 var background_video_player: VideoStreamPlayer = null
 var main_ring_menu: RingMenu = null
 var main_ring_items: Array[Dictionary] = []
+var last_import_report: Dictionary = {}
 
 
 func _ready() -> void:
@@ -72,11 +83,24 @@ func _ready() -> void:
 	stage_editor_button.pressed.connect(_on_stage_editor_pressed)
 	open_mods_folder_button.pressed.connect(_on_open_mods_folder_pressed)
 	open_stages_folder_button.pressed.connect(_on_open_stages_folder_pressed)
+	import_character_button.pressed.connect(_on_import_character_pressed)
+	import_stage_button.pressed.connect(_on_import_stage_pressed)
+	import_open_character_button.pressed.connect(_on_open_imported_character_editor_pressed)
+	import_open_stage_button.pressed.connect(_on_open_imported_stage_editor_pressed)
+	import_summary_close_button.pressed.connect(_on_close_import_summary_pressed)
+	import_character_dialog.file_selected.connect(_on_import_character_path_selected)
+	import_character_dialog.dir_selected.connect(_on_import_character_path_selected)
+	import_stage_dialog.file_selected.connect(_on_import_stage_path_selected)
+	import_stage_dialog.dir_selected.connect(_on_import_stage_path_selected)
 	quit_button.pressed.connect(_on_quit_game_pressed)
+	var window := get_window()
+	if window != null and not window.files_dropped.is_connected(_on_files_dropped):
+		window.files_dropped.connect(_on_files_dropped)
 	training_button.grab_focus()
 	options_status_label.visible = false
 	character_editor_submenu.visible = false
 	team_submenu.visible = false
+	import_summary_panel.visible = false
 	_build_team_mode_options()
 	_setup_main_ring_menu()
 	_set_legacy_main_buttons_visible(false)
@@ -202,6 +226,8 @@ func _build_main_ring_items() -> void:
 		{"id": "stage_editor", "label": "Stage Editor"},
 		{"id": "open_mods", "label": "Open Mods Folder"},
 		{"id": "open_stages", "label": "Open Stages Folder"},
+		{"id": "import_character", "label": "Import Character"},
+		{"id": "import_stage", "label": "Import Stage"},
 		{"id": "options", "label": "Options"},
 		{"id": "quit", "label": "Quit Game"}
 	]
@@ -236,6 +262,10 @@ func _activate_main_ring_selection(index: int) -> void:
 			_on_open_mods_folder_pressed()
 		"open_stages":
 			_on_open_stages_folder_pressed()
+		"import_character":
+			_on_import_character_pressed()
+		"import_stage":
+			_on_import_stage_pressed()
 		"options":
 			_on_options_pressed()
 		"quit":
@@ -292,6 +322,12 @@ func _menu_focus_controls() -> Array[Control]:
 	_append_focus_if_visible(out, stage_editor_button)
 	_append_focus_if_visible(out, open_mods_folder_button)
 	_append_focus_if_visible(out, open_stages_folder_button)
+	_append_focus_if_visible(out, import_character_button)
+	_append_focus_if_visible(out, import_stage_button)
+	if import_summary_panel.visible:
+		_append_focus_if_visible(out, import_open_character_button)
+		_append_focus_if_visible(out, import_open_stage_button)
+		_append_focus_if_visible(out, import_summary_close_button)
 	_append_focus_if_visible(out, quit_button)
 	return out
 
@@ -413,6 +449,8 @@ func _set_legacy_main_buttons_visible(visible_value: bool) -> void:
 	stage_editor_button.visible = visible_value
 	open_mods_folder_button.visible = visible_value
 	open_stages_folder_button.visible = visible_value
+	import_character_button.visible = visible_value
+	import_stage_button.visible = visible_value
 	options_button.visible = visible_value
 	quit_button.visible = visible_value
 	options_status_label.visible = false
@@ -453,6 +491,104 @@ func _on_open_mods_folder_pressed() -> void:
 
 func _on_open_stages_folder_pressed() -> void:
 	_open_user_content_folder("user://stages/")
+
+
+func _on_import_character_pressed() -> void:
+	SystemSFX.play_ui_from(self, "ui_confirm")
+	import_character_dialog.popup_centered_ratio(0.7)
+
+
+func _on_import_stage_pressed() -> void:
+	SystemSFX.play_ui_from(self, "ui_confirm")
+	import_stage_dialog.popup_centered_ratio(0.7)
+
+
+func _on_import_character_path_selected(path: String) -> void:
+	_handle_import_report(CONTENT_IMPORT_SERVICE.import_character_source(path))
+
+
+func _on_import_stage_path_selected(path: String) -> void:
+	_handle_import_report(CONTENT_IMPORT_SERVICE.import_stage_source(path))
+
+
+func _on_files_dropped(files: PackedStringArray) -> void:
+	if files.is_empty():
+		return
+	if files.size() > 1:
+		options_status_label.visible = true
+		options_status_label.text = "Drop one file or folder at a time."
+		return
+	var path: String = str(files[0])
+	if _looks_like_stage_source(path):
+		_handle_import_report(CONTENT_IMPORT_SERVICE.import_stage_source(path))
+		return
+	_handle_import_report(CONTENT_IMPORT_SERVICE.import_character_source(path))
+
+
+func _looks_like_stage_source(path: String) -> bool:
+	var abs_path: String = path
+	if path.begins_with("res://") or path.begins_with("user://"):
+		abs_path = ProjectSettings.globalize_path(path)
+	if DirAccess.dir_exists_absolute(abs_path):
+		if FileAccess.file_exists("%s/stage.def" % path) or FileAccess.file_exists("%s\\stage.def" % abs_path):
+			return true
+		var lowered_dir: String = abs_path.to_lower()
+		return lowered_dir.find("stage") >= 0 or lowered_dir.find("arena") >= 0 or lowered_dir.find("map") >= 0
+	var lowered: String = abs_path.to_lower()
+	return lowered.find("stage") >= 0 or lowered.find("arena") >= 0 or lowered.find("map") >= 0
+
+
+func _handle_import_report(report: Dictionary) -> void:
+	last_import_report = report.duplicate(true)
+	_show_import_summary(last_import_report)
+	options_status_label.visible = true
+	options_status_label.text = str(report.get("summary", "Import finished."))
+
+
+func _show_import_summary(report: Dictionary) -> void:
+	import_summary_panel.visible = true
+	var lines: PackedStringArray = []
+	var ok: bool = bool(report.get("ok", false))
+	lines.append("[b]%s[/b]" % ("Import Complete" if ok else "Import Needs Attention"))
+	lines.append("Type: %s" % str(report.get("kind", "content")).capitalize())
+	lines.append("Name: %s" % str(report.get("content_name", "")))
+	lines.append("Target: %s" % str(report.get("target_path", "")))
+	var generated_files: Array = report.get("generated_files", [])
+	if not generated_files.is_empty():
+		lines.append("Generated: %s" % ", ".join(generated_files))
+	var warnings: Array = report.get("warnings", [])
+	if not warnings.is_empty():
+		lines.append("Warnings:")
+		for warning in warnings:
+			lines.append("- %s" % str(warning))
+	import_summary_label.text = "\n".join(lines)
+	var kind: String = str(report.get("kind", ""))
+	import_open_character_button.visible = ok and kind == "character"
+	import_open_stage_button.visible = ok and kind == "stage"
+
+
+func _on_open_imported_character_editor_pressed() -> void:
+	var mod_name: String = str(last_import_report.get("content_name", "")).strip_edges()
+	if mod_name.is_empty():
+		return
+	SystemSFX.play_ui_from(self, "ui_confirm")
+	get_tree().set_meta("character_editor_mod_name", mod_name)
+	get_tree().set_meta("character_editor_section", "states")
+	get_tree().change_scene_to_file(box_editor_scene_path)
+
+
+func _on_open_imported_stage_editor_pressed() -> void:
+	var stage_name: String = str(last_import_report.get("content_name", "")).strip_edges()
+	if stage_name.is_empty():
+		return
+	SystemSFX.play_ui_from(self, "ui_confirm")
+	get_tree().set_meta("stage_editor_stage_name", stage_name)
+	get_tree().change_scene_to_file(stage_editor_scene_path)
+
+
+func _on_close_import_summary_pressed() -> void:
+	SystemSFX.play_ui_from(self, "ui_back")
+	import_summary_panel.visible = false
 
 
 func _open_user_content_folder(user_path: String) -> void:

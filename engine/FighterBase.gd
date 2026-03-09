@@ -1,6 +1,11 @@
 extends CharacterBody3D
 class_name FighterBase
 
+const FLOOR_SNAP_LENGTH: float = 0.35
+const FLOOR_MAX_ANGLE_DEGREES: float = 60.0
+const WALL_MIN_SLIDE_ANGLE_DEGREES: float = 5.0
+const BODY_SAFE_MARGIN: float = 0.04
+
 signal explod_requested(anim_id: String, time_ticks: int, pos: Vector3, explod_id: int)
 
 @export var character_id: String = ""
@@ -81,6 +86,8 @@ var last_tap_direction: int = 0
 var last_tap_frame: int = -999999
 var previous_move_direction: int = 0
 var debug_hitboxes_visible_requested: bool = true
+var debug_runtime_boxes_root: Node3D = null
+var persistent_debug_hurtbox_profile: Array = []
 var hitpause_frames_remaining: int = 0
 var animations_paused_for_hitpause: bool = false
 var last_attack_result: String = ""
@@ -175,6 +182,14 @@ var voice_player: AudioStreamPlayer
 func _ready() -> void:
 	health = max_health
 	resource = max_resource
+	motion_mode = CharacterBody3D.MOTION_MODE_GROUNDED
+	up_direction = Vector3.UP
+	floor_stop_on_slope = true
+	floor_constant_speed = false
+	floor_max_angle = deg_to_rad(FLOOR_MAX_ANGLE_DEGREES)
+	wall_min_slide_angle = deg_to_rad(WALL_MIN_SLIDE_ANGLE_DEGREES)
+	floor_snap_length = FLOOR_SNAP_LENGTH
+	safe_margin = BODY_SAFE_MARGIN
 	_ensure_body_collision_shape()
 	_ensure_default_hurtbox()
 	_apply_collision_scale()
@@ -197,6 +212,7 @@ func _ready() -> void:
 	add_child(projectile_system)
 	projectile_system.setup(self)
 	projectile_system.projectile_hit.connect(_on_hit_confirmed)
+	_ensure_debug_runtime_boxes_root()
 	_ensure_audio_players()
 	set_hitbox_debug_visible(debug_hitboxes_visible_requested)
 
@@ -280,6 +296,7 @@ func _physics_process(delta: float) -> void:
 		state_controller.step_physics(delta)
 	if hitbox_system != null:
 		hitbox_system.update_persistent_hurtboxes()
+	_update_runtime_debug_boxes()
 	if _update_hitpause():
 		_update_ko_dissolve(delta)
 		return
@@ -337,6 +354,8 @@ func _physics_process(delta: float) -> void:
 	if lock_to_x_axis:
 		global_position.x = locked_x_position
 	move_and_slide()
+	if velocity.y <= 0.0:
+		apply_floor_snap()
 	if lock_to_x_axis:
 		global_position.x = locked_x_position
 	_apply_floor_clamp()
@@ -1983,7 +2002,8 @@ func get_debug_state_text() -> String:
 func set_hitbox_debug_visible(enabled: bool) -> void:
 	debug_hitboxes_visible_requested = enabled
 	if hitbox_system != null:
-		hitbox_system.set_debug_visuals_enabled(enabled)
+		hitbox_system.set_debug_visuals_enabled(false)
+	_update_runtime_debug_boxes()
 
 
 func get_hitbox_debug_info() -> Dictionary:
@@ -2528,6 +2548,33 @@ func _replace_runtime_model_root(new_model_root: Node3D, model_source_path: Stri
 	runtime_model_root = new_model_root
 	skeleton.add_child(runtime_model_root)
 	current_model_path = model_source_path
+	_refresh_runtime_skeleton_bindings()
+	if not character_data.is_empty():
+		_configure_persistent_hurtboxes(character_data.get("def", {}))
+
+
+func _refresh_runtime_skeleton_bindings() -> void:
+	var active_skeleton: Skeleton3D = _get_active_skeleton()
+	if hitbox_system != null and hitbox_system.has_method("set_skeleton"):
+		hitbox_system.call("set_skeleton", active_skeleton)
+
+
+func _get_active_skeleton() -> Skeleton3D:
+	if runtime_model_root != null:
+		var runtime_skeleton: Skeleton3D = _find_skeleton_recursive(runtime_model_root)
+		if runtime_skeleton != null:
+			return runtime_skeleton
+	return skeleton
+
+
+func _find_skeleton_recursive(root: Node) -> Skeleton3D:
+	if root is Skeleton3D:
+		return root as Skeleton3D
+	for child in root.get_children():
+		var found: Skeleton3D = _find_skeleton_recursive(child)
+		if found != null:
+			return found
+	return null
 
 
 func _load_model_node_from_path(path: String) -> Node3D:
@@ -2640,6 +2687,8 @@ func _update_knockdown(delta: float) -> bool:
 	if lock_to_z_axis:
 		global_position.z = locked_z_position
 	move_and_slide()
+	if velocity.y <= 0.0:
+		apply_floor_snap()
 	_apply_floor_clamp()
 	if knockdown_frames_remaining <= 0:
 		knockdown_frames_remaining = 0
@@ -2994,7 +3043,11 @@ func _configure_persistent_hurtboxes(def_data: Dictionary) -> void:
 		return
 	var profile: Array = _load_hurtbox_profile_from_def(def_data)
 	if profile.is_empty():
+		if _uses_mesh_derived_hurtboxes(def_data):
+			profile = _build_mesh_derived_hurtbox_profile()
+	if profile.is_empty():
 		profile = _build_default_bone_hurtbox_profile()
+	persistent_debug_hurtbox_profile = profile.duplicate(true)
 	hitbox_system.set_persistent_hurtboxes(profile)
 
 
@@ -3025,9 +3078,207 @@ func _load_hurtbox_profile_from_def(def_data: Dictionary) -> Array:
 	return []
 
 
+func _uses_mesh_derived_hurtboxes(def_data: Dictionary) -> bool:
+	var source: String = str(def_data.get("hurtbox_source", "")).strip_edges().to_lower()
+	if source.is_empty():
+		source = str(def_data.get("hurtboxes_source", "")).strip_edges().to_lower()
+	return source == "mesh_derived"
+
+
+func _build_mesh_derived_hurtbox_profile() -> Array:
+	var mesh_bounds: Dictionary = _collect_runtime_mesh_world_bounds()
+	if mesh_bounds.is_empty():
+		return []
+
+	var world_center: Vector3 = mesh_bounds.get("center", global_position + Vector3(0.0, 1.0, 0.0))
+	var world_size: Vector3 = mesh_bounds.get("size", Vector3(1.2, 2.2, 1.0))
+	var width: float = maxf(0.6, world_size.x)
+	var height: float = maxf(1.2, world_size.y)
+	var depth: float = maxf(0.5, world_size.z)
+
+	var pelvis_bone: String = _find_first_bone_name(["hips", "pelvis", "root", "mixamorig:hips"])
+	var torso_bone: String = _find_first_bone_name([
+		"spine.003", "spine3", "chest", "torso", "spine_03", "spine2", "spine.002", "spine", "mixamorig:spine2", "mixamorig:spine1"
+	])
+	var head_bone: String = _find_first_bone_name(["head", "head.x", "mixamorig:head"])
+	var arm_l_bone: String = _find_first_bone_name(["upperarm.l", "arm.l", "leftarm", "mixamorig:leftarm"])
+	var arm_r_bone: String = _find_first_bone_name(["upperarm.r", "arm.r", "rightarm", "mixamorig:rightarm"])
+	var forearm_l_bone: String = _find_first_bone_name(["lowerarm.l", "forearm.l", "leftforearm", "mixamorig:leftforearm", "hand.l", "mixamorig:lefthand"])
+	var forearm_r_bone: String = _find_first_bone_name(["lowerarm.r", "forearm.r", "rightforearm", "mixamorig:rightforearm", "hand.r", "mixamorig:righthand"])
+	var leg_l_bone: String = _find_first_bone_name(["upperleg.l", "thigh.l", "leftupleg", "mixamorig:leftupleg"])
+	var leg_r_bone: String = _find_first_bone_name(["upperleg.r", "thigh.r", "rightupleg", "mixamorig:rightupleg"])
+	var shin_l_bone: String = _find_first_bone_name(["lowerleg.l", "calf.l", "leftleg", "mixamorig:leftleg", "foot.l", "mixamorig:leftfoot"])
+	var shin_r_bone: String = _find_first_bone_name(["lowerleg.r", "calf.r", "rightleg", "mixamorig:rightleg", "foot.r", "mixamorig:rightfoot"])
+
+	var pelvis_world: Vector3 = _get_bone_world_position_or(pelvis_bone, world_center + Vector3(0.0, -height * 0.18, 0.0))
+	var torso_world: Vector3 = _get_bone_world_position_or(torso_bone, world_center + Vector3(0.0, height * 0.08, 0.0))
+	var head_world: Vector3 = _get_bone_world_position_or(head_bone, world_center + Vector3(0.0, height * 0.34, 0.0))
+
+	var profile: Array = []
+	_append_mesh_derived_hurtbox(
+		profile,
+		"torso",
+		torso_bone if not torso_bone.is_empty() else pelvis_bone,
+		pelvis_world.lerp(torso_world, 0.65),
+		Vector3(maxf(0.75, width * 0.38), maxf(0.85, pelvis_world.distance_to(torso_world) * 1.35), maxf(0.5, depth * 0.48))
+	)
+	_append_mesh_derived_hurtbox(
+		profile,
+		"pelvis",
+		pelvis_bone,
+		pelvis_world + Vector3(0.0, height * 0.03, 0.0),
+		Vector3(maxf(0.7, width * 0.34), maxf(0.65, height * 0.18), maxf(0.45, depth * 0.44))
+	)
+	_append_mesh_derived_hurtbox(
+		profile,
+		"head",
+		head_bone if not head_bone.is_empty() else torso_bone,
+		head_world + Vector3(0.0, height * 0.02, 0.0),
+		Vector3.ONE * maxf(0.42, minf(width * 0.24, height * 0.16))
+	)
+	_append_mesh_derived_limb_hurtbox(
+		profile,
+		"arm_l",
+		arm_l_bone,
+		forearm_l_bone,
+		world_center + Vector3(-width * 0.28, height * 0.12, 0.0),
+		Vector3(maxf(0.28, width * 0.16), maxf(0.55, height * 0.24), maxf(0.28, depth * 0.24))
+	)
+	_append_mesh_derived_limb_hurtbox(
+		profile,
+		"arm_r",
+		arm_r_bone,
+		forearm_r_bone,
+		world_center + Vector3(width * 0.28, height * 0.12, 0.0),
+		Vector3(maxf(0.28, width * 0.16), maxf(0.55, height * 0.24), maxf(0.28, depth * 0.24))
+	)
+	_append_mesh_derived_limb_hurtbox(
+		profile,
+		"leg_l",
+		leg_l_bone,
+		shin_l_bone,
+		world_center + Vector3(-width * 0.14, -height * 0.26, 0.0),
+		Vector3(maxf(0.32, width * 0.18), maxf(0.75, height * 0.34), maxf(0.3, depth * 0.26))
+	)
+	_append_mesh_derived_limb_hurtbox(
+		profile,
+		"leg_r",
+		leg_r_bone,
+		shin_r_bone,
+		world_center + Vector3(width * 0.14, -height * 0.26, 0.0),
+		Vector3(maxf(0.32, width * 0.18), maxf(0.75, height * 0.34), maxf(0.3, depth * 0.26))
+	)
+
+	if profile.is_empty():
+		profile.append({
+			"id": "body_core",
+			"offset": [world_center.x - global_position.x, world_center.y - global_position.y, world_center.z - global_position.z],
+			"size": [width * 0.55, height * 0.75, depth * 0.6]
+		})
+	return profile
+
+
+func _collect_runtime_mesh_world_bounds() -> Dictionary:
+	if runtime_model_root == null:
+		return {}
+	var min_point: Vector3 = Vector3.ZERO
+	var max_point: Vector3 = Vector3.ZERO
+	var has_point: bool = false
+	var stack: Array[Node] = [runtime_model_root]
+	while not stack.is_empty():
+		var node: Node = stack.pop_back()
+		if node is MeshInstance3D:
+			var mesh_instance := node as MeshInstance3D
+			if mesh_instance.visible and mesh_instance.mesh != null:
+				var mesh_aabb: AABB = mesh_instance.get_aabb()
+				for corner in _aabb_corners(mesh_aabb):
+					var world_point: Vector3 = mesh_instance.global_transform * corner
+					if not has_point:
+						min_point = world_point
+						max_point = world_point
+						has_point = true
+					else:
+						min_point = min_point.min(world_point)
+						max_point = max_point.max(world_point)
+		for child in node.get_children():
+			stack.append(child)
+	if not has_point:
+		return {}
+	var size: Vector3 = max_point - min_point
+	return {
+		"min": min_point,
+		"max": max_point,
+		"center": min_point + (size * 0.5),
+		"size": size
+	}
+
+
+func _aabb_corners(aabb: AABB) -> Array[Vector3]:
+	var pos: Vector3 = aabb.position
+	var end: Vector3 = aabb.position + aabb.size
+	return [
+		Vector3(pos.x, pos.y, pos.z),
+		Vector3(end.x, pos.y, pos.z),
+		Vector3(pos.x, end.y, pos.z),
+		Vector3(pos.x, pos.y, end.z),
+		Vector3(end.x, end.y, pos.z),
+		Vector3(end.x, pos.y, end.z),
+		Vector3(pos.x, end.y, end.z),
+		Vector3(end.x, end.y, end.z)
+	]
+
+
+func _append_mesh_derived_limb_hurtbox(profile: Array, hurtbox_id: String, upper_bone: String, lower_bone: String, fallback_center: Vector3, fallback_size: Vector3) -> void:
+	if upper_bone.is_empty():
+		return
+	var upper_world: Vector3 = _get_bone_world_position_or(upper_bone, fallback_center)
+	var lower_world: Vector3 = _get_bone_world_position_or(lower_bone, upper_world + Vector3(0.0, -fallback_size.y * 0.5, 0.0))
+	var center: Vector3 = upper_world.lerp(lower_world, 0.5)
+	var size := fallback_size
+	size.y = maxf(size.y, upper_world.distance_to(lower_world) * 1.15)
+	_append_mesh_derived_hurtbox(profile, hurtbox_id, upper_bone, center, size)
+
+
+func _append_mesh_derived_hurtbox(profile: Array, hurtbox_id: String, bone_name: String, world_center: Vector3, size: Vector3) -> void:
+	var clamped_size := Vector3(maxf(0.05, size.x), maxf(0.05, size.y), maxf(0.05, size.z))
+	if bone_name.is_empty():
+		var fallback_offset: Vector3 = world_center - global_position
+		profile.append({
+			"id": hurtbox_id,
+			"offset": [fallback_offset.x, fallback_offset.y, fallback_offset.z],
+			"size": [clamped_size.x, clamped_size.y, clamped_size.z]
+		})
+		return
+	var bone_transform: Transform3D = _get_bone_world_transform_or_identity(bone_name)
+	var local_offset: Vector3 = bone_transform.basis.inverse() * (world_center - bone_transform.origin)
+	profile.append({
+		"id": hurtbox_id,
+		"bone": bone_name,
+		"offset": [local_offset.x, local_offset.y, local_offset.z],
+		"size": [clamped_size.x, clamped_size.y, clamped_size.z]
+	})
+
+
+func _get_bone_world_position_or(bone_name: String, fallback: Vector3) -> Vector3:
+	if bone_name.is_empty():
+		return fallback
+	return _get_bone_world_transform_or_identity(bone_name).origin
+
+
+func _get_bone_world_transform_or_identity(bone_name: String) -> Transform3D:
+	var active_skeleton: Skeleton3D = _get_active_skeleton()
+	if active_skeleton == null or bone_name.is_empty():
+		return Transform3D(Basis.IDENTITY, global_position)
+	var bone_idx: int = active_skeleton.find_bone(bone_name)
+	if bone_idx == -1:
+		return Transform3D(Basis.IDENTITY, global_position)
+	return active_skeleton.global_transform * active_skeleton.get_bone_global_pose(bone_idx)
+
+
 func _build_default_bone_hurtbox_profile() -> Array:
 	var profile: Array = []
-	var has_skeleton: bool = skeleton != null and skeleton.get_bone_count() > 0
+	var active_skeleton: Skeleton3D = _get_active_skeleton()
+	var has_skeleton: bool = active_skeleton != null and active_skeleton.get_bone_count() > 0
 	if not has_skeleton:
 		profile.append({
 			"id": "body_core",
@@ -3068,17 +3319,114 @@ func _build_default_bone_hurtbox_profile() -> Array:
 
 
 func _find_first_bone_name(candidates: Array) -> String:
-	if skeleton == null:
+	var active_skeleton: Skeleton3D = _get_active_skeleton()
+	if active_skeleton == null:
 		return ""
 	var lowered_to_actual: Dictionary = {}
-	for i in range(skeleton.get_bone_count()):
-		var name: String = skeleton.get_bone_name(i)
+	for i in range(active_skeleton.get_bone_count()):
+		var name: String = active_skeleton.get_bone_name(i)
 		lowered_to_actual[name.to_lower()] = name
 	for candidate in candidates:
 		var key: String = str(candidate).to_lower()
 		if lowered_to_actual.has(key):
 			return str(lowered_to_actual[key])
 	return ""
+
+
+func _ensure_debug_runtime_boxes_root() -> void:
+	if debug_runtime_boxes_root != null and is_instance_valid(debug_runtime_boxes_root):
+		return
+	debug_runtime_boxes_root = get_node_or_null("RuntimeDebugBoxes") as Node3D
+	if debug_runtime_boxes_root != null:
+		return
+	debug_runtime_boxes_root = Node3D.new()
+	debug_runtime_boxes_root.name = "RuntimeDebugBoxes"
+	add_child(debug_runtime_boxes_root)
+
+
+func _update_runtime_debug_boxes() -> void:
+	_ensure_debug_runtime_boxes_root()
+	if debug_runtime_boxes_root == null:
+		return
+	for child in debug_runtime_boxes_root.get_children():
+		child.queue_free()
+	debug_runtime_boxes_root.visible = debug_hitboxes_visible_requested
+	if not debug_hitboxes_visible_requested:
+		return
+	var frame_now: int = state_controller.frame_in_state if state_controller != null else 0
+	var current_state: Dictionary = state_controller.get_current_state_data() if state_controller != null else {}
+	_append_runtime_debug_boxes(current_state.get("hitboxes", []), frame_now, Color(1.0, 0.08, 0.08, 0.42), true)
+	_append_runtime_debug_boxes(current_state.get("throwboxes", []), frame_now, Color(1.0, 0.2, 0.95, 0.42), true)
+	_append_runtime_debug_boxes(current_state.get("hurtboxes", []), frame_now, Color(0.0, 1.0, 1.0, 0.32), true)
+	_append_runtime_debug_boxes(persistent_debug_hurtbox_profile, frame_now, Color(0.0, 1.0, 1.0, 0.22), false)
+
+
+func _append_runtime_debug_boxes(entries, frame_now: int, color: Color, timed: bool) -> void:
+	if typeof(entries) != TYPE_ARRAY:
+		return
+	for raw_entry in entries:
+		if typeof(raw_entry) != TYPE_DICTIONARY:
+			continue
+		var entry: Dictionary = raw_entry as Dictionary
+		if timed and not _is_runtime_debug_entry_active(entry, frame_now):
+			continue
+		var mesh_instance := MeshInstance3D.new()
+		var box_mesh := BoxMesh.new()
+		box_mesh.size = _get_runtime_debug_box_size(entry)
+		mesh_instance.mesh = box_mesh
+		mesh_instance.top_level = true
+		mesh_instance.global_transform = _get_runtime_debug_box_transform(entry)
+		mesh_instance.material_override = _make_runtime_debug_box_material(color)
+		mesh_instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		debug_runtime_boxes_root.add_child(mesh_instance)
+
+
+func _is_runtime_debug_entry_active(entry: Dictionary, frame_now: int) -> bool:
+	var start_frame: int = int(entry.get("start", 0))
+	var end_frame: int = int(entry.get("end", -1))
+	if start_frame == 0 and end_frame == 0:
+		end_frame = -1
+	if frame_now < start_frame:
+		return false
+	if end_frame >= 0 and frame_now > end_frame:
+		return false
+	return true
+
+
+func _get_runtime_debug_box_transform(entry: Dictionary) -> Transform3D:
+	var offset: Vector3 = _to_vector3(entry.get("offset", Vector3.ZERO))
+	if command_interpreter != null and not command_interpreter.get_facing_right():
+		offset.x = -offset.x
+	var bone_name: String = str(entry.get("bone", ""))
+	var active_skeleton: Skeleton3D = _get_active_skeleton()
+	if active_skeleton != null and not bone_name.is_empty():
+		var bone_idx: int = active_skeleton.find_bone(bone_name)
+		if bone_idx != -1:
+			var bone_transform: Transform3D = active_skeleton.global_transform * active_skeleton.get_bone_global_pose(bone_idx)
+			return Transform3D(Basis.IDENTITY, bone_transform.origin + (bone_transform.basis * offset))
+	return Transform3D(Basis.IDENTITY, global_position + offset)
+
+
+func _get_runtime_debug_box_size(entry: Dictionary) -> Vector3:
+	var size: Vector3 = _to_vector3(entry.get("size", Vector3.ONE))
+	return Vector3(
+		maxf(0.05, size.x * collision_scale),
+		maxf(0.05, size.y * collision_scale),
+		maxf(0.05, size.z * collision_scale)
+	)
+
+
+func _make_runtime_debug_box_material(color: Color) -> StandardMaterial3D:
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.no_depth_test = true
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	mat.albedo_color = color
+	mat.emission_enabled = true
+	mat.emission = color
+	mat.emission_energy_multiplier = 1.2
+	return mat
 
 
 func play_state_sounds_for_frame(sound_timeline: Array, target_frame: int) -> void:

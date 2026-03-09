@@ -1,0 +1,21 @@
+{
+  "projectiles": [
+    {
+      "id": "fireball_light",
+      "speed": 8.0,
+      "lifetime_frames": 120,
+      "spawn_offset": [1.0, 1.0, 0.0],
+      "size": [0.45, 0.45, 0.45],
+      "despawn_on_hit": true,
+      "hit_data": {
+        "damage": 65,
+        "pushback": [3.2, 0.0, 0.0],
+        "launch_velocity": [4.0, 2.4, 0.0],
+        "hitstun_frames": 14,
+        "smash_hitstun_frames": 12,
+        "hitstun_state": "hitstun",
+        "hit_sound": "hit_heavy"
+      }
+    }
+  ]
+}

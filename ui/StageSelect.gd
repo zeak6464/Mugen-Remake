@@ -109,35 +109,17 @@ func _resolve_mode() -> void:
 
 func _scan_stages() -> void:
 	stage_entries.clear()
-	var seen_names: Dictionary = {}
-	for root in stages_roots:
-		var normalized_root: String = _normalize_root(root)
-		if normalized_root.begins_with("user://"):
-			var root_abs: String = ProjectSettings.globalize_path(normalized_root)
-			if not DirAccess.dir_exists_absolute(root_abs):
-				DirAccess.make_dir_recursive_absolute(root_abs)
-		var dir := DirAccess.open(normalized_root)
-		if dir == null:
-			continue
-		dir.list_dir_begin()
-		var item: String = dir.get_next()
-		while not item.is_empty():
-			if dir.current_is_dir() and item != "." and item != ".." and not seen_names.has(item):
-				var folder: String = "%s%s" % [normalized_root, item]
-				if _is_stage_folder(folder):
-					var stage_def: Dictionary = _load_stage_def("%s/stage.def" % folder)
-					stage_entries.append(
-						{
-							"name": item,
-							"folder_path": folder,
-							"preview_texture": _load_stage_preview_texture(folder),
-							"stage_def": stage_def,
-							"model_path": _find_stage_model_file(folder, stage_def)
-						}
-					)
-					seen_names[item] = true
-			item = dir.get_next()
-		dir.list_dir_end()
+	for entry in ContentResolver.scan_stage_entries(stages_roots):
+		var folder_path: String = str(entry.get("folder_path", ""))
+		stage_entries.append(
+			{
+				"name": str(entry.get("name", "")),
+				"folder_path": folder_path,
+				"preview_texture": _load_stage_preview_texture(folder_path),
+				"stage_def": entry.get("stage_def", {}),
+				"model_path": str(entry.get("model_path", ""))
+			}
+		)
 	stage_entries.sort_custom(func(a, b): return str(a.get("name", "")) < str(b.get("name", "")))
 
 
@@ -370,22 +352,7 @@ func _on_back_pressed() -> void:
 
 
 func _is_stage_folder(folder_path: String) -> bool:
-	if FileAccess.file_exists("%s/stage.def" % folder_path):
-		return true
-	var dir := DirAccess.open(folder_path)
-	if dir == null:
-		return false
-	dir.list_dir_begin()
-	var item: String = dir.get_next()
-	while not item.is_empty():
-		if not dir.current_is_dir():
-			var lower: String = item.to_lower()
-			if lower.ends_with(".glb") or lower.ends_with(".gltf"):
-				dir.list_dir_end()
-				return true
-		item = dir.get_next()
-	dir.list_dir_end()
-	return false
+	return ContentResolver.is_stage_folder(folder_path)
 
 
 func _load_stage_preview_texture(folder_path: String) -> Texture2D:
@@ -461,11 +428,13 @@ func _update_stage_preview(entry: Dictionary) -> void:
 		stage_preview.texture = entry.get("preview_texture", null)
 		return
 	var stage_def: Dictionary = entry.get("stage_def", {})
-	model_root.position = _parse_vec3(str(stage_def.get("stage_offset", "0,0,0")), Vector3.ZERO)
+	model_root.position = _parse_vec3(stage_def.get("stage_offset", Vector3.ZERO), Vector3.ZERO)
+	model_root.rotation_degrees = _parse_vec3(stage_def.get("stage_rotation", Vector3.ZERO), Vector3.ZERO)
+	model_root.scale = _parse_vec3(stage_def.get("stage_scale", Vector3.ONE), Vector3.ONE)
 	preview_stage_root.add_child(model_root)
 	preview_model = model_root
-	var camera_pos: Vector3 = _parse_vec3(str(stage_def.get("camera_position", "0,3,8")), Vector3(0.0, 3.0, 8.0))
-	var look_target: Vector3 = _parse_vec3(str(stage_def.get("camera_look_target", "0,1,0")), Vector3(0.0, 1.0, 0.0))
+	var camera_pos: Vector3 = _parse_vec3(stage_def.get("camera_position", Vector3(0.0, 3.0, 8.0)), Vector3(0.0, 3.0, 8.0))
+	var look_target: Vector3 = _parse_vec3(stage_def.get("camera_look_target", Vector3(0.0, 1.0, 0.0)), Vector3(0.0, 1.0, 0.0))
 	if preview_camera != null and is_instance_valid(preview_camera):
 		preview_camera.position = camera_pos
 		preview_camera.look_at_from_position(preview_camera.position, look_target, Vector3.UP)
@@ -511,53 +480,11 @@ func _load_gltf_scene_any_path(model_path: String) -> Node:
 
 
 func _load_stage_def(path: String) -> Dictionary:
-	var data: Dictionary = {}
-	if not FileAccess.file_exists(path):
-		return data
-	var file := FileAccess.open(path, FileAccess.READ)
-	if file == null:
-		return data
-	while not file.eof_reached():
-		var line: String = file.get_line().strip_edges()
-		if line.is_empty() or line.begins_with(";") or line.begins_with("#"):
-			continue
-		var split: PackedStringArray = line.split("=", false, 1)
-		if split.size() == 2:
-			data[split[0].strip_edges()] = split[1].strip_edges()
-	return data
+	return ContentResolver.load_stage_def(path)
 
 
 func _find_stage_model_file(folder_path: String, stage_def: Dictionary = {}) -> String:
-	var explicit_keys: Array[String] = ["model", "model_path", "scene", "stage_model"]
-	for key in explicit_keys:
-		var value: String = str(stage_def.get(key, "")).strip_edges()
-		if value.is_empty():
-			continue
-		var resolved: String = _resolve_stage_relative_path(folder_path, value)
-		if _can_load_stage_model(resolved):
-			return resolved
-	var dir := DirAccess.open(folder_path)
-	if dir == null:
-		return ""
-	dir.list_dir_begin()
-	var item: String = dir.get_next()
-	while not item.is_empty():
-		if not dir.current_is_dir():
-			var lower: String = item.to_lower()
-			if lower.ends_with(".glb") or lower.ends_with(".gltf"):
-				var candidate: String = "%s/%s" % [folder_path, item]
-				if _can_load_stage_model(candidate):
-					dir.list_dir_end()
-					return candidate
-			elif lower.ends_with(".glb.import") or lower.ends_with(".gltf.import"):
-				var source_name: String = item.trim_suffix(".import")
-				var candidate_import: String = "%s/%s" % [folder_path, source_name]
-				if _can_load_stage_model(candidate_import):
-					dir.list_dir_end()
-					return candidate_import
-		item = dir.get_next()
-	dir.list_dir_end()
-	return ""
+	return ContentResolver.find_stage_model_path(folder_path, stage_def)
 
 
 func _resolve_stage_relative_path(folder_path: String, raw_path: String) -> String:
@@ -576,7 +503,10 @@ func _can_load_stage_model(path: String) -> bool:
 	return FileAccess.file_exists(abs_path)
 
 
-func _parse_vec3(raw: String, fallback: Vector3) -> Vector3:
+func _parse_vec3(raw_value, fallback: Vector3) -> Vector3:
+	if raw_value is Vector3:
+		return raw_value
+	var raw: String = str(raw_value).replace("(", "").replace(")", "")
 	var parts: PackedStringArray = raw.split(",", false)
 	if parts.size() < 3:
 		return fallback

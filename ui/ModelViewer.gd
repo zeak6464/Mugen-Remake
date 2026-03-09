@@ -67,29 +67,15 @@ func _pressed(event: InputEvent, action: StringName) -> bool:
 func _scan_mods() -> void:
 	mod_entries.clear()
 	mod_option.clear()
-	var seen_names: Dictionary = {}
-	for root in mods_roots:
-		var normalized_root: String = _normalize_root(root)
-		if normalized_root.is_empty():
-			continue
-		if normalized_root.begins_with("user://"):
-			var root_abs: String = ProjectSettings.globalize_path(normalized_root)
-			if not DirAccess.dir_exists_absolute(root_abs):
-				DirAccess.make_dir_recursive_absolute(root_abs)
-		var dir := DirAccess.open(normalized_root)
-		if dir == null:
-			continue
-		dir.list_dir_begin()
-		var item := dir.get_next()
-		while not item.is_empty():
-			if dir.current_is_dir() and item != "." and item != ".." and not seen_names.has(item):
-				var mod_path := "%s%s/" % [normalized_root, item]
-				var model_path: String = _find_model_file(mod_path)
-				if not model_path.is_empty():
-					mod_entries.append({"name": item, "path": mod_path, "model_path": model_path, "def_data": _load_character_def("%scharacter.def" % mod_path)})
-					seen_names[item] = true
-			item = dir.get_next()
-		dir.list_dir_end()
+	for entry in ContentResolver.scan_character_entries(mods_roots, "model"):
+		mod_entries.append(
+			{
+				"name": str(entry.get("name", "")),
+				"path": str(entry.get("path", "")),
+				"model_path": str(entry.get("model_path", "")),
+				"def_data": entry.get("def_data", {})
+			}
+		)
 	mod_entries.sort_custom(func(a, b): return str(a.get("name", "")) < str(b.get("name", "")))
 	for i in range(mod_entries.size()):
 		mod_option.add_item(str(mod_entries[i].get("name", "")), i)
@@ -250,58 +236,17 @@ func _on_animation_selected(index: int) -> void:
 
 
 func _find_model_file(mod_path: String) -> String:
-	var def_model_path: String = _resolve_model_path_from_def(mod_path)
-	if _is_candidate_model_file(def_model_path):
-		return def_model_path
-	var preferred: Array[String] = ["model.glb", "model.gltf"]
-	for file_name in preferred:
-		var candidate: String = "%s%s" % [mod_path, file_name]
-		if _is_candidate_model_file(candidate):
-			return candidate
-	var dir := DirAccess.open(mod_path)
-	if dir == null:
-		return ""
-	dir.list_dir_begin()
-	var item := dir.get_next()
-	while not item.is_empty():
-		if not dir.current_is_dir():
-			var lower := item.to_lower()
-			var candidate_path := "%s%s" % [mod_path, item]
-			if (lower.ends_with(".gltf") or lower.ends_with(".glb")) and _is_candidate_model_file(candidate_path):
-				dir.list_dir_end()
-				return candidate_path
-		item = dir.get_next()
-	dir.list_dir_end()
-	return ""
+	return ContentResolver.find_character_model_path(mod_path, _load_character_def("%scharacter.def" % mod_path))
 
 
 func _resolve_model_path_from_def(mod_path: String) -> String:
 	var def_data: Dictionary = _load_character_def("%scharacter.def" % mod_path)
-	var raw_path: String = str(def_data.get("model_path", "")).strip_edges()
-	if raw_path.is_empty():
-		raw_path = str(def_data.get("model_file", "")).strip_edges()
-	if raw_path.is_empty():
-		return ""
-	if raw_path.begins_with("res://") or raw_path.begins_with("user://"):
-		return raw_path
-	return "%s%s" % [mod_path, raw_path]
+	var raw_path: String = str(def_data.get("model_path", def_data.get("model_file", ""))).strip_edges()
+	return ContentResolver.resolve_relative_or_absolute_path(mod_path, raw_path)
 
 
 func _load_character_def(path: String) -> Dictionary:
-	if not FileAccess.file_exists(path):
-		return {}
-	var result: Dictionary = {}
-	var file := FileAccess.open(path, FileAccess.READ)
-	if file == null:
-		return result
-	while not file.eof_reached():
-		var line := file.get_line().strip_edges()
-		if line.is_empty() or line.begins_with(";") or line.begins_with("#"):
-			continue
-		var split := line.split("=", false, 1)
-		if split.size() == 2:
-			result[split[0].strip_edges()] = split[1].strip_edges()
-	return result
+	return ContentResolver.load_character_def(path)
 
 
 func _extract_model_scale(def_data: Dictionary) -> Vector3:
@@ -313,23 +258,7 @@ func _extract_model_scale(def_data: Dictionary) -> Vector3:
 
 
 func _is_candidate_model_file(path: String) -> bool:
-	if path.is_empty() or not FileAccess.file_exists(path):
-		return false
-	var file := FileAccess.open(path, FileAccess.READ)
-	if file == null:
-		return false
-	if file.get_length() <= 0:
-		return false
-	var lower: String = path.to_lower()
-	if lower.ends_with(".glb"):
-		if file.get_length() < 4:
-			return false
-		var magic := file.get_buffer(4)
-		return magic.size() == 4 and magic[0] == 0x67 and magic[1] == 0x6C and magic[2] == 0x54 and magic[3] == 0x46
-	if lower.ends_with(".gltf"):
-		var text := file.get_as_text().strip_edges()
-		return text.begins_with("{")
-	return false
+	return ContentResolver.is_candidate_model_file(path)
 
 
 func _normalize_root(root: String) -> String:

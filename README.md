@@ -28,6 +28,7 @@ It is designed so creators can:
   - `physics.json`
   - persistent `hurtboxes.json`
 - Runtime mod/stage loading from `user://` and `res://`
+- One-click import for dropped or picked `.glb` / `.gltf` characters and stages
 - Character Editor, Box Tools, and Stage Editor
 - Model Viewer (zoom + animation selector)
 - VFX integration for hit/block/parry/KO feedback
@@ -94,6 +95,30 @@ Stage roots are scanned in this order:
 2. `res://stages/`
 
 This allows local mod content to override bundled assets.
+
+## Drag-And-Drop Import
+
+You can now import starter content directly from the main menu.
+
+- `Import Character` accepts a `.glb`, `.gltf`, or a folder and copies it into `user://mods/<name>/`
+- `Import Stage` accepts a `.glb`, `.gltf`, or a folder and copies it into `user://stages/<name>/`
+- Missing starter files are auto-generated so the new content appears in select/editor/runtime immediately
+- The post-import report tells you what was generated, what was inferred, and what still needs cleanup
+
+Generated character starters include:
+
+- `character.def`
+- `states.json`
+- `commands.json`
+- `physics.json`
+- empty support files for hurtboxes, sounds, projectiles, transformations, and costumes
+
+Generated stage starters include:
+
+- `stage.def`
+- auto-derived camera defaults
+- floor, arena bounds, and blast zone defaults
+- music placeholders
 
 ## Documentation
 
