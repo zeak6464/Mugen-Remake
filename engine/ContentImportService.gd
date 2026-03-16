@@ -22,7 +22,7 @@ static func import_character_source(source_path: String) -> Dictionary:
 	if copied_model_path.is_empty():
 		copied_model_path = ContentResolver.find_character_model_path(target_dir, ContentResolver.load_character_def("%scharacter.def" % target_dir))
 	if copied_model_path.is_empty():
-		report["warnings"].append("No .glb or .gltf model was found after import.")
+		report["warnings"].append("No .glb, .gltf, or .fbx model was found after import.")
 		report["ok"] = false
 		report["target_path"] = ProjectSettings.globalize_path(target_dir)
 		report["content_name"] = str(prepared.get("content_name", ""))
@@ -72,7 +72,7 @@ static func import_stage_source(source_path: String) -> Dictionary:
 	if copied_model_path.is_empty():
 		copied_model_path = ContentResolver.find_stage_model_path(target_dir, ContentResolver.load_stage_def("%s/stage.def" % target_dir))
 	if copied_model_path.is_empty():
-		report["warnings"].append("No .glb or .gltf model was found after import.")
+		report["warnings"].append("No .glb, .gltf, or .fbx model was found after import.")
 		report["ok"] = false
 		report["target_path"] = ProjectSettings.globalize_path(target_dir)
 		report["content_name"] = str(prepared.get("content_name", ""))
@@ -213,7 +213,7 @@ static func _first_model_from_paths(paths: Array) -> String:
 	for raw_path in paths:
 		var candidate: String = str(raw_path)
 		var lower: String = candidate.to_lower()
-		if lower.ends_with(".glb") or lower.ends_with(".gltf"):
+		if lower.ends_with(".glb") or lower.ends_with(".gltf") or lower.ends_with(".fbx"):
 			return candidate
 	return ""
 
@@ -436,8 +436,10 @@ static func _build_import_character_physics() -> Dictionary:
 	if typeof(baseline) != TYPE_DICTIONARY:
 		return _build_generic_character_physics()
 	var physics: Dictionary = (baseline as Dictionary).duplicate(true)
-	if not physics.has("max_fall_speed"):
-		physics["max_fall_speed"] = 25.0
+	var generic: Dictionary = _build_generic_character_physics()
+	for key in generic:
+		if not physics.has(key):
+			physics[key] = generic[key]
 	return physics
 
 
@@ -606,11 +608,17 @@ static func _build_generic_character_commands() -> Dictionary:
 
 static func _build_generic_character_physics() -> Dictionary:
 	return {
+		"weight": 100,
 		"walk_speed": 3.2,
 		"run_speed": 5.8,
+		"initial_dash": 6.2,
 		"jump_speed": 7.5,
 		"gravity": 18.0,
-		"max_fall_speed": 25.0
+		"max_fall_speed": 25.0,
+		"fast_fall_speed": 32.0,
+		"air_speed": 2.72,
+		"air_accel": 0.45,
+		"max_jumps": 1
 	}
 
 

@@ -164,3 +164,21 @@ offset_top = 113.0
 offset_right = 1.0
 offset_bottom = 139.0
 horizontal_alignment = 1
+
+[node name="ResultDamage" type="VBoxContainer" parent="TopBar/CenterInfo"]
+visible = false
+layout_mode = 0
+offset_left = -80.0
+offset_top = 106.0
+offset_right = 80.0
+offset_bottom = 156.0
+
+[node name="P1Damage" type="Label" parent="TopBar/CenterInfo/ResultDamage"]
+layout_mode = 2
+text = "P1 Damage: 0"
+horizontal_alignment = 1
+
+[node name="P2Damage" type="Label" parent="TopBar/CenterInfo/ResultDamage"]
+layout_mode = 2
+text = "P2 Damage: 0"
+horizontal_alignment = 1

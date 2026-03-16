@@ -1,6 +1,13 @@
 {
+  "weight": 100,
   "walk_speed": 3.2,
   "run_speed": 6.0,
+  "initial_dash": 6.2,
   "jump_speed": 7.5,
-  "gravity": 1.0
+  "gravity": 1.0,
+  "max_fall_speed": 25.0,
+  "fast_fall_speed": 32.0,
+  "air_speed": 2.72,
+  "air_accel": 0.45,
+  "max_jumps": 1
 }

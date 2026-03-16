@@ -242,7 +242,7 @@ func _match_simple_pattern(frames: Array[InputFrame], pattern: Array) -> bool:
 	var final_token = pattern[pattern.size() - 1]
 	if not _frame_matches_token(frames[search_index], final_token):
 		return false
-	search_index -= 1
+	# Allow direction tokens on the same frame as the button (hold direction + press button).
 	for token_index in range(pattern.size() - 2, -1, -1):
 		var token = pattern[token_index]
 		var found_index: int = _find_token_backwards(frames, token, search_index)

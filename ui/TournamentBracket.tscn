@@ -1,0 +1,72 @@
+[gd_scene load_steps=3 format=3 uid="uid://tournament_bracket"]
+
+[ext_resource type="Script" path="res://ui/TournamentBracket.gd" id="1_script"]
+[ext_resource type="Theme" uid="uid://ksxjx5uqcuqd" path="res://ui/theme/GlobalUITheme.tres" id="2_theme"]
+
+[node name="TournamentBracket" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("2_theme")
+script = ExtResource("1_script")
+
+[node name="BackgroundColor" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.06, 0.06, 0.08, 1)
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme_override_constants/margin_left = 40
+theme_override_constants/margin_top = 40
+theme_override_constants/margin_right = 40
+theme_override_constants/margin_bottom = 40
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="TitleLabel" type="Label" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "Tournament Bracket"
+horizontal_alignment = 1
+
+[node name="BracketScroll" type="ScrollContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+custom_minimum_size = Vector2(0, 280)
+
+[node name="BracketContent" type="VBoxContainer" parent="MarginContainer/VBoxContainer/BracketScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 4
+
+[node name="StatusLabel" type="Label" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "Next: ... vs ..."
+horizontal_alignment = 1
+
+[node name="ButtonsRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="ContinueButton" type="Button" parent="MarginContainer/VBoxContainer/ButtonsRow"]
+custom_minimum_size = Vector2(240, 36)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "Continue to Next Match"
+
+[node name="BackButton" type="Button" parent="MarginContainer/VBoxContainer/ButtonsRow"]
+custom_minimum_size = Vector2(120, 36)
+layout_mode = 2
+text = "Back"

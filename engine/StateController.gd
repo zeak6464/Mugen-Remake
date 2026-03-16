@@ -92,11 +92,11 @@ func _apply_state_enter_data(state_data: Dictionary) -> void:
 		var played := false
 		if fighter != null and fighter.has_method("play_state_animation"):
 			played = bool(fighter.call("play_state_animation", animation_name, should_loop))
-		if not played and animation_player != null and animation_player.has_animation(animation_name):
+		if not played and animation_player != null:
 			var anim: Animation = animation_player.get_animation(animation_name)
 			if anim != null:
 				anim.loop_mode = Animation.LOOP_LINEAR if should_loop else Animation.LOOP_NONE
-			animation_player.play(animation_name)
+				animation_player.play(animation_name)
 	if fighter != null:
 		if fighter.has_method("clear_runtime_state_overrides"):
 			fighter.call("clear_runtime_state_overrides")
@@ -143,6 +143,8 @@ func _apply_state_frame_data(state_data: Dictionary, in_hitpause: bool) -> void:
 		var next_frame: int = int(next_data.get("frame", -1))
 		var next_id: String = str(next_data.get("id", ""))
 		if next_frame >= 0 and frame_in_state >= next_frame and not next_id.is_empty():
+			if fighter != null and fighter.has_method("sync_position_to_animation_root"):
+				fighter.sync_position_to_animation_root()
 			change_state(next_id)
 
 

@@ -1335,15 +1335,57 @@ func _on_frame_state_selected(_index: int) -> void:
 	var recovery: int = -1
 	if total_frames >= 0 and active_end >= 0:
 		recovery = maxi(0, total_frames - active_end - 1)
+	var active_count: int = -1
+	if active_start >= 0 and active_end >= 0:
+		active_count = maxi(0, active_end - active_start + 1)
 
 	var lines: PackedStringArray = []
 	lines.append("[b]%s[/b]" % state_id)
 	lines.append("Animation: %s" % str(state_data.get("animation", "")))
-	lines.append("Startup: %s" % ("-" if startup < 0 else str(startup)))
-	lines.append("Active: %s" % ("-" if active_start < 0 else ("%d-%d" % [active_start, maxi(active_start, active_end)])))
-	lines.append("Recovery: %s" % ("-" if recovery < 0 else str(recovery)))
-	lines.append("Total: %s" % ("-" if total_frames < 0 else str(total_frames)))
-	lines.append("Hitboxes: %d | Persistent hurtboxes are edited in Box Tools." % hitboxes.size())
+	lines.append("")
+	lines.append("[b]Frame data[/b]")
+	lines.append("%s Frame Startup" % ("-" if startup < 0 else str(startup)))
+	lines.append("%s Active Frames" % ("-" if active_count < 0 else str(active_count)))
+	if active_start >= 0 and active_end >= 0:
+		lines.append("  (frames %d–%d)" % [active_start, active_end])
+	lines.append("%s Recovery Frames" % ("-" if recovery < 0 else str(recovery)))
+	if total_frames >= 0:
+		lines.append("Total: %d frames" % total_frames)
+	lines.append("")
+	var first_hb_data: Dictionary = {}
+	var first_hb_result: String = ""
+	for i in range(hitboxes.size()):
+		if typeof(hitboxes[i]) != TYPE_DICTIONARY:
+			continue
+		var hb: Dictionary = hitboxes[i]
+		first_hb_data = hb.get("data", {})
+		first_hb_result = str(first_hb_data.get("on_hit_result", "")).strip_edges()
+		if first_hb_result.is_empty() and bool(first_hb_data.get("knockdown", false)):
+			first_hb_result = "Knockdown"
+		if first_hb_result.is_empty():
+			first_hb_result = "Hit"
+		break
+	if not first_hb_data.is_empty():
+		lines.append("[b]Properties on Hit / Block[/b]")
+		var hit_adv: Variant = first_hb_data.get("on_hit_adv", null)
+		var block_adv: Variant = first_hb_data.get("on_block_adv", null)
+		var hit_str: String = first_hb_result
+		if hit_adv != null:
+			var v: int = int(hit_adv)
+			hit_str += " %+d On Hit" % v
+		else:
+			hit_str += " On Hit"
+		var block_str: String = "- On Block" if block_adv == null else ("%+d On Block" % int(block_adv))
+		lines.append(hit_str)
+		lines.append(block_str)
+		var smash_pct_first: Variant = first_hb_data.get("smash_percent", first_hb_data.get("smash_damage", null))
+		if smash_pct_first != null:
+			lines.append("Smash: %s%% damage" % str(int(smash_pct_first)))
+		else:
+			var dmg_first: int = int(first_hb_data.get("damage", 0))
+			lines.append("Smash: %d%% damage (from dmg)" % dmg_first)
+	lines.append("")
+	lines.append("Hitboxes: %d | Persistent hurtboxes in Box Tools." % hitboxes.size())
 	if state_data.has("cancel_into"):
 		lines.append("Cancel Into: %s" % str(state_data.get("cancel_into", [])))
 	for i in range(hitboxes.size()):
@@ -1362,6 +1404,11 @@ func _on_frame_state_selected(_index: int) -> void:
 		if hb_data.has("on_block_adv"):
 			on_block_adv = str(int(hb_data.get("on_block_adv", 0)))
 		var damage: int = int(hb_data.get("damage", 0))
-		lines.append("- %s: frames %s-%s size %s dmg %d" % [hb_id, str(hb_start), str(hb_end), str(hb_size), damage])
-		lines.append("    on hit: %s | on block: %s" % [on_hit_adv, on_block_adv])
+		var smash_pct: Variant = hb_data.get("smash_percent", hb_data.get("smash_damage", null))
+		var dmg_str: String = "dmg %d" % damage
+		if smash_pct != null:
+			dmg_str += " | Smash: %s%%" % str(int(smash_pct))
+		else:
+			dmg_str += " (%d%% in Smash)" % damage
+		lines.append("- %s: frames %s-%s size %s | %s | hit %s block %s" % [hb_id, str(hb_start), str(hb_end), str(hb_size), dmg_str, on_hit_adv, on_block_adv])
 	frame_data_text.text = "\n".join(lines)

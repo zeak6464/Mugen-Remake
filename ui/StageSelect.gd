@@ -4,6 +4,7 @@ const RING_MENU_SCENE: PackedScene = preload("res://ui/components/RingMenu.tscn"
 
 @export var stages_roots: Array[String] = ["user://stages/", "res://stages/"]
 @export var training_scene_path: String = "res://stages/TestArena.tscn"
+@export var tournament_bracket_scene_path: String = "res://ui/TournamentBracket.tscn"
 @export var grid_columns: int = 5
 @export var use_stage_ring_menu: bool = false
 
@@ -348,7 +349,10 @@ func _start_selected_stage() -> void:
 				status_label.text = "Waiting for host to start..."
 		return
 	get_tree().set_meta("training_stage_folder", folder_path)
-	get_tree().change_scene_to_file(training_scene_path)
+	if game_mode == "tournament":
+		get_tree().change_scene_to_file(tournament_bracket_scene_path)
+	else:
+		get_tree().change_scene_to_file(training_scene_path)
 
 
 func _resolve_selected_stage_entry() -> Dictionary:

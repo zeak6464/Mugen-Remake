@@ -75,23 +75,39 @@ Example:
 
 ```json
 {
+  "weight": 100,
   "walk_speed": 3.2,
   "run_speed": 6.0,
+  "initial_dash": 6.2,
   "jump_speed": 7.5,
-  "gravity": 18.0
+  "gravity": 18.0,
+  "max_fall_speed": 25.0,
+  "fast_fall_speed": 32.0,
+  "air_speed": 2.72,
+  "air_accel": 0.45,
+  "max_jumps": 1
 }
 ```
 
-Supported keys currently used by runtime include:
+Supported keys used by runtime:
 
-- `walk_speed`
-- `run_speed`
-- `jump_speed`
-- `gravity`
-- `max_fall_speed`
-- `smash_air_speed`
-- `smash_air_accel`
-- `smash_air_brake`
+| Key | Description | Default |
+|-----|-------------|--------|
+| `weight` | Character weight; higher = less knockback (e.g. in Smash). | 100 |
+| `walk_speed` | Horizontal speed while walking. | 3.2 |
+| `run_speed` | Horizontal speed while running (after initial dash). | 6.0 |
+| `initial_dash` | Speed on the first frame of run (dash). | same as `run_speed` |
+| `jump_speed` | Initial upward speed on jump. | 7.5 |
+| `gravity` | Downward acceleration per second. | 18.0 |
+| `max_fall_speed` | Terminal fall speed (cap on downward velocity). | 25.0 |
+| `fast_fall_speed` | Fall cap when holding down in air (fast fall). | ~1.28× `max_fall_speed` |
+| `air_speed` | Max horizontal air speed (Smash / air control). | derived from walk |
+| `air_accel` / `total_air_accel` | Air horizontal acceleration. | 0.45 |
+| `max_jumps` | Number of mid-air jumps. | 1 |
+| `smash_air_speed` | Override air speed in Smash mode. | uses `air_speed` |
+| `smash_air_accel` | Override air accel in Smash mode. | uses `air_accel` |
+| `smash_air_brake` | Air deceleration when releasing horizontal input. | 0.2 |
+| `sh_frames`, `fh_frames`, `shff_frames`, `fhff_frames` | Optional frame data (Short Hop, Full Hop, etc.) for display/tools. | (optional) |
 
 ---
 
@@ -159,7 +175,10 @@ Minimum structure:
           "damage": 30,
           "hitstun_frames": 12,
           "blockstun_frames": 8,
-          "pushback": [1.0, 0.0, 0.0]
+          "pushback": [1.0, 0.0, 0.0],
+          "on_hit_adv": 2,
+          "on_block_adv": -5,
+          "on_hit_result": "Hit"
         }
       }
     ],
@@ -175,6 +194,15 @@ Important:
 
 - Keep per-state `hurtboxes` empty unless you explicitly want legacy per-animation hurtboxes.
 - Preferred workflow is persistent hurtboxes in `hurtboxes.json`.
+
+**Frame data (hitbox `data`):** You can add optional keys for display and tools (Character Editor shows them as “Frame data” / “Properties on Hit/Block”):
+- `on_hit_adv` (number): Frame advantage when the move hits (e.g. `2` = +2 on hit).
+- `on_block_adv` (number): Frame advantage when the move is blocked (e.g. `-5` = -5 on block).
+- `on_hit_result` (string, optional): Label for hit result, e.g. `"Hit"`, `"Knockdown"`, `"Launch"`. If omitted, the editor infers “Knockdown” when `knockdown` is true.
+
+- **Smash mode % damage:** In Smash mode, the value added to the defender's percent is normally `damage`. Set `smash_percent` or `smash_damage` in hitbox data to use a different % for Smash (e.g. `damage`: 30, `smash_percent`: 12 for 12% in Smash).
+
+Startup / active / recovery are derived from hitbox `start`/`end` and state `next.frame`.
 
 ---
 
@@ -347,9 +375,15 @@ Notes:
 
 ---
 
-### 7) Grapples / throws
+### 7) Grapples and throws
 
-Use `throwboxes` in a state (not regular strike hitboxes):
+Use `throwboxes` in a state (not regular strike hitboxes). Two styles:
+
+**Grapple then throw (hold):** Attacker grabs the defender for a short time, then throws them on release (damage/launch apply). Unblockable; defender can throw tech with the right command. Set `grapple_hold`: true (default). This is “grapple then throw”: grab → hold → release with throw.
+
+**Throw (instant):** Unblockable command grab that applies damage and launch as soon as the throwbox connects. No hold. Set `grapple_hold`: false, or `instant_throw`: true.
+
+Example – grapple (hold):
 
 ```json
 "throwboxes": [
@@ -375,9 +409,44 @@ Use `throwboxes` in a state (not regular strike hitboxes):
 ]
 ```
 
+Example – throw (instant):
+
+```json
+"throwboxes": [
+  {
+    "id": "throw_instant_1",
+    "start": 5,
+    "end": 7,
+    "bone": "",
+    "offset": [0.8, 1.0, 0.0],
+    "size": [0.7, 0.8, 0.8],
+    "data": {
+      "attack_type": "grapple",
+      "grapple": true,
+      "grapple_hold": false,
+      "damage": 90,
+      "launch_velocity": [0.5, 4.0, 0.0],
+      "hitstun_state": "hitstun",
+      "hitstun_frames": 24
+    }
+  }
+]
+```
+
+You can use `instant_throw`: true instead of `grapple_hold`: false. For instant throws you typically set `launch_velocity`, `hitstun_frames`, and optionally `knockdown`; no `grab_duration_frames` or `grabbed_state`.
+
+**Different throw from same grab (forward / back):** For grapple-then-throw, you can give two release outcomes. Add to the throwbox `data`:
+
+- `release_forward`: dict with damage, launch_velocity, pushback, hitstun_frames, etc. Used when the attacker holds **forward** (toward the defender) at release.
+- `release_back`: dict for when the attacker holds **back** at release.
+
+Base `damage`, `launch_velocity`, etc. are used if no direction is held or as fallback. Example: base damage 80, `release_forward`: `{ "damage": 100, "launch_velocity": [0.8, 5, 0] }`, `release_back`: `{ "damage": 70, "launch_velocity": [-0.5, 4, 0] }`.
+
+- **Grabbed defender can attack:** In throwbox data, `grabbed_can_attack` (default true) lets the defender keep input while grabbed so they can cancel into an attack state (e.g. `grabbed_jab`) and hit the grabber. In that attack's hitbox `data`, set `grapple_escape_frames` (e.g. 15) so each hit shortens the grab; when the grabber's hold reaches 0 the grapple releases. Use `grabbed_can_attack`: false to disable (defender cannot attack out).
+
 Optional anti-spam tuning:
 
-- `grapple_whiff_cooldown_frames` in throw data.
+- `grapple_whiff_cooldown_frames` in throw/grapple data.
 
 ---
 

@@ -1,10 +1,14 @@
 extends CharacterBody3D
 class_name FighterBase
 
-const FLOOR_SNAP_LENGTH: float = 0.35
+const FLOOR_SNAP_LENGTH: float = 0.2
 const FLOOR_MAX_ANGLE_DEGREES: float = 60.0
 const WALL_MIN_SLIDE_ANGLE_DEGREES: float = 5.0
 const BODY_SAFE_MARGIN: float = 0.04
+## Max step height to climb (e.g. stairs) without clipping into geometry.
+const STEP_UP_HEIGHT: float = 0.5
+const STEP_UP_HORIZONTAL_THRESHOLD: float = 0.1
+const FLOOR_CLIP_CORRECTION_MARGIN: float = 0.02
 
 signal explod_requested(anim_id: String, time_ticks: int, pos: Vector3, explod_id: int)
 
@@ -84,10 +88,12 @@ var grabbed_prev_accepts_input: bool = true
 var grabbed_prev_reads_input: bool = true
 var last_tap_direction: int = 0
 var last_tap_frame: int = -999999
+var run_entered_at_frame: int = -999999
 var previous_move_direction: int = 0
 var debug_hitboxes_visible_requested: bool = true
 var debug_runtime_boxes_root: Node3D = null
 var persistent_debug_hurtbox_profile: Array = []
+var root_motion_bone_name: String = ""
 var hitpause_frames_remaining: int = 0
 var animations_paused_for_hitpause: bool = false
 var last_attack_result: String = ""
@@ -176,6 +182,7 @@ var after_image_node: Node3D = null
 
 var hitbox_system: HitboxSystem
 var damage_system: DamageSystem
+var status_effect_system: StatusEffectSystem
 var projectile_system: ProjectileSystem
 var sfx_player: AudioStreamPlayer
 var voice_player: AudioStreamPlayer
@@ -209,6 +216,8 @@ func _ready() -> void:
 	damage_system.combo_event.connect(_on_combo_event)
 	damage_system.combat_event.connect(_on_combat_event)
 
+	status_effect_system = StatusEffectSystem.new()
+
 	projectile_system = ProjectileSystem.new()
 	projectile_system.name = "ProjectileSystem"
 	add_child(projectile_system)
@@ -232,6 +241,8 @@ func _ensure_default_hurtbox() -> void:
 
 	var hurtbox := Area3D.new()
 	hurtbox.name = "DefaultHurtbox"
+	hurtbox.collision_layer = 1  # Layer 1 = hurtbox (hitbox collision_mask 1 detects this)
+	hurtbox.collision_mask = 0
 	hurtbox.monitoring = true
 	hurtbox.monitorable = true
 	hurtbox.set_meta("is_hurtbox", true)
@@ -307,6 +318,7 @@ func _physics_process(delta: float) -> void:
 	_update_nothitby_timers()
 	_update_hit_override_timers()
 	_update_smash_respawn_protection()
+	_update_status_effects()
 	var timed_state_active: bool = _update_timed_state()
 	if _update_knockdown(delta):
 		return
@@ -355,9 +367,22 @@ func _physics_process(delta: float) -> void:
 		global_position.z = locked_z_position
 	if lock_to_x_axis:
 		global_position.x = locked_x_position
-	move_and_slide()
+	var step_up_done: bool = false
+	if is_on_floor() and velocity.y <= 0.0:
+		var horz: float = Vector2(velocity.x, velocity.z).length()
+		if horz >= STEP_UP_HORIZONTAL_THRESHOLD:
+			var pos_before: Vector3 = global_position
+			global_position.y += STEP_UP_HEIGHT
+			move_and_slide()
+			if is_on_floor():
+				step_up_done = true
+			else:
+				global_position = pos_before
+	if not step_up_done:
+		move_and_slide()
 	if velocity.y <= 0.0:
 		apply_floor_snap()
+	_correct_floor_clipping()
 	if lock_to_x_axis:
 		global_position.x = locked_x_position
 	_apply_floor_clamp()
@@ -389,6 +414,7 @@ func inject_character_data(data: Dictionary) -> void:
 	max_resource = maxi(1, int(def_data.get("max_resource", max_resource)))
 	max_juggle_points = maxi(1, int(def_data.get("max_juggle_points", max_juggle_points)))
 	resource = clampi(int(def_data.get("starting_resource", resource)), 0, max_resource)
+	root_motion_bone_name = str(def_data.get("root_motion_bone", "")).strip_edges()
 	reset_juggle_state()
 	_reset_jump_state()
 	_apply_collision_scale()
@@ -407,6 +433,25 @@ func inject_character_data(data: Dictionary) -> void:
 
 func apply_state_velocity(state_velocity) -> void:
 	velocity = _to_vector3(state_velocity)
+
+
+## Syncs the fighter's horizontal position to the skeleton root bone so the game position
+## matches where the animation placed the character (e.g. after root motion).
+func sync_position_to_animation_root() -> void:
+	var active_skeleton: Skeleton3D = _get_active_skeleton()
+	if active_skeleton == null or active_skeleton.get_bone_count() == 0:
+		return
+	var bone_idx: int = 0
+	if not root_motion_bone_name.is_empty():
+		bone_idx = active_skeleton.find_bone(root_motion_bone_name)
+		if bone_idx < 0:
+			bone_idx = 0
+	var root_transform: Transform3D = active_skeleton.global_transform * active_skeleton.get_bone_global_pose(bone_idx)
+	var bone_pos: Vector3 = root_transform.origin
+	if not lock_to_x_axis:
+		global_position.x = bone_pos.x
+	if not lock_to_z_axis:
+		global_position.z = bone_pos.z
 
 
 func update_hitboxes_for_state_frame(hitbox_timeline: Array, frame_in_state: int) -> void:
@@ -660,6 +705,30 @@ func controller_attack_mul_set(value: float) -> void:
 
 func controller_defence_mul_set(value: float) -> void:
 	defence_mul = maxf(0.0, float(value))
+
+
+func _update_status_effects() -> void:
+	if status_effect_system != null:
+		status_effect_system.tick(self)
+
+
+func apply_status_effect(effect_def: Dictionary, source: Node = null) -> void:
+	if status_effect_system != null:
+		status_effect_system.apply_effect(effect_def, source)
+
+
+func get_effective_attack_mul() -> float:
+	var base_mul: float = attack_mul
+	if status_effect_system != null:
+		base_mul *= status_effect_system.get_attack_mul_modifier(self)
+	return base_mul
+
+
+func get_effective_defence_mul() -> float:
+	var base_mul: float = defence_mul
+	if status_effect_system != null:
+		base_mul *= status_effect_system.get_defence_mul_modifier(self)
+	return base_mul
 
 
 func controller_assert_special(flag1: String, flag2: String = "", flag3: String = "") -> void:
@@ -1699,7 +1768,9 @@ func add_smash_percent(amount: float) -> void:
 func get_smash_knockback_multiplier() -> float:
 	if not smash_mode_enabled:
 		return 1.0
-	return clampf(1.0 + (smash_percent * 0.018), 1.0, 6.0)
+	var weight: float = maxf(1.0, float(physics_data.get("weight", 100)))
+	var percent_mult: float = clampf(1.0 + (smash_percent * 0.018), 1.0, 6.0)
+	return percent_mult * (100.0 / weight)
 
 
 func activate_smash_respawn_protection(frames: int) -> void:
@@ -1740,7 +1811,8 @@ func start_grapple_sequence(defender: Node, hit_data: Dictionary) -> bool:
 	grapple_frames_left = maxi(1, int(hit_data.get("grab_duration_frames", 10)))
 	var grab_offset: Vector3 = _to_vector3(hit_data.get("grab_offset", Vector3(0.75, 1.0, 0.0)))
 	var grabbed_state_id: String = str(hit_data.get("grabbed_state", "grabbed"))
-	defender_fighter._set_grabbed_by(self, grab_offset, grabbed_state_id)
+	var grabbed_can_attack: bool = bool(hit_data.get("grabbed_can_attack", true))
+	defender_fighter._set_grabbed_by(self, grab_offset, grabbed_state_id, grabbed_can_attack)
 	return true
 
 
@@ -1773,6 +1845,7 @@ func set_runtime_model_root(node: Node3D, model_source_path: String = "") -> voi
 		current_model_path = model_source_path
 		if base_model_path.is_empty() and not model_source_path.is_empty():
 			base_model_path = model_source_path
+		_refresh_runtime_skeleton_bindings()
 
 
 func get_mod_directory() -> String:
@@ -1878,11 +1951,39 @@ func _release_grapple_sequence() -> void:
 	if grapple_target == null:
 		return
 	var defender: FighterBase = grapple_target
-	var hit_data: Dictionary = grapple_hit_data.duplicate(true)
+	var hit_data: Dictionary = _resolve_grapple_release_hit_data(grapple_hit_data)
 	_clear_grapple_sequence()
 	defender._clear_grabbed_by(self)
 	if damage_system != null:
 		damage_system.apply_grapple_release(self, defender, hit_data)
+
+
+func _resolve_grapple_release_hit_data(grapple_hit_data: Dictionary) -> Dictionary:
+	var hit_data: Dictionary = grapple_hit_data.duplicate(true)
+	var release_forward: Variant = hit_data.get("release_forward", null)
+	var release_back: Variant = hit_data.get("release_back", null)
+	if (release_forward == null or not (release_forward is Dictionary)) and (release_back == null or not (release_back is Dictionary)):
+		hit_data.erase("release_forward")
+		hit_data.erase("release_back")
+		return hit_data
+	var move_x: float = 0.0
+	var facing_right: bool = true
+	if command_interpreter != null:
+		move_x = command_interpreter.get_latest_raw_direction().x
+		if command_interpreter.has_method("get_facing_right"):
+			facing_right = command_interpreter.get_facing_right()
+	var want_forward: bool = (facing_right and move_x > walk_deadzone) or (not facing_right and move_x < -walk_deadzone)
+	var want_back: bool = (facing_right and move_x < -walk_deadzone) or (not facing_right and move_x > walk_deadzone)
+	var chosen: Dictionary = {}
+	if want_forward and release_forward is Dictionary:
+		chosen = (release_forward as Dictionary).duplicate(true)
+	elif want_back and release_back is Dictionary:
+		chosen = (release_back as Dictionary).duplicate(true)
+	for key in chosen:
+		hit_data[key] = chosen[key]
+	hit_data.erase("release_forward")
+	hit_data.erase("release_back")
+	return hit_data
 
 
 func _clear_grapple_sequence() -> void:
@@ -1891,14 +1992,23 @@ func _clear_grapple_sequence() -> void:
 	grapple_frames_left = 0
 
 
-func _set_grabbed_by(attacker: FighterBase, local_offset: Vector3, grabbed_state_id: String) -> void:
+func on_hit_by_grapple_target(attacker: Node, hit_data: Dictionary) -> void:
+	if grapple_target != attacker:
+		return
+	var escape_frames: int = int(hit_data.get("grapple_escape_frames", 30))
+	grapple_frames_left = maxi(0, grapple_frames_left - maxi(1, escape_frames))
+	if grapple_frames_left <= 0:
+		_release_grapple_sequence()
+
+
+func _set_grabbed_by(attacker: FighterBase, local_offset: Vector3, grabbed_state_id: String, can_attack_while_grabbed: bool = true) -> void:
 	grabbed_by = attacker
 	grabbed_offset = local_offset
 	grabbed_prev_accepts_input = accepts_player_movement_input
 	grabbed_prev_reads_input = command_interpreter.read_local_input if command_interpreter != null else true
 	accepts_player_movement_input = false
 	if command_interpreter != null:
-		command_interpreter.read_local_input = false
+		command_interpreter.read_local_input = can_attack_while_grabbed
 	velocity = Vector3.ZERO
 	if state_controller != null and not grabbed_state_id.is_empty() and state_controller.states_data.has(grabbed_state_id):
 		state_controller.change_state(grabbed_state_id)
@@ -1941,28 +2051,35 @@ func _update_grabbed_transform() -> void:
 func play_state_animation(animation_name: String, should_loop: bool = true) -> bool:
 	if animation_name.is_empty():
 		return false
-	if animation_player != null and animation_player.has_animation(animation_name):
-		_set_animation_loop_mode(animation_player, animation_name, should_loop)
-		animation_player.play(animation_name)
-		return true
-	if animation_player != null and animation_player.get_animation_list().size() == 1:
-		var fallback_anim: String = str(animation_player.get_animation_list()[0])
-		_set_animation_loop_mode(animation_player, fallback_anim, should_loop)
-		animation_player.play(fallback_anim)
-		return true
+	if animation_player != null:
+		var anim: Animation = animation_player.get_animation(animation_name)
+		if anim != null:
+			_set_animation_loop_mode(animation_player, animation_name, should_loop)
+			animation_player.play(animation_name)
+			return true
+		if animation_player.get_animation_list().size() == 1:
+			var fallback_anim: String = str(animation_player.get_animation_list()[0])
+			anim = animation_player.get_animation(fallback_anim)
+			if anim != null:
+				_set_animation_loop_mode(animation_player, fallback_anim, should_loop)
+				animation_player.play(fallback_anim)
+				return true
 	var players: Array[Node] = find_children("*", "AnimationPlayer", true, false)
 	for player_node in players:
 		if player_node is AnimationPlayer:
 			var player := player_node as AnimationPlayer
-			if player.has_animation(animation_name):
+			var anim: Animation = player.get_animation(animation_name)
+			if anim != null:
 				_set_animation_loop_mode(player, animation_name, should_loop)
 				player.play(animation_name)
 				return true
 			if player.get_animation_list().size() == 1:
 				var nested_fallback: String = str(player.get_animation_list()[0])
-				_set_animation_loop_mode(player, nested_fallback, should_loop)
-				player.play(nested_fallback)
-				return true
+				anim = player.get_animation(nested_fallback)
+				if anim != null:
+					_set_animation_loop_mode(player, nested_fallback, should_loop)
+					player.play(nested_fallback)
+					return true
 	return false
 
 
@@ -2170,6 +2287,51 @@ func _on_command_matched(_command_id: String, command_entry: Dictionary) -> void
 	var target_state: String = str(command_entry.get("target_state", ""))
 	if target_state.is_empty():
 		return
+	# While walking/running, treat P as dash attack and K as side special when holding left/right
+	if command_interpreter != null and state_controller != null:
+		var cs: String = state_controller.current_state
+		if cs == "walk" or cs == "run":
+			var raw: Vector2 = command_interpreter.get_latest_raw_direction()
+			if absf(raw.x) > walk_deadzone:
+				var cur: Dictionary = state_controller.get_current_state_data()
+				var cancel_into: Array = cur.get("cancel_into", [])
+				if target_state == "p_light" and state_controller.states_data.has("dash_attack") and cancel_into.has("dash_attack"):
+					target_state = "dash_attack"
+				elif target_state == "special_neutral" and state_controller.states_data.has("special_side") and cancel_into.has("special_side"):
+					target_state = "special_side"
+		# In crouch: redirect to crouch attacks (Smash-style crouching attacks)
+		if cs == "crouch":
+			var cur_c: Dictionary = state_controller.get_current_state_data()
+			var into_c: Array = cur_c.get("cancel_into", [])
+			if target_state == "tilt_down" and state_controller.states_data.has("crouch_attack_down") and into_c.has("crouch_attack_down"):
+				target_state = "crouch_attack_down"
+			elif target_state == "dash_attack" and state_controller.states_data.has("crouch_attack_forward") and into_c.has("crouch_attack_forward"):
+				target_state = "crouch_attack_forward"
+			elif target_state == "tilt_side" and state_controller.states_data.has("crouch_attack_back") and into_c.has("crouch_attack_back"):
+				target_state = "crouch_attack_back"
+		# In air: redirect ground attacks to aerials (Smash-style)
+		if not _is_grounded_for_jump():
+			var cur: Dictionary = state_controller.get_current_state_data()
+			var cancel_into: Array = cur.get("cancel_into", [])
+			var aerial: String = ""
+			if target_state == "p_light" and cancel_into.has("nair"):
+				aerial = "nair"
+			elif target_state == "tilt_side" and cancel_into.has("fair"):
+				aerial = "fair"
+			elif target_state == "tilt_back" and cancel_into.has("bair"):
+				aerial = "bair"
+			elif target_state == "tilt_up" and cancel_into.has("uair"):
+				aerial = "uair"
+			elif target_state == "tilt_down" and cancel_into.has("dair"):
+				aerial = "dair"
+			if not aerial.is_empty() and state_controller.states_data.has(aerial):
+				target_state = aerial
+		# Jab string: from p_light / p_light_2 during hit window, P again -> next jab
+		if target_state == "p_light":
+			if cs == "p_light" and _can_enter_state_from_current("p_light_2"):
+				target_state = "p_light_2"
+			elif cs == "p_light_2" and _can_enter_state_from_current("p_light_3"):
+				target_state = "p_light_3"
 	if grapple_whiff_lock_frames_remaining > 0 and _state_is_grapple_attempt(target_state):
 		return
 	if not _can_enter_state_from_current(target_state):
@@ -2694,6 +2856,7 @@ func _update_knockdown(delta: float) -> bool:
 	move_and_slide()
 	if velocity.y <= 0.0:
 		apply_floor_snap()
+	_correct_floor_clipping()
 	_apply_floor_clamp()
 	if knockdown_frames_remaining <= 0:
 		knockdown_frames_remaining = 0
@@ -2783,8 +2946,10 @@ func _apply_locomotion() -> void:
 	var state_id: String = state_controller.current_state
 	var move_input: float = command_interpreter.get_latest_raw_direction().x
 	var grounded: bool = _is_grounded_for_jump()
+	var frame_now: int = int(Engine.get_physics_frames())
 	var walk_speed: float = float(physics_data.get("walk_speed", default_walk_speed))
 	var run_speed: float = float(physics_data.get("run_speed", walk_speed * 1.8))
+	var initial_dash: float = float(physics_data.get("initial_dash", run_speed))
 	var move_direction: int = 0
 	if move_input > walk_deadzone:
 		move_direction = 1
@@ -2793,17 +2958,28 @@ func _apply_locomotion() -> void:
 
 	# Detect a double tap from neutral -> direction -> neutral -> same direction.
 	if move_direction != 0 and previous_move_direction == 0 and state_id != "run":
-		var frame_now: int = int(Engine.get_physics_frames())
 		var can_run_state: bool = state_controller.states_data.has("run")
 		var can_enter_run: bool = state_id == "idle" or state_id == "walk"
 		if can_run_state and can_enter_run and move_direction == last_tap_direction and frame_now - last_tap_frame <= RUN_DOUBLE_TAP_WINDOW_FRAMES:
 			state_controller.change_state("run")
 			state_id = "run"
+			run_entered_at_frame = frame_now
 		last_tap_direction = move_direction
 		last_tap_frame = frame_now
 
+	# Crouch: hold down -> crouch; release -> idle
+	var down_input: float = command_interpreter.get_latest_raw_direction().y
+	var holding_down: bool = down_input > walk_deadzone
+	if state_controller.states_data.has("crouch"):
+		if holding_down and (state_id == "idle" or state_id == "walk"):
+			state_controller.change_state("crouch")
+			state_id = "crouch"
+		elif not holding_down and state_id == "crouch":
+			state_controller.change_state("idle")
+			state_id = state_controller.current_state
+
 	# Keep locomotion state in sync with movement input so walk/run animations play.
-	if state_id != "run":
+	if state_id != "run" and state_id != "crouch":
 		if absf(move_input) > walk_deadzone and state_id == "idle" and state_controller.states_data.has("walk"):
 			state_controller.change_state("walk")
 			state_id = state_controller.current_state
@@ -2811,7 +2987,8 @@ func _apply_locomotion() -> void:
 			state_controller.change_state("idle")
 			state_id = state_controller.current_state
 
-	var movement_speed: float = run_speed if state_id == "run" else walk_speed
+	var use_initial_dash: bool = state_id == "run" and frame_now == run_entered_at_frame and absf(move_input) > walk_deadzone
+	var movement_speed: float = initial_dash if use_initial_dash else (run_speed if state_id == "run" else walk_speed)
 	if state_id == "run" and absf(move_input) <= walk_deadzone:
 		if state_controller.states_data.has("idle"):
 			state_controller.change_state("idle")
@@ -2819,10 +2996,10 @@ func _apply_locomotion() -> void:
 		return
 	if absf(move_input) > walk_deadzone:
 		if smash_mode_enabled and not grounded:
-			var smash_air_speed: float = float(physics_data.get("smash_air_speed", walk_speed * 0.85))
-			var smash_air_accel: float = float(physics_data.get("smash_air_accel", 0.45))
-			var target_x: float = move_input * smash_air_speed
-			velocity.x = move_toward(velocity.x, target_x, smash_air_accel)
+			var air_speed: float = float(physics_data.get("smash_air_speed", physics_data.get("air_speed", walk_speed * 0.85)))
+			var air_accel: float = float(physics_data.get("smash_air_accel", physics_data.get("air_accel", physics_data.get("total_air_accel", 0.45))))
+			var target_x: float = move_input * air_speed
+			velocity.x = move_toward(velocity.x, target_x, air_accel)
 		else:
 			velocity.x = move_input * movement_speed
 	else:
@@ -2949,7 +3126,9 @@ func _apply_jump_and_gravity(delta: float) -> void:
 	var jump_speed: float = float(physics_data.get("jump_speed", default_jump_speed))
 	var air_jump_speed: float = float(physics_data.get("air_jump_speed", jump_speed))
 	var max_fall_speed: float = float(physics_data.get("max_fall_speed", 25.0 if smash_mode_enabled else 1000.0))
+	var fast_fall_speed: float = float(physics_data.get("fast_fall_speed", max_fall_speed * 1.28))
 	var grounded: bool = _is_grounded_for_jump()
+	var holding_down: bool = command_interpreter != null and command_interpreter.get_latest_raw_direction().y > walk_deadzone
 	var jump_just_pressed: bool = _consume_jump_press()
 	var jumped_this_frame: bool = false
 
@@ -2973,7 +3152,8 @@ func _apply_jump_and_gravity(delta: float) -> void:
 			jumped_this_frame = true
 		if not jumped_this_frame:
 			velocity.y -= gravity * delta
-		velocity.y = maxf(velocity.y, -max_fall_speed)
+		var effective_max_fall: float = fast_fall_speed if holding_down and velocity.y < 0.0 else max_fall_speed
+		velocity.y = maxf(velocity.y, -effective_max_fall)
 
 
 func _can_jump() -> bool:
@@ -2985,6 +3165,34 @@ func _can_jump() -> bool:
 
 func _get_max_jumps() -> int:
 	return maxi(1, int(physics_data.get("max_jumps", physics_data.get("air_jump_count", 1))))
+
+
+func get_physics_stats() -> Dictionary:
+	var walk_speed: float = float(physics_data.get("walk_speed", default_walk_speed))
+	var run_speed: float = float(physics_data.get("run_speed", walk_speed * 1.8))
+	var max_fall: float = float(physics_data.get("max_fall_speed", 25.0))
+	var out: Dictionary = {
+		"weight": int(physics_data.get("weight", 100)),
+		"gravity": float(physics_data.get("gravity", default_gravity)),
+		"walk_speed": walk_speed,
+		"run_speed": run_speed,
+		"initial_dash": float(physics_data.get("initial_dash", run_speed)),
+		"jump_speed": float(physics_data.get("jump_speed", default_jump_speed)),
+		"air_speed": float(physics_data.get("smash_air_speed", physics_data.get("air_speed", walk_speed * 0.85))),
+		"total_air_accel": float(physics_data.get("smash_air_accel", physics_data.get("air_accel", physics_data.get("total_air_accel", 0.45)))),
+		"fall_speed": max_fall,
+		"fast_fall_speed": float(physics_data.get("fast_fall_speed", max_fall * 1.28)),
+		"max_jumps": _get_max_jumps()
+	}
+	if physics_data.has("sh_frames"):
+		out["sh_frames"] = int(physics_data.get("sh_frames", 0))
+	if physics_data.has("fh_frames"):
+		out["fh_frames"] = int(physics_data.get("fh_frames", 0))
+	if physics_data.has("shff_frames"):
+		out["shff_frames"] = int(physics_data.get("shff_frames", 0))
+	if physics_data.has("fhff_frames"):
+		out["fhff_frames"] = int(physics_data.get("fhff_frames", 0))
+	return out
 
 
 func _consume_jump_press() -> bool:
@@ -3030,6 +3238,60 @@ func _apply_floor_clamp() -> void:
 		global_position = pos
 		if velocity.y < 0.0:
 			velocity.y = 0.0
+
+
+func _get_capsule_bottom_offset() -> float:
+	var body_collision := get_node_or_null("BodyCollision") as CollisionShape3D
+	if body_collision == null or body_collision.shape == null:
+		return DEFAULT_BODY_OFFSET_Y - (DEFAULT_BODY_HEIGHT * 0.5)
+	var offset_y: float = body_collision.position.y
+	var h: float = DEFAULT_BODY_HEIGHT * collision_scale
+	if body_collision.shape is CapsuleShape3D:
+		h = (body_collision.shape as CapsuleShape3D).height
+	return offset_y - (h * 0.5)
+
+
+func _correct_floor_clipping() -> void:
+	var bottom_offset: float = _get_capsule_bottom_offset()
+	var capsule_bottom_y: float = global_position.y + bottom_offset
+	var min_valid_y: float = -INF
+	var n: int = get_slide_collision_count()
+	for i in range(n):
+		var col := get_slide_collision(i)
+		if col == null:
+			continue
+		var norm: Vector3 = col.get_normal()
+		if norm.y < 0.5:
+			continue
+		var contact_pos: Vector3 = col.get_position()
+		var need_y: float = contact_pos.y - bottom_offset + FLOOR_CLIP_CORRECTION_MARGIN
+		if need_y > min_valid_y:
+			min_valid_y = need_y
+	if min_valid_y > -INF and global_position.y < min_valid_y:
+		var pos := global_position
+		pos.y = min_valid_y
+		global_position = pos
+		if velocity.y < 0.0:
+			velocity.y = 0.0
+		return
+	# Fallback when on floor but no slide (e.g. standing still while stuck): raycast down
+	if is_on_floor() or velocity.y <= 0.0:
+		var world := get_world_3d()
+		if world != null:
+			var from: Vector3 = global_position + Vector3(0.0, 0.15, 0.0)
+			var to: Vector3 = from + Vector3(0.0, -0.6, 0.0)
+			var query := PhysicsRayQueryParameters3D.create(from, to)
+			query.exclude = [self]
+			var hit: Dictionary = world.direct_space_state.intersect_ray(query)
+			if not hit.is_empty():
+				var hit_pos: Vector3 = hit.position
+				var need_y: float = hit_pos.y - bottom_offset + FLOOR_CLIP_CORRECTION_MARGIN
+				if global_position.y < need_y:
+					var pos := global_position
+					pos.y = need_y
+					global_position = pos
+					if velocity.y < 0.0:
+						velocity.y = 0.0
 
 
 func _has_mesh_ground_beneath(max_distance: float = 0.22) -> bool:
@@ -3135,19 +3397,19 @@ func _build_mesh_derived_hurtbox_profile() -> Array:
 	var height: float = maxf(1.2, world_size.y)
 	var depth: float = maxf(0.5, world_size.z)
 
-	var pelvis_bone: String = _find_first_bone_name(["hips", "pelvis", "root", "mixamorig:hips"])
+	var pelvis_bone: String = _find_first_bone_name(["J_spine01", "hips", "pelvis", "root", "mixamorig:hips"])
 	var torso_bone: String = _find_first_bone_name([
-		"spine.003", "spine3", "chest", "torso", "spine_03", "spine2", "spine.002", "spine", "mixamorig:spine2", "mixamorig:spine1"
+		"J_spine02", "J_spine01", "spine.003", "spine3", "chest", "torso", "spine_03", "spine2", "spine.002", "spine", "mixamorig:spine2", "mixamorig:spine1"
 	])
-	var head_bone: String = _find_first_bone_name(["head", "head.x", "mixamorig:head"])
-	var arm_l_bone: String = _find_first_bone_name(["upperarm.l", "arm.l", "leftarm", "mixamorig:leftarm"])
-	var arm_r_bone: String = _find_first_bone_name(["upperarm.r", "arm.r", "rightarm", "mixamorig:rightarm"])
-	var forearm_l_bone: String = _find_first_bone_name(["lowerarm.l", "forearm.l", "leftforearm", "mixamorig:leftforearm", "hand.l", "mixamorig:lefthand"])
-	var forearm_r_bone: String = _find_first_bone_name(["lowerarm.r", "forearm.r", "rightforearm", "mixamorig:rightforearm", "hand.r", "mixamorig:righthand"])
-	var leg_l_bone: String = _find_first_bone_name(["upperleg.l", "thigh.l", "leftupleg", "mixamorig:leftupleg"])
-	var leg_r_bone: String = _find_first_bone_name(["upperleg.r", "thigh.r", "rightupleg", "mixamorig:rightupleg"])
-	var shin_l_bone: String = _find_first_bone_name(["lowerleg.l", "calf.l", "leftleg", "mixamorig:leftleg", "foot.l", "mixamorig:leftfoot"])
-	var shin_r_bone: String = _find_first_bone_name(["lowerleg.r", "calf.r", "rightleg", "mixamorig:rightleg", "foot.r", "mixamorig:rightfoot"])
+	var head_bone: String = _find_first_bone_name(["J_head", "J_neck", "head", "head.x", "mixamorig:head"])
+	var arm_l_bone: String = _find_first_bone_name(["J_arm_l", "J_elbow_l", "upperarm.l", "arm.l", "leftarm", "mixamorig:leftarm"])
+	var arm_r_bone: String = _find_first_bone_name(["J_arm_r", "J_elbow_r", "upperarm.r", "arm.r", "rightarm", "mixamorig:rightarm"])
+	var forearm_l_bone: String = _find_first_bone_name(["J_elbow_l", "lowerarm.l", "forearm.l", "leftforearm", "mixamorig:leftforearm", "hand.l", "mixamorig:lefthand"])
+	var forearm_r_bone: String = _find_first_bone_name(["J_elbow_r", "lowerarm.r", "forearm.r", "rightforearm", "mixamorig:rightforearm", "hand.r", "mixamorig:righthand"])
+	var leg_l_bone: String = _find_first_bone_name(["J_leg_l", "J_knee_l", "upperleg.l", "thigh.l", "leftupleg", "mixamorig:leftupleg"])
+	var leg_r_bone: String = _find_first_bone_name(["J_leg_r", "J_knee_r", "upperleg.r", "thigh.r", "rightupleg", "mixamorig:rightupleg"])
+	var shin_l_bone: String = _find_first_bone_name(["J_knee_l", "J_foot_l", "lowerleg.l", "calf.l", "leftleg", "mixamorig:leftleg", "foot.l", "mixamorig:leftfoot"])
+	var shin_r_bone: String = _find_first_bone_name(["J_knee_r", "J_foot_r", "lowerleg.r", "calf.r", "rightleg", "mixamorig:rightleg", "foot.r", "mixamorig:rightfoot"])
 
 	var pelvis_world: Vector3 = _get_bone_world_position_or(pelvis_bone, world_center + Vector3(0.0, -height * 0.18, 0.0))
 	var torso_world: Vector3 = _get_bone_world_position_or(torso_bone, world_center + Vector3(0.0, height * 0.08, 0.0))
@@ -3326,14 +3588,14 @@ func _build_default_bone_hurtbox_profile() -> Array:
 		})
 		return profile
 	var torso_bone: String = _find_first_bone_name([
-		"spine.003", "spine3", "chest", "torso", "spine_03", "spine2", "spine.002", "spine", "hips"
+		"J_spine02", "J_spine01", "spine.003", "spine3", "chest", "torso", "spine_03", "spine2", "spine.002", "spine", "hips"
 	])
-	var pelvis_bone: String = _find_first_bone_name(["hips", "pelvis", "root"])
-	var head_bone: String = _find_first_bone_name(["head", "head.x", "mixamorig:head"])
-	var arm_l_bone: String = _find_first_bone_name(["upperarm.l", "arm.l", "leftarm", "mixamorig:leftarm"])
-	var arm_r_bone: String = _find_first_bone_name(["upperarm.r", "arm.r", "rightarm", "mixamorig:rightarm"])
-	var leg_l_bone: String = _find_first_bone_name(["upperleg.l", "thigh.l", "leftupleg", "mixamorig:leftupleg"])
-	var leg_r_bone: String = _find_first_bone_name(["upperleg.r", "thigh.r", "rightupleg", "mixamorig:rightupleg"])
+	var pelvis_bone: String = _find_first_bone_name(["J_spine01", "hips", "pelvis", "root"])
+	var head_bone: String = _find_first_bone_name(["J_head", "J_neck", "head", "head.x", "mixamorig:head"])
+	var arm_l_bone: String = _find_first_bone_name(["J_arm_l", "J_elbow_l", "upperarm.l", "arm.l", "leftarm", "mixamorig:leftarm"])
+	var arm_r_bone: String = _find_first_bone_name(["J_arm_r", "J_elbow_r", "upperarm.r", "arm.r", "rightarm", "mixamorig:rightarm"])
+	var leg_l_bone: String = _find_first_bone_name(["J_leg_l", "J_knee_l", "upperleg.l", "thigh.l", "leftupleg", "mixamorig:leftupleg"])
+	var leg_r_bone: String = _find_first_bone_name(["J_leg_r", "J_knee_r", "upperleg.r", "thigh.r", "rightupleg", "mixamorig:rightupleg"])
 	if not torso_bone.is_empty():
 		profile.append({"id": "torso", "bone": torso_bone, "offset": [0.0, 0.0, 0.0], "size": [1.0, 1.1, 0.8]})
 	if not pelvis_bone.is_empty():

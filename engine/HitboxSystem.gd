@@ -23,6 +23,10 @@ const DEBUG_HURTBOX_COLOR := Color(0.0, 1.0, 1.0, 1.0)
 const DEBUG_THROWBOX_ACTIVE_COLOR := Color(1.0, 0.25, 0.95, 1.0)
 const DEBUG_THROWBOX_INACTIVE_COLOR := Color(0.45, 0.12, 0.42, 0.95)
 
+## Collision layers so hitboxes detect hurtboxes. Hitbox mask must include hurtbox layer.
+const LAYER_HURTBOX := 1
+const LAYER_HITBOX := 2
+
 
 func setup(p_fighter: Node, p_skeleton: Skeleton3D, p_hitboxes_root: Node3D, p_hurtboxes_root: Node3D) -> void:
 	fighter = p_fighter
@@ -233,6 +237,8 @@ func _ensure_hitbox_node(hitbox_id: String, entry: Dictionary) -> void:
 
 	var area := Area3D.new()
 	area.name = hitbox_id
+	area.collision_layer = 1 << (LAYER_HITBOX - 1)
+	area.collision_mask = 1 << (LAYER_HURTBOX - 1)
 	area.monitoring = false
 	area.monitorable = true
 	area.set_meta("is_hitbox", true)
@@ -323,6 +329,8 @@ func _ensure_hurtbox_node(hurtbox_id: String, entry: Dictionary) -> void:
 		return
 	var area := Area3D.new()
 	area.name = hurtbox_id
+	area.collision_layer = 1 << (LAYER_HURTBOX - 1)
+	area.collision_mask = 0
 	area.monitoring = false
 	area.monitorable = true
 	area.set_meta("is_hurtbox", true)
@@ -376,6 +384,8 @@ func _ensure_throwbox_node(throwbox_id: String, entry: Dictionary) -> void:
 		return
 	var area := Area3D.new()
 	area.name = throwbox_id
+	area.collision_layer = 1 << (LAYER_HITBOX - 1)
+	area.collision_mask = 1 << (LAYER_HURTBOX - 1)
 	area.monitoring = false
 	area.monitorable = true
 	area.set_meta("is_hitbox", true)
@@ -439,6 +449,8 @@ func _ensure_persistent_hurtbox_node(hurtbox_id: String, entry: Dictionary) -> v
 		return
 	var area := Area3D.new()
 	area.name = "Persistent_%s" % hurtbox_id
+	area.collision_layer = 1 << (LAYER_HURTBOX - 1)
+	area.collision_mask = 0
 	area.monitoring = false
 	area.monitorable = true
 	area.set_meta("is_hurtbox", true)
@@ -495,7 +507,10 @@ func _build_throw_hit_data(entry: Dictionary) -> Dictionary:
 		result["attack_type"] = "grapple"
 	if not result.has("grapple"):
 		result["grapple"] = true
-	if not result.has("grapple_hold"):
+	# Instant throw: damage/launch on contact, no hold. Grapple (hold): grab for N frames then release.
+	if result.get("instant_throw", false):
+		result["grapple_hold"] = false
+	elif not result.has("grapple_hold"):
 		result["grapple_hold"] = true
 	return result
 

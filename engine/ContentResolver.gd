@@ -120,7 +120,7 @@ static func find_character_model_path(mod_path: String, def_data: Dictionary = {
 		var resolved: String = resolve_relative_or_absolute_path(normalized_path, raw_hint)
 		if is_candidate_model_file(resolved):
 			return resolved
-	var preferred: Array[String] = ["model.glb", "model.gltf"]
+	var preferred: Array[String] = ["model.glb", "model.gltf", "model.fbx"]
 	for file_name in preferred:
 		var candidate: String = "%s%s" % [normalized_path, file_name]
 		if is_candidate_model_file(candidate):
@@ -134,7 +134,7 @@ static func find_character_model_path(mod_path: String, def_data: Dictionary = {
 		if not dir.current_is_dir():
 			var lower: String = item.to_lower()
 			var candidate_path: String = "%s%s" % [normalized_path, item]
-			if (lower.ends_with(".gltf") or lower.ends_with(".glb")) and is_candidate_model_file(candidate_path):
+			if (lower.ends_with(".gltf") or lower.ends_with(".glb") or lower.ends_with(".fbx")) and is_candidate_model_file(candidate_path):
 				dir.list_dir_end()
 				return candidate_path
 		item = dir.get_next()
@@ -187,7 +187,7 @@ static func is_stage_folder(folder_path: String) -> bool:
 	while not item.is_empty():
 		if not dir.current_is_dir():
 			var lower: String = item.to_lower()
-			if lower.ends_with(".glb") or lower.ends_with(".gltf"):
+			if lower.ends_with(".glb") or lower.ends_with(".gltf") or lower.ends_with(".fbx"):
 				dir.list_dir_end()
 				return true
 		item = dir.get_next()
@@ -236,7 +236,7 @@ static func find_stage_model_path(folder_path: String, stage_def: Dictionary = {
 		var resolved: String = resolve_relative_or_absolute_path(folder_path, value)
 		if can_load_model_path(resolved):
 			return resolved
-	var preferred: Array[String] = ["stage.glb", "stage.gltf", "model.glb", "model.gltf", "Test.glb", "Test.gltf"]
+	var preferred: Array[String] = ["stage.glb", "stage.gltf", "stage.fbx", "model.glb", "model.gltf", "model.fbx", "Test.glb", "Test.gltf", "Test.fbx"]
 	for file_name in preferred:
 		var candidate: String = "%s/%s" % [folder_path, file_name]
 		if can_load_model_path(candidate):
@@ -249,12 +249,12 @@ static func find_stage_model_path(folder_path: String, stage_def: Dictionary = {
 	while not item.is_empty():
 		if not dir.current_is_dir():
 			var lower: String = item.to_lower()
-			if lower.ends_with(".glb") or lower.ends_with(".gltf"):
+			if lower.ends_with(".glb") or lower.ends_with(".gltf") or lower.ends_with(".fbx"):
 				var candidate: String = "%s/%s" % [folder_path, item]
 				if can_load_model_path(candidate):
 					dir.list_dir_end()
 					return candidate
-			elif lower.ends_with(".glb.import") or lower.ends_with(".gltf.import"):
+			elif lower.ends_with(".glb.import") or lower.ends_with(".gltf.import") or lower.ends_with(".fbx.import"):
 				var source_name: String = item.trim_suffix(".import")
 				var import_candidate: String = "%s/%s" % [folder_path, source_name]
 				if can_load_model_path(import_candidate):
@@ -299,11 +299,14 @@ static func is_candidate_model_file(path: String) -> bool:
 	if lower.ends_with(".gltf"):
 		var text: String = file.get_as_text().strip_edges()
 		return text.begins_with("{")
+	if lower.ends_with(".fbx"):
+		return file.get_length() > 0
 	return false
 
 
 static func load_model_scene(path: String) -> Node:
 	var lower: String = path.to_lower()
+	# FBX and other editor-imported formats load as PackedScene via ResourceLoader.
 	if not path.begins_with("user://"):
 		var loaded = ResourceLoader.load(path)
 		if loaded is PackedScene:

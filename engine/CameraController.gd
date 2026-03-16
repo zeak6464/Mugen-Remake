@@ -21,6 +21,14 @@ class_name CameraController
 @export var distance_depth_factor: float = 0.7
 @export var look_height_offset: float = 1.0
 @export var distance_height_factor: float = 0.22
+## When true, camera stays focused on the stage and only zooms out based on player distance (Smash-style). Reduces shake.
+@export var use_focus_camera: bool = true
+## When use_focus_camera is true, how much the look target can drift toward player midpoint (0 = pure stage, 1 = old behavior).
+@export var focus_camera_pan_blend: float = 0.0
+## When true and only one fighter is tracked (e.g. round end), camera zooms in on the winner.
+var winner_zoom_enabled: bool = false
+@export var winner_zoom_depth: float = 5.5
+@export var winner_zoom_fov: float = 36.0
 
 var look_target: Vector3 = Vector3.ZERO
 var stage_anchor_position: Vector3 = Vector3.ZERO
@@ -62,6 +70,28 @@ func _process(delta: float) -> void:
 	if tracked_fighters.is_empty():
 		return
 
+	# Winner zoom: single fighter (round/match end), zoom in on them
+	if winner_zoom_enabled and tracked_fighters.size() == 1:
+		var winner: Node3D = tracked_fighters[0]
+		var target_pos: Vector3 = Vector3(
+			winner.global_position.x,
+			winner.global_position.y + follow_height,
+			winner.global_position.z + winner_zoom_depth
+		)
+		var desired_look_pos: Vector3 = winner.global_position + Vector3(0.0, look_height_offset, 0.0)
+		look_target = look_target.lerp(desired_look_pos, clampf(delta * look_smoothing, 0.0, 1.0))
+		global_position = global_position.lerp(target_pos, clampf(delta * position_smoothing, 0.0, 1.0))
+		look_at(look_target, Vector3.UP)
+		fov = lerpf(fov, winner_zoom_fov, clampf(delta * 3.0, 0.0, 1.0))
+		if shake_time_remaining > 0.0:
+			shake_time_remaining -= delta
+			var t: float = float(Engine.get_process_frames()) * 0.0166667 * shake_freq + shake_phase
+			var shake_offset: float = shake_ampl * sin(t * TAU)
+			var pos := global_position
+			pos.y += shake_offset
+			global_position = pos
+		return
+
 	var midpoint: Vector3 = Vector3.ZERO
 	for fighter in tracked_fighters:
 		midpoint += fighter.global_position
@@ -70,30 +100,51 @@ func _process(delta: float) -> void:
 	var same_focus_target: bool = tracked_fighters.size() <= 1
 	var furthest_distance: float = _furthest_tracked_distance(tracked_fighters)
 	var spread_y: float = _tracked_vertical_span(tracked_fighters)
+	var spread_from_center: float = _horizontal_spread_from_center(tracked_fighters)
 	var depth_t: float = clampf((furthest_distance - horizontal_deadzone) / maxf(0.01, max_tracked_distance - horizontal_deadzone), 0.0, 1.0)
 	var vertical_t: float = clampf(spread_y / maxf(0.01, max_vertical_span), 0.0, 1.0)
-	var frame_t: float = 1.0 if same_focus_target else maxf(depth_t, vertical_t)
-	var desired_depth: float = clampf(min_depth + (furthest_distance * distance_depth_factor), min_depth, max_depth)
+	var center_t: float = clampf(spread_from_center / maxf(0.01, max_tracked_distance), 0.0, 1.0)
+	var frame_t: float
+	var desired_depth: float
+	if use_focus_camera:
+		var zoom_t: float = 1.0 if same_focus_target else maxf(maxf(depth_t, vertical_t), center_t)
+		frame_t = zoom_t
+		desired_depth = clampf(min_depth + (maxf(furthest_distance, spread_from_center) * distance_depth_factor), min_depth, max_depth)
+	else:
+		frame_t = 1.0 if same_focus_target else maxf(depth_t, vertical_t)
+		desired_depth = clampf(min_depth + (furthest_distance * distance_depth_factor), min_depth, max_depth)
 
-	var clamped_mid_x: float = clampf(midpoint.x, stage_left_limit, stage_right_limit)
-	var target_position := Vector3(
-		clamped_mid_x,
-		midpoint.y + follow_height + (furthest_distance * distance_height_factor),
-		midpoint.z + desired_depth
-	)
+	var target_position: Vector3
+	var desired_look: Vector3
+	if use_focus_camera:
+		# Fixed on stage center; zoom out only (so both players visible even when on one side)
+		var depth_offset: float = desired_depth - min_depth
+		target_position = Vector3(
+			stage_anchor_position.x,
+			stage_anchor_position.y + (furthest_distance * distance_height_factor),
+			stage_anchor_position.z + depth_offset
+		)
+		desired_look = stage_anchor_look_target
+		look_target = look_target.lerp(desired_look, clampf(delta * look_smoothing, 0.0, 1.0))
+	else:
+		var clamped_mid_x: float = clampf(midpoint.x, stage_left_limit, stage_right_limit)
+		target_position = Vector3(
+			clamped_mid_x,
+			midpoint.y + follow_height + (furthest_distance * distance_height_factor),
+			midpoint.z + desired_depth
+		)
+		var avg_velocity_x: float = 0.0
+		var velocity_sources: int = 0
+		for fighter in tracked_fighters:
+			if fighter is CharacterBody3D:
+				avg_velocity_x += (fighter as CharacterBody3D).velocity.x
+				velocity_sources += 1
+		if velocity_sources > 0:
+			avg_velocity_x /= float(velocity_sources)
+		desired_look = Vector3(clamped_mid_x + avg_velocity_x * velocity_look_lead, midpoint.y + look_height_offset, midpoint.z)
+		look_target = look_target.lerp(desired_look, clampf(delta * look_smoothing, 0.0, 1.0))
+
 	var clean_position: Vector3 = global_position.lerp(target_position, clampf(delta * position_smoothing, 0.0, 1.0))
-
-	var avg_velocity_x: float = 0.0
-	var velocity_sources: int = 0
-	for fighter in tracked_fighters:
-		if fighter is CharacterBody3D:
-			avg_velocity_x += (fighter as CharacterBody3D).velocity.x
-			velocity_sources += 1
-	if velocity_sources > 0:
-		avg_velocity_x /= float(velocity_sources)
-
-	var desired_look := Vector3(clamped_mid_x + avg_velocity_x * velocity_look_lead, midpoint.y + look_height_offset, midpoint.z)
-	look_target = look_target.lerp(desired_look, clampf(delta * look_smoothing, 0.0, 1.0))
 	look_at(look_target, Vector3.UP)
 
 	fov = lerpf(min_fov, max_fov, frame_t)
@@ -147,3 +198,13 @@ func _tracked_vertical_span(fighters: Array[Node3D]) -> float:
 		min_y = minf(min_y, fighter.global_position.y)
 		max_y = maxf(max_y, fighter.global_position.y)
 	return max_y - min_y
+
+
+func _horizontal_spread_from_center(fighters: Array[Node3D]) -> float:
+	if fighters.is_empty():
+		return 0.0
+	var center_x: float = stage_anchor_look_target.x
+	var spread: float = 0.0
+	for fighter in fighters:
+		spread = maxf(spread, absf(fighter.global_position.x - center_x))
+	return spread

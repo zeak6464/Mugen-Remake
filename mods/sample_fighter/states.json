@@ -2,7 +2,9 @@
 	"grabbed": {
 		"allow_movement": false,
 		"animation": "bd01",
-		"cancel_into": [],
+		"cancel_into": [
+			"grabbed_jab"
+		],
 		"hitboxes": [],
 		"hurtboxes": [
 			{
@@ -43,6 +45,55 @@
 		},
 		"pushboxes": [],
 		"throw_invuln": true,
+		"throwboxes": [],
+		"velocity": [
+			0.0,
+			0.0,
+			0.0
+		]
+	},
+	"grabbed_jab": {
+		"allow_movement": false,
+		"animation": "bs02",
+		"cancel_into": [
+			"grabbed"
+		],
+		"hitboxes": [
+			{
+				"bone": "",
+				"data": {
+					"damage": 8.0,
+					"grapple_escape_frames": 15.0,
+					"hit_sound": "hit_light",
+					"hitstun_frames": 6.0,
+					"hitstun_state": "hitstun",
+					"pushback": [
+						0.15,
+						0.0,
+						0.0
+					]
+				},
+				"end": 2.0,
+				"id": "grabbed_jab_1",
+				"offset": [
+					0.5,
+					1.0,
+					0.0
+				],
+				"size": [
+					0.4,
+					0.4,
+					0.4
+				],
+				"start": 1.0
+			}
+		],
+		"hurtboxes": [],
+		"next": {
+			"frame": 8.0,
+			"id": "grabbed"
+		},
+		"pushboxes": [],
 		"throwboxes": [],
 		"velocity": [
 			0.0,
@@ -185,28 +236,28 @@
 					"juggle_cost": 1.0,
 					"pushback": [
 						5.0,
-						0.0,
+						1.0,
 						0.0
 					]
 				},
-				"end": 122,
+				"end": 244,
 				"id": "p_light_1",
 				"offset": [
-					-0.51,
 					0.0,
+					-0.5,
 					0.0
 				],
 				"size": [
-					10.0,
-					10.0,
-					10.0
+					2.0,
+					2.0,
+					2.0
 				],
-				"start": 0
+				"start": 12
 			}
 		],
 		"hurtboxes": [],
 		"next": {
-			"frame": 123.0,
+			"frame": 220.0,
 			"id": "idle"
 		},
 		"projectiles": [],

@@ -3,6 +3,7 @@ class_name DamageSystem
 
 signal combo_event(attacker: Node, defender: Node, total_hits: int, total_damage: int)
 signal combat_event(event_id: String, attacker: Node, defender: Node, hit_data: Dictionary)
+signal damage_dealt(attacker: Node, defender: Node, amount: int)
 
 var combo_tracker: Dictionary = {}
 var smash_mode_enabled: bool = false
@@ -97,6 +98,8 @@ func apply_hit(attacker: Node, defender: Node, hit_data: Dictionary) -> void:
 		return
 
 	_apply_damage_resolution(attacker, defender, hit_data, is_grapple)
+	if defender.has_method("get") and defender.get("grapple_target") == attacker and defender.has_method("on_hit_by_grapple_target"):
+		defender.call("on_hit_by_grapple_target", attacker, hit_data)
 
 
 func apply_grapple_release(attacker: Node, defender: Node, hit_data: Dictionary) -> void:
@@ -132,11 +135,15 @@ func add_combo_hits(attacker: Node, defender: Node, add_count: int) -> void:
 func _apply_damage_resolution(attacker: Node, defender: Node, hit_data: Dictionary, is_grapple: bool) -> void:
 	var damage: int = int(hit_data.get("damage", 0))
 	var attack_mul_val: float = 1.0
-	if attacker.has_method("get") and attacker.get("attack_mul") != null:
+	if attacker.has_method("get_effective_attack_mul"):
+		attack_mul_val = attacker.call("get_effective_attack_mul")
+	elif attacker.has_method("get") and attacker.get("attack_mul") != null:
 		attack_mul_val = float(attacker.get("attack_mul"))
 	damage = int(roundf(float(damage) * attack_mul_val))
 	var defence_mul_val: float = 1.0
-	if defender.has_method("get") and defender.get("defence_mul") != null:
+	if defender.has_method("get_effective_defence_mul"):
+		defence_mul_val = defender.call("get_effective_defence_mul")
+	elif defender.has_method("get") and defender.get("defence_mul") != null:
 		defence_mul_val = float(defender.get("defence_mul"))
 	damage = int(roundf(float(damage) * defence_mul_val))
 	var pushback: Vector3 = _to_vector3(hit_data.get("pushback", Vector3.ZERO))
@@ -159,11 +166,15 @@ func _apply_damage_resolution(attacker: Node, defender: Node, hit_data: Dictiona
 		if defender.has_method("register_juggle_hit"):
 			defender.call("register_juggle_hit", juggle_cost)
 
+	var smash_percent_damage: float = float(damage)
+	if smash_mode_enabled and (hit_data.has("smash_percent") or hit_data.has("smash_damage")):
+		var sp: Variant = hit_data.get("smash_percent", hit_data.get("smash_damage", damage))
+		smash_percent_damage = float(sp)
 	var knockback_scale: float = 1.0
 	if smash_mode_enabled and defender.has_method("get_smash_knockback_multiplier"):
 		knockback_scale = maxf(1.0, float(defender.call("get_smash_knockback_multiplier")))
 	if smash_mode_enabled:
-		knockback_scale *= 1.0 + (float(damage) * 0.01)
+		knockback_scale *= 1.0 + (smash_percent_damage * 0.01)
 	pushback *= knockback_scale
 	launch_velocity *= knockback_scale
 
@@ -171,7 +182,7 @@ func _apply_damage_resolution(attacker: Node, defender: Node, hit_data: Dictiona
 	var new_health: int = current_health
 	if smash_mode_enabled:
 		if defender.has_method("add_smash_percent"):
-			defender.call("add_smash_percent", float(damage))
+			defender.call("add_smash_percent", smash_percent_damage)
 	else:
 		new_health = maxi(0, current_health - damage)
 	var hit_pause_attacker: int = int(hit_data.get("hit_pause_attacker", 9))
@@ -184,6 +195,9 @@ func _apply_damage_resolution(attacker: Node, defender: Node, hit_data: Dictiona
 		hit_pause_defender = int(hit_data.get("smash_hit_pause_defender", 3))
 	_apply_hitpause(attacker, defender, hit_pause_attacker, hit_pause_defender)
 	defender.call("set_health", new_health)
+	var actual_damage: int = current_health - new_health
+	if actual_damage > 0:
+		damage_dealt.emit(attacker, defender, actual_damage)
 	if new_health <= 0:
 		# KO should remain in KO state, not be overwritten by hitstun.
 		if attacker.has_method("add_resource"):
@@ -219,7 +233,10 @@ func _apply_damage_resolution(attacker: Node, defender: Node, hit_data: Dictiona
 			else:
 				defender.call("enter_hitstun", hitstun_state)
 	elif defender.has_method("enter_timed_state"):
-		var smash_hitstun_frames: int = int(hit_data.get("smash_hitstun_frames", maxi(4, mini(18, int(round(float(damage) * 0.35) + 4)))))
+		var smash_dmg_for_stun: float = float(damage)
+		if hit_data.has("smash_percent") or hit_data.has("smash_damage"):
+			smash_dmg_for_stun = float(hit_data.get("smash_percent", hit_data.get("smash_damage", damage)))
+		var smash_hitstun_frames: int = int(hit_data.get("smash_hitstun_frames", maxi(4, mini(18, int(round(smash_dmg_for_stun * 0.35) + 4)))))
 		defender.call("enter_timed_state", hitstun_state, smash_hitstun_frames, "idle")
 	defender.call("apply_pushback", pushback)
 	if launch_velocity.length_squared() > 0.0001 and defender.has_method("apply_launch_velocity"):
@@ -230,12 +247,27 @@ func _apply_damage_resolution(attacker: Node, defender: Node, hit_data: Dictiona
 		defender.call("add_resource", int(hit_data.get("meter_gain_on_taken", 5)))
 	combat_event.emit("throw_hit" if is_grapple else "hit", attacker, defender, hit_data)
 
+	_apply_hit_status_effects(attacker, defender, hit_data)
+
 	var combo_key: String = "%s->%s" % [attacker.get_instance_id(), defender.get_instance_id()]
 	var data: Dictionary = combo_tracker.get(combo_key, {"hits": 0, "damage": 0})
 	data["hits"] = int(data["hits"]) + 1
 	data["damage"] = int(data["damage"]) + damage
 	combo_tracker[combo_key] = data
 	combo_event.emit(attacker, defender, data["hits"], data["damage"])
+
+
+func _apply_hit_status_effects(attacker: Node, defender: Node, hit_data: Dictionary) -> void:
+	if defender == null or not defender.has_method("apply_status_effect"):
+		return
+	var single: Variant = hit_data.get("status_effect", null)
+	if single != null and single is Dictionary:
+		defender.call("apply_status_effect", single, attacker)
+	var list: Variant = hit_data.get("status_effects", null)
+	if list != null and list is Array:
+		for entry in list:
+			if entry is Dictionary:
+				defender.call("apply_status_effect", entry, attacker)
 
 
 func _apply_hitpause(attacker: Node, defender: Node, attacker_frames: int, defender_frames: int) -> void:

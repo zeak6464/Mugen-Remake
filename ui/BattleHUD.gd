@@ -13,6 +13,9 @@ extends CanvasLayer
 @onready var score_label: Label = $TopBar/CenterInfo/Score
 @onready var status_label: Label = $TopBar/CenterInfo/Status
 @onready var team_info_label: Label = $TopBar/CenterInfo/TeamInfo
+@onready var result_damage_container: Control = $TopBar/CenterInfo/ResultDamage
+@onready var result_damage_p1: Label = $TopBar/CenterInfo/ResultDamage/P1Damage
+@onready var result_damage_p2: Label = $TopBar/CenterInfo/ResultDamage/P2Damage
 
 var compact_team_layout_enabled: bool = false
 
@@ -43,8 +46,10 @@ func set_battle_state(data: Dictionary) -> void:
 	p2_health_bar.max_value = p2_max
 	p2_health_bar.value = clampi(p2_health, 0, p2_max)
 
-	p1_health_label.text = "P1 HP: %d/%d" % [p1_health, p1_max]
-	p2_health_label.text = "P2 HP: %d/%d" % [p2_health, p2_max]
+	var p1_name: String = str(data.get("p1_name", "")).strip_edges()
+	var p2_name: String = str(data.get("p2_name", "")).strip_edges()
+	p1_health_label.text = ("%s - " % p1_name if not p1_name.is_empty() else "") + "P1 HP: %d/%d" % [p1_health, p1_max]
+	p2_health_label.text = "P2 HP: %d/%d" % [p2_health, p2_max] + (" - %s" % p2_name if not p2_name.is_empty() else "")
 	p1_resource_bar.max_value = p1_max_resource
 	p2_resource_bar.max_value = p2_max_resource
 	p1_resource_bar.value = clampi(p1_resource, 0, p1_max_resource)
@@ -55,6 +60,15 @@ func set_battle_state(data: Dictionary) -> void:
 	round_label.text = "Round: %d" % int(data.get("round_number", 1))
 	score_label.text = "Score: %d - %d" % [int(data.get("p1_wins", 0)), int(data.get("p2_wins", 0))]
 	status_label.text = str(data.get("status", ""))
+	var show_result: bool = bool(data.get("show_round_result", false))
+	var p1_dmg: int = int(data.get("p1_damage_dealt", 0))
+	var p2_dmg: int = int(data.get("p2_damage_dealt", 0))
+	if result_damage_container != null:
+		result_damage_container.visible = show_result
+		if result_damage_p1 != null:
+			result_damage_p1.text = "P1 Damage: %d" % p1_dmg
+		if result_damage_p2 != null:
+			result_damage_p2.text = "P2 Damage: %d" % p2_dmg
 	if team_mode:
 		team_info_label.visible = true
 		team_info_label.text = "Team %s | Remaining %d - %d" % [

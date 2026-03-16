@@ -1,46 +1,179 @@
 {
   "commands": [
     {
-      "id": "p_light",
+      "id": "tilt_up",
+      "pattern": [8, "P"],
+      "max_window": 14,
+      "min_repeat_frames": 8,
+      "target_state": "tilt_up"
+    },
+    {
+      "id": "tilt_up_forward",
+      "pattern": [9, "P"],
+      "max_window": 14,
+      "min_repeat_frames": 8,
+      "target_state": "tilt_up_forward"
+    },
+    {
+      "id": "tilt_up_back",
+      "pattern": [7, "P"],
+      "max_window": 14,
+      "min_repeat_frames": 8,
+      "target_state": "tilt_up_back"
+    },
+    {
+      "id": "tilt_down",
+      "pattern": [2, "P"],
+      "max_window": 14,
+      "min_repeat_frames": 8,
+      "target_state": "tilt_down"
+    },
+    {
+      "id": "tilt_down_forward",
+      "pattern": [3, "P"],
+      "max_window": 14,
+      "min_repeat_frames": 8,
+      "target_state": "tilt_down_forward"
+    },
+    {
+      "id": "tilt_down_back",
+      "pattern": [1, "P"],
+      "max_window": 14,
+      "min_repeat_frames": 8,
+      "target_state": "tilt_down_back"
+    },
+    {
+      "id": "tilt_forward",
+      "pattern": [5, 6, "P"],
+      "max_window": 16,
+      "min_repeat_frames": 8,
+      "target_state": "tilt_side"
+    },
+    {
+      "id": "tilt_back",
+      "pattern": [4, "P"],
+      "max_window": 14,
+      "min_repeat_frames": 8,
+      "target_state": "tilt_side"
+    },
+    {
+      "id": "smash_up",
+      "pattern": [8, 8, "P"],
+      "max_window": 18,
+      "min_repeat_frames": 10,
+      "target_state": "smash_charge_up"
+    },
+    {
+      "id": "smash_down",
+      "pattern": [2, 2, "P"],
+      "max_window": 18,
+      "min_repeat_frames": 10,
+      "target_state": "smash_charge_down"
+    },
+    {
+      "id": "smash_forward",
+      "pattern": [6, 6, "P"],
+      "max_window": 18,
+      "min_repeat_frames": 10,
+      "target_state": "smash_charge_side"
+    },
+    {
+      "id": "smash_back",
+      "pattern": [4, 4, "P"],
+      "max_window": 18,
+      "min_repeat_frames": 10,
+      "target_state": "smash_charge_side"
+    },
+    {
+      "id": "special_side",
+      "pattern": [6, "K"],
+      "max_window": 18,
+      "min_repeat_frames": 12,
+      "target_state": "special_side"
+    },
+    {
+      "id": "special_up",
+      "pattern": [8, "K"],
+      "max_window": 18,
+      "min_repeat_frames": 12,
+      "target_state": "special_up"
+    },
+    {
+      "id": "special_down",
+      "pattern": [2, "K"],
+      "max_window": 18,
+      "min_repeat_frames": 12,
+      "target_state": "special_down"
+    },
+    {
+      "id": "dash_attack",
+      "pattern": [6, "P"],
+      "max_window": 10,
+      "min_repeat_frames": 8,
+      "target_state": "dash_attack"
+    },
+    {
+      "id": "run_forward",
+      "pattern": [6, 6],
+      "max_window": 10,
+      "min_repeat_frames": 10,
+      "target_state": "run"
+    },
+    {
+      "id": "run_back",
+      "pattern": [4, 4],
+      "max_window": 10,
+      "min_repeat_frames": 10,
+      "target_state": "run"
+    },
+    {
+      "id": "jab",
       "pattern": ["P"],
       "max_window": 8,
       "min_repeat_frames": 6,
       "target_state": "p_light"
     },
     {
-      "id": "qcf_p",
-      "pattern": [2, 3, 6, "P"],
-      "max_window": 20,
-      "min_repeat_frames": 10,
-      "target_state": "qcf_p"
-    },
-    {
-      "id": "special",
-      "pattern": [2, 3, 6, "K"],
-      "max_window": 20,
-      "min_repeat_frames": 10,
-      "target_state": "qcf_p"
-    },
-    {
-      "id": "projectile",
+      "id": "special_neutral",
       "pattern": ["K"],
-      "max_window": 8,
-      "min_repeat_frames": 8,
-      "target_state": "qcf_p"
+      "max_window": 10,
+      "min_repeat_frames": 12,
+      "target_state": "special_neutral"
     },
     {
-      "id": "projectile_test",
-      "pattern": ["K"],
-      "max_window": 8,
-      "min_repeat_frames": 8,
-      "target_state": "qcf_p"
+      "id": "spot_dodge",
+      "pattern": [2, "S"],
+      "max_window": 12,
+      "min_repeat_frames": 25,
+      "target_state": "spot_dodge"
     },
     {
-      "id": "parry",
+      "id": "roll_forward",
+      "pattern": [6, "S"],
+      "max_window": 12,
+      "min_repeat_frames": 30,
+      "target_state": "roll_forward"
+    },
+    {
+      "id": "roll_back",
+      "pattern": [4, "S"],
+      "max_window": 12,
+      "min_repeat_frames": 30,
+      "target_state": "roll_back"
+    },
+    {
+      "id": "guard",
       "pattern": ["S"],
       "max_window": 8,
       "min_repeat_frames": 6,
       "target_state": "parry"
+    },
+    {
+      "id": "command_grab",
+      "pattern": [3, 2, 3, "H"],
+      "max_window": 24,
+      "min_repeat_frames": 40,
+      "target_state": "command_grab"
     },
     {
       "id": "throw",
@@ -57,43 +190,11 @@
       "target_state": "throw"
     },
     {
-      "id": "transform_on",
-      "pattern": [2, 1, 4, "S"],
-      "max_window": 20,
-      "min_repeat_frames": 12,
-      "transform_to": "power_form",
-      "transform_state": "transform_start"
-    },
-    {
-      "id": "transform_on_alt",
-      "pattern": [2, 1, 4, "H"],
-      "max_window": 20,
-      "min_repeat_frames": 12,
-      "transform_to": "power_form",
-      "transform_state": "transform_start"
-    },
-    {
-      "id": "transform_off",
-      "pattern": [2, 3, 6, "S"],
-      "max_window": 20,
-      "min_repeat_frames": 12,
-      "revert_transform": true,
-      "transform_state": "transform_end"
-    },
-    {
-      "id": "transform_off_alt",
-      "pattern": [2, 3, 6, "H"],
-      "max_window": 20,
-      "min_repeat_frames": 12,
-      "revert_transform": true,
-      "transform_state": "transform_end"
-    },
-    {
-      "id": "run_forward",
-      "pattern": [6, 6],
-      "max_window": 10,
-      "min_repeat_frames": 10,
-      "target_state": "run"
+      "id": "grabbed_attack",
+      "pattern": ["P"],
+      "max_window": 8,
+      "min_repeat_frames": 4,
+      "target_state": "grabbed_jab"
     }
   ]
 }

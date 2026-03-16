@@ -1,6 +1,13 @@
 {
   "commands": [
     {
+      "id": "grabbed_attack",
+      "pattern": ["P"],
+      "max_window": 8,
+      "min_repeat_frames": 4,
+      "target_state": "grabbed_jab"
+    },
+    {
       "id": "p_light",
       "pattern": ["P"],
       "max_window": 122,

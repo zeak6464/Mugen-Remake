@@ -33,6 +33,8 @@ const CPU_GUARD_HOLD_FRAMES: int = 5
 @export var round_time_seconds: int = 99
 @export var round_reset_delay_seconds: float = 2.0
 @export var round_intro_delay_seconds: float = 1.0
+@export var character_intros_enabled: bool = true
+@export var intro_duration_seconds: float = 2.5
 @export var rounds_to_win: int = 2
 @export var arcade_match_end_delay_seconds: float = 2.5
 @export var match_end_return_delay_seconds: float = 2.0
@@ -103,6 +105,8 @@ const LEARNED_AI_MAX_SAMPLES: int = 3000
 const LEARNED_AI_RECORD_INTERVAL: int = 5
 const LEARNED_AI_FILENAME: String = "learned_ai.json"
 var status_text: String = "Ready"
+var p1_damage_dealt_this_round: int = 0
+var p2_damage_dealt_this_round: int = 0
 var stage_music_player: AudioStreamPlayer = null
 var loaded_stage_instance: Node = null
 var runtime_stage_environment: WorldEnvironment = null
@@ -550,6 +554,10 @@ func _apply_runtime_links(fighter_a: FighterBase, fighter_b: FighterBase) -> voi
 		camera_controller.fighter_a_path = camera_controller.get_path_to(fighter_a)
 		camera_controller.fighter_b_path = camera_controller.get_path_to(fighter_b)
 		_refresh_camera_tracked_fighters()
+	if fighter_a.damage_system != null:
+		fighter_a.damage_system.damage_dealt.connect(_on_damage_dealt)
+	if fighter_b.damage_system != null:
+		fighter_b.damage_system.damage_dealt.connect(_on_damage_dealt)
 	if input_buffer_viewer != null:
 		input_buffer_viewer.target_fighter_path = input_buffer_viewer.get_path_to(fighter_a)
 	_apply_hitbox_debug_state()
@@ -2323,15 +2331,51 @@ func _fighter_is_rising_airborne(fighter: FighterBase) -> bool:
 	return fighter.velocity.y > 0.05
 
 
+func _on_damage_dealt(attacker: Node, _defender: Node, amount: int) -> void:
+	if amount <= 0:
+		return
+	if _is_attacker_p1(attacker):
+		p1_damage_dealt_this_round += amount
+	else:
+		p2_damage_dealt_this_round += amount
+
+
+func _is_attacker_p1(attacker: Node) -> bool:
+	if attacker == active_fighter_a:
+		return true
+	if team_mode_enabled and attacker in team_fighters_p1:
+		return true
+	return false
+
+
+func _get_character_display_name(fighter: FighterBase) -> String:
+	if fighter == null or not is_instance_valid(fighter):
+		return ""
+	var def_data: Dictionary = fighter.character_data.get("def", {})
+	var name_val: String = str(def_data.get("display_name", "")).strip_edges()
+	if name_val.is_empty():
+		name_val = str(def_data.get("name", "")).strip_edges()
+	if name_val.is_empty():
+		name_val = str(fighter.character_id).strip_edges()
+	if name_val.is_empty():
+		var mod_dir: String = fighter.get_mod_directory()
+		if not mod_dir.is_empty():
+			name_val = mod_dir.trim_suffix("/").get_file()
+	return name_val if not name_val.is_empty() else "P?"
+
+
 func _start_round() -> void:
 	round_time_left = round_time_seconds
 	round_accumulator = 0.0
 	round_active = false
 	round_intro_pending = true
-	round_intro_timer = maxf(0.0, round_intro_delay_seconds)
+	var use_intros: bool = character_intros_enabled and _play_intro_states()
+	round_intro_timer = maxf(0.0, intro_duration_seconds if use_intros else round_intro_delay_seconds)
 	round_reset_pending = false
 	round_reset_timer = 0.0
 	match_over = false
+	p1_damage_dealt_this_round = 0
+	p2_damage_dealt_this_round = 0
 	status_text = "Smash - Ready" if smash_mode_enabled else "Round %d - Ready" % round_number
 	SystemSFX.play_battle_from(self, "round_ready")
 	_restore_camera_targets_for_round()
@@ -2340,9 +2384,36 @@ func _start_round() -> void:
 	_apply_hitbox_debug_state()
 
 
+func _play_intro_states() -> bool:
+	var any_intro: bool = false
+	if active_fighter_a != null and is_instance_valid(active_fighter_a) and active_fighter_a.state_controller != null:
+		if active_fighter_a.state_controller.states_data.has("intro"):
+			active_fighter_a.state_controller.change_state("intro")
+			any_intro = true
+	if active_fighter_b != null and is_instance_valid(active_fighter_b) and active_fighter_b.state_controller != null:
+		if active_fighter_b.state_controller.states_data.has("intro"):
+			active_fighter_b.state_controller.change_state("intro")
+			any_intro = true
+	return any_intro
+
+
+func _end_intro_states() -> void:
+	if active_fighter_a != null and is_instance_valid(active_fighter_a) and active_fighter_a.state_controller != null:
+		if active_fighter_a.state_controller.current_state == "intro":
+			var go_state: String = _get_initial_state(active_fighter_a)
+			if not go_state.is_empty():
+				active_fighter_a.state_controller.change_state(go_state)
+	if active_fighter_b != null and is_instance_valid(active_fighter_b) and active_fighter_b.state_controller != null:
+		if active_fighter_b.state_controller.current_state == "intro":
+			var go_state: String = _get_initial_state(active_fighter_b)
+			if not go_state.is_empty():
+				active_fighter_b.state_controller.change_state(go_state)
+
+
 func _restore_camera_targets_for_round() -> void:
 	if camera_controller == null:
 		return
+	camera_controller.winner_zoom_enabled = false
 	if active_fighter_a == null or active_fighter_b == null:
 		return
 	if not is_instance_valid(active_fighter_a) or not is_instance_valid(active_fighter_b):
@@ -2486,6 +2557,7 @@ func _update_round_logic(delta: float) -> void:
 		round_intro_timer -= delta
 		if round_intro_timer <= 0.0:
 			round_intro_pending = false
+			_end_intro_states()
 			round_active = true
 			if input_replay_recorder != null and game_mode != "online" and (dummy_uses_local_input or get_tree().get_meta("save_replay", false)):
 				input_replay_recorder.start_recording()
@@ -2657,25 +2729,20 @@ func _end_round_with_winner(winner: int, message: String) -> void:
 		var next_idx: int = match_idx + 1
 		get_tree().set_meta("tournament_match_index", next_idx)
 		round_active = false
+		match_over = true
+		match_over_return_scene = "res://ui/TournamentBracket.tscn"
+		match_over_timer = maxf(2.0, arcade_match_end_delay_seconds)
+		round_reset_pending = false
+		round_reset_timer = 0.0
+		tournament_next_match_pending = false
 		if next_idx >= total:
 			var champ_name: String = "Unknown"
 			if winner_idx >= 0 and winner_idx < entrants.size():
 				champ_name = str(entrants[winner_idx].get("mod", "Unknown"))
-			match_over = true
-			match_over_return_scene = "res://ui/MainMenu.tscn"
-			match_over_timer = maxf(2.0, arcade_match_end_delay_seconds)
-			round_reset_pending = false
-			round_reset_timer = 0.0
-			tournament_next_match_pending = false
 			status_text = "Champion: %s!" % champ_name
-			SystemSFX.play_battle_from(self, "round_match")
 		else:
-			tournament_next_match_pending = true
-			tournament_next_match_timer = maxf(1.0, round_reset_delay_seconds)
-			round_reset_pending = false
-			round_reset_timer = 0.0
-			status_text = "Next match..."
-			SystemSFX.play_battle_from(self, "round_win")
+			status_text = "Match complete - Bracket"
+		SystemSFX.play_battle_from(self, "round_win")
 		return
 	round_reset_pending = true
 	round_reset_timer = round_reset_delay_seconds
@@ -2717,6 +2784,7 @@ func _focus_camera_on_winner(winner: int) -> void:
 	var winner_path: NodePath = camera_controller.get_path_to(winner_fighter)
 	camera_controller.fighter_a_path = winner_path
 	camera_controller.fighter_b_path = winner_path
+	camera_controller.winner_zoom_enabled = true
 	if camera_controller.has_method("set_tracked_fighter_paths"):
 		var winner_paths: Array[NodePath] = [winner_path]
 		camera_controller.set_tracked_fighter_paths(winner_paths)
@@ -3558,6 +3626,8 @@ func _update_hud() -> void:
 		status_display = "P1 %d stock | %.0f%%   vs   P2 %d stock | %.0f%%" % [p1_stocks, active_fighter_a.smash_percent, p2_stocks, active_fighter_b.smash_percent]
 	if round_reset_pending and not replay_playback_active and dummy_uses_local_input and input_replay_recorder != null and input_replay_recorder.get_recorded_frame_count() > 0:
 		status_display += " | R=Replay"
+	var p1_name: String = _get_character_display_name(active_fighter_a)
+	var p2_name: String = _get_character_display_name(active_fighter_b)
 	target_hud.call(
 		"set_battle_state",
 		{
@@ -3569,6 +3639,8 @@ func _update_hud() -> void:
 			"p2_resource": p2_resource,
 			"p1_max_resource": p1_max_resource,
 			"p2_max_resource": p2_max_resource,
+			"p1_name": p1_name,
+			"p2_name": p2_name,
 			"time_left": round_time_left,
 			"round_number": round_number,
 			"p1_wins": p1_wins,
@@ -3583,7 +3655,10 @@ func _update_hud() -> void:
 			"p1_team_remaining": p1_team_remaining,
 			"p2_team_remaining": p2_team_remaining,
 			"p1_team_status": p1_team_status,
-			"p2_team_status": p2_team_status
+			"p2_team_status": p2_team_status,
+			"p1_damage_dealt": p1_damage_dealt_this_round,
+			"p2_damage_dealt": p2_damage_dealt_this_round,
+			"show_round_result": not round_active and (status_text.contains("Win") or status_text.contains("Draw") or status_text.contains("KO") or status_text.contains("Champion") or status_text.contains("Returning"))
 		}
 	)
 

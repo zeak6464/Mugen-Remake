@@ -19,6 +19,7 @@ config/icon="res://icon.svg"
 
 GDAIMCPRuntime="*uid://dcne7ryelpxmn"
 NetworkManager="*res://engine/NetworkManager.gd"
+StatusEffectRegistry="*res://engine/StatusEffectRegistry.gd"
 VFX="*res://addons/vfx_library/vfx.gd"
 EnvVFX="*res://addons/vfx_library/env_vfx.gd"
 
