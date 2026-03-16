@@ -5,6 +5,7 @@ signal button_config_requested
 signal exit_requested(target_scene: String)
 signal toggle_hitbox_requested
 signal open_hitbox_editor_requested
+signal record_learned_ai_requested(enabled: bool)
 
 const SETTINGS_PATH: String = "user://options.cfg"
 const CONTROLS_MENU_SCENE: PackedScene = preload("res://ui/ControlsMenu.tscn")
@@ -14,6 +15,8 @@ const CONTROLS_MENU_SCENE: PackedScene = preload("res://ui/ControlsMenu.tscn")
 @onready var toggle_hitbox_button: Button = $Root/CenterContainer/Panel/Content/MainScroll/MainVBox/ToggleHitboxButton
 @onready var hitbox_editor_hint_label: Label = $Root/CenterContainer/Panel/Content/MainScroll/MainVBox/HitboxEditStatusLabel
 @onready var open_hitbox_editor_button: Button = $Root/CenterContainer/Panel/Content/MainScroll/MainVBox/ToggleHitboxEditButton
+@onready var record_for_cpu_row: Control = $Root/CenterContainer/Panel/Content/MainScroll/MainVBox/RecordForCpuRow
+@onready var record_for_cpu_check: CheckBox = $Root/CenterContainer/Panel/Content/MainScroll/MainVBox/RecordForCpuRow/RecordForCpuCheckBox
 @onready var content_root: Control = $Root/CenterContainer/Panel/Content
 @onready var main_scroll: ScrollContainer = $Root/CenterContainer/Panel/Content/MainScroll
 @onready var main_vbox: Control = $Root/CenterContainer/Panel/Content/MainScroll/MainVBox
@@ -59,6 +62,12 @@ func _ready() -> void:
 			SystemSFX.play_ui_from(self, "ui_confirm")
 			open_hitbox_editor_requested.emit()
 	)
+	if record_for_cpu_check != null:
+		record_for_cpu_check.toggled.connect(
+			func(enabled: bool) -> void:
+				SystemSFX.play_ui_from(self, "ui_confirm")
+				record_learned_ai_requested.emit(enabled)
+		)
 	move_list_button.pressed.connect(
 		func() -> void:
 			SystemSFX.play_ui_from(self, "ui_confirm")
@@ -114,7 +123,7 @@ func _ready() -> void:
 	hide_menu()
 
 
-func _unhandled_input(event: InputEvent) -> void:
+func _input(event: InputEvent) -> void:
 	if not visible:
 		return
 	if controls_overlay != null and is_instance_valid(controls_overlay):
@@ -231,8 +240,12 @@ func hide_menu() -> void:
 	_close_controls_overlay()
 
 
-func set_menu_state(is_training_mode: bool, _dummy_local_input: bool, hitbox_debug: bool) -> void:
+func set_menu_state(is_training_mode: bool, _dummy_local_input: bool, hitbox_debug: bool, record_learned_ai: bool = false) -> void:
 	current_is_training_mode = is_training_mode
+	if record_for_cpu_row != null:
+		record_for_cpu_row.visible = is_training_mode
+	if record_for_cpu_check != null:
+		record_for_cpu_check.button_pressed = record_learned_ai
 	_update_debug_state_label(hitbox_debug)
 	_update_hitbox_editor_ui()
 

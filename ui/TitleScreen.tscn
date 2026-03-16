@@ -2,7 +2,11 @@
 
 [ext_resource type="Script" uid="uid://cfvq345ogo5y7" path="res://ui/TitleScreen.gd" id="1_title_screen_script"]
 [ext_resource type="Theme" uid="uid://ksxjx5uqcuqd" path="res://ui/theme/GlobalUITheme.tres" id="2_global_theme"]
-[ext_resource type="Texture2D" uid="uid://bm8u4jte2tmid" path="res://ui/Menu/TitleScreen.jpg" id="3_emmnt"]
+[ext_resource type="Texture2D" uid="uid://b8cv63vn2mrf3" path="res://ui/Menu/Title.png" id="3_emmnt"]
+[ext_resource type="Texture2D" uid="uid://bhmtthbt7ogx2" path="res://ui/Menu/Sky.png" id="3_p7j3k"]
+[ext_resource type="PackedScene" path="res://ui/TitleScreenFire.tscn" id="4_fire"]
+[ext_resource type="Texture2D" uid="uid://bhqpd2j5ouuxl" path="res://ui/Menu/Background.png" id="5_ddekp"]
+[ext_resource type="Texture2D" uid="uid://d1o4ribaasryq" path="res://ui/Menu/Fire.png" id="5_revie"]
 
 [node name="TitleScreen" type="Control" unique_id=1867827904]
 layout_mode = 3
@@ -15,16 +19,36 @@ grow_vertical = 2
 theme = ExtResource("2_global_theme")
 script = ExtResource("1_title_screen_script")
 
-[node name="Sprite2D" type="Sprite2D" parent="." unique_id=1143368965]
-position = Vector2(641.25006, 480)
-scale = Vector2(0.9996094, 1.3250002)
+[node name="Sky" type="Sprite2D" parent="." unique_id=134547485]
+position = Vector2(642.5, 476.99994)
+scale = Vector2(1.5649507, 1.1715685)
+texture = ExtResource("3_p7j3k")
+
+[node name="FireViewportContainer" parent="." unique_id=967141056 instance=ExtResource("4_fire")]
+layout_mode = 1
+offset_bottom = 236.0
+
+[node name="Fire" type="Sprite2D" parent="." unique_id=755340968]
+position = Vector2(644, 733)
+scale = Vector2(0.5438467, 0.34697068)
+texture = ExtResource("5_revie")
+
+[node name="Logo" type="Sprite2D" parent="." unique_id=1143368965]
+position = Vector2(642, 480.49997)
+scale = Vector2(0.8307291, 0.9326171)
 texture = ExtResource("3_emmnt")
+
+[node name="Black Boarder" type="Sprite2D" parent="." unique_id=186512770]
+position = Vector2(642.2389, 479.51688)
+scale = Vector2(1.5969027, 1.6016102)
+texture = ExtResource("5_ddekp")
 
 [node name="CenterContainer" type="Control" parent="." unique_id=1392439906]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+offset_bottom = 238.0
 grow_horizontal = 2
 grow_vertical = 2
 
@@ -33,19 +57,21 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_bottom = 237.0
+offset_bottom = -5.0
 grow_horizontal = 2
 grow_vertical = 2
 
 [node name="PromptLabel" type="Label" parent="CenterContainer/VBoxContainer" unique_id=234540514]
 layout_mode = 0
-offset_left = 308.0
-offset_top = 676.0
-offset_right = 988.0
-offset_bottom = 715.0
-theme_override_colors/font_color = Color(0, 0, 0, 1)
-theme_override_colors/font_outline_color = Color(0.74509805, 1, 0.21568628, 1)
+offset_left = 516.0
+offset_top = 818.0
+offset_right = 733.0
+offset_bottom = 857.0
+theme_override_colors/font_color = Color(0.2, 0.5, 1, 1)
+theme_override_colors/font_outline_color = Color(0.1, 0.25, 0.6, 1)
 theme_override_constants/outline_size = 1
 theme_override_font_sizes/font_size = 28
-text = "Press Attack (P) or Enter to Start"
+text = "PRESS START"
 horizontal_alignment = 1
+
+[node name="Node3D" type="Node3D" parent="." unique_id=1603833105]

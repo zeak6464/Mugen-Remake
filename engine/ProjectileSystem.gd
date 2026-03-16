@@ -28,10 +28,11 @@ func spawn_projectile(projectile_id: String, facing_right: bool, spawn_origin: V
 		spawn_offset.x *= -1.0
 
 	var velocity: Vector3 = _to_vector3(def.get("velocity", Vector3.ZERO))
-	if velocity.is_zero_approx():
+	var stationary: bool = bool(def.get("stationary", false))
+	if not stationary and velocity.is_zero_approx():
 		var speed: float = float(def.get("speed", 8.0))
 		velocity = Vector3(speed if facing_right else -speed, 0.0, 0.0)
-	elif not facing_right:
+	elif not facing_right and not velocity.is_zero_approx():
 		velocity.x *= -1.0
 
 	var size: Vector3 = _to_vector3(def.get("size", Vector3(0.4, 0.4, 0.4)))
@@ -56,6 +57,13 @@ func _on_projectile_hit(attacker: Node, defender: Node, hit_data: Dictionary) ->
 
 func _on_projectile_expired(projectile: ProjectileBase) -> void:
 	active_projectiles.erase(projectile)
+
+
+func clear_active_projectiles() -> void:
+	for p in active_projectiles:
+		if is_instance_valid(p):
+			p.queue_free()
+	active_projectiles.clear()
 
 
 func _get_projectile_definition(projectile_id: String) -> Dictionary:

@@ -18,6 +18,7 @@ config/icon="res://icon.svg"
 [autoload]
 
 GDAIMCPRuntime="*uid://dcne7ryelpxmn"
+NetworkManager="*res://engine/NetworkManager.gd"
 VFX="*res://addons/vfx_library/vfx.gd"
 EnvVFX="*res://addons/vfx_library/env_vfx.gd"
 

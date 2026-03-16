@@ -18,12 +18,12 @@ const DIFFICULTY_CHOICES: Array[String] = [
 	"Very Hard 7",
 	"Very Hard 8"
 ]
-const TIME_LIMIT_CHOICES: Array[int] = [30, 60, 99, 120, 180]
-const SMASH_STOCK_CHOICES: Array[int] = [1, 2, 3, 4, 5, 6, 7, 8]
+const TIME_LIMIT_CHOICES: Array[int] = [0, 30, 60, 99, 120, 180]
+const SMASH_STOCK_MAX: int = 99
 const GAME_SPEED_CHOICES: Array[String] = ["Slow", "Normal", "Fast", "Turbo"]
 const GAME_SPEED_SCALES: Array[float] = [0.9, 1.0, 1.1, 1.2]
 const DEFAULT_DIFFICULTY_INDEX: int = 3
-const DEFAULT_TIME_LIMIT_INDEX: int = 2
+const DEFAULT_TIME_LIMIT_INDEX: int = 3
 const DEFAULT_SMASH_STOCK_INDEX: int = 2
 const DEFAULT_GAME_SPEED_INDEX: int = 1
 const DEFAULT_LIFE_PERCENT: float = 100.0
@@ -99,7 +99,7 @@ func _ready() -> void:
 	difficulty_option.grab_focus()
 
 
-func _unhandled_input(event: InputEvent) -> void:
+func _input(event: InputEvent) -> void:
 	var viewport := get_viewport()
 	if viewport == null:
 		return
@@ -248,14 +248,15 @@ func _build_difficulty_options() -> void:
 
 func _build_time_limit_options() -> void:
 	time_limit_option.clear()
-	for i in range(TIME_LIMIT_CHOICES.size()):
+	time_limit_option.add_item("Infinite", 0)
+	for i in range(1, TIME_LIMIT_CHOICES.size()):
 		time_limit_option.add_item(str(TIME_LIMIT_CHOICES[i]), i)
 
 
 func _build_smash_stock_options() -> void:
 	smash_stocks_option.clear()
-	for i in range(SMASH_STOCK_CHOICES.size()):
-		smash_stocks_option.add_item(str(SMASH_STOCK_CHOICES[i]), i)
+	for i in range(SMASH_STOCK_MAX):
+		smash_stocks_option.add_item(str(i + 1), i)
 
 
 func _build_game_speed_options() -> void:
@@ -380,7 +381,7 @@ func _load_and_apply_settings() -> void:
 	time_limit_index = clampi(time_limit_index, 0, TIME_LIMIT_CHOICES.size() - 1)
 	time_limit_option.select(time_limit_index)
 
-	smash_stock_index = clampi(smash_stock_index, 0, SMASH_STOCK_CHOICES.size() - 1)
+	smash_stock_index = clampi(smash_stock_index, 0, SMASH_STOCK_MAX - 1)
 	smash_stocks_option.select(smash_stock_index)
 
 	game_speed_index = clampi(game_speed_index, 0, GAME_SPEED_CHOICES.size() - 1)
@@ -416,7 +417,7 @@ func _save_current_settings() -> void:
 	cfg.set_value("gameplay", "time_limit_index", time_limit_option.get_selected_id())
 	cfg.set_value("gameplay", "time_limit_seconds", TIME_LIMIT_CHOICES[time_limit_option.get_selected_id()])
 	cfg.set_value("gameplay", "smash_stock_index", smash_stocks_option.get_selected_id())
-	cfg.set_value("gameplay", "smash_stocks", SMASH_STOCK_CHOICES[smash_stocks_option.get_selected_id()])
+	cfg.set_value("gameplay", "smash_stocks", smash_stocks_option.get_selected_id() + 1)
 	cfg.set_value("gameplay", "game_speed_index", game_speed_option.get_selected_id())
 	cfg.set_value("gameplay", "game_speed_scale", GAME_SPEED_SCALES[game_speed_option.get_selected_id()])
 	cfg.set_value("video", "resolution_index", resolution_option.get_selected_id())
@@ -474,5 +475,5 @@ func _publish_runtime_option_meta() -> void:
 	tree.set_meta("option_difficulty_index", difficulty_option.get_selected_id())
 	tree.set_meta("option_life_percent", life_slider.value)
 	tree.set_meta("option_time_limit_seconds", TIME_LIMIT_CHOICES[time_limit_option.get_selected_id()])
-	tree.set_meta("option_smash_stocks", SMASH_STOCK_CHOICES[smash_stocks_option.get_selected_id()])
+	tree.set_meta("option_smash_stocks", smash_stocks_option.get_selected_id() + 1)
 	tree.set_meta("option_game_speed_scale", GAME_SPEED_SCALES[game_speed_option.get_selected_id()])

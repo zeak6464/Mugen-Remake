@@ -1,9 +1,9 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://b0l8p2ta40qhk"]
 
-[ext_resource type="Script" path="res://ui/ModelViewer.gd" id="1_script"]
-[ext_resource type="Theme" path="res://ui/theme/GlobalUITheme.tres" id="2_theme"]
+[ext_resource type="Script" uid="uid://dctv6tblwwkue" path="res://ui/ModelViewer.gd" id="1_script"]
+[ext_resource type="Theme" uid="uid://ksxjx5uqcuqd" path="res://ui/theme/GlobalUITheme.tres" id="2_theme"]
 
-[node name="ModelViewer" type="Control"]
+[node name="ModelViewer" type="Control" unique_id=147466680]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -13,7 +13,7 @@ grow_vertical = 2
 theme = ExtResource("2_theme")
 script = ExtResource("1_script")
 
-[node name="Background" type="ColorRect" parent="."]
+[node name="Background" type="ColorRect" parent="." unique_id=1568935127]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -22,7 +22,7 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.05, 0.07, 0.1, 1)
 
-[node name="MarginContainer" type="MarginContainer" parent="."]
+[node name="MarginContainer" type="MarginContainer" parent="." unique_id=729364823]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -34,89 +34,90 @@ offset_bottom = -20.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer" unique_id=584934098]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 theme_override_constants/separation = 8
 
-[node name="TopRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+[node name="TopRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer" unique_id=1806056544]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 8
 
-[node name="ModOption" type="OptionButton" parent="MarginContainer/VBoxContainer/TopRow"]
+[node name="ModOption" type="OptionButton" parent="MarginContainer/VBoxContainer/TopRow" unique_id=1176271214]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="PrevButton" type="Button" parent="MarginContainer/VBoxContainer/TopRow"]
+[node name="PrevButton" type="Button" parent="MarginContainer/VBoxContainer/TopRow" unique_id=972449598]
 custom_minimum_size = Vector2(90, 0)
 layout_mode = 2
 text = "Prev"
 
-[node name="NextButton" type="Button" parent="MarginContainer/VBoxContainer/TopRow"]
+[node name="NextButton" type="Button" parent="MarginContainer/VBoxContainer/TopRow" unique_id=1447388283]
 custom_minimum_size = Vector2(90, 0)
 layout_mode = 2
 text = "Next"
 
-[node name="BackButton" type="Button" parent="MarginContainer/VBoxContainer/TopRow"]
+[node name="BackButton" type="Button" parent="MarginContainer/VBoxContainer/TopRow" unique_id=1683178810]
 custom_minimum_size = Vector2(110, 0)
 layout_mode = 2
 text = "Back"
 
-[node name="StatusLabel" type="Label" parent="MarginContainer/VBoxContainer"]
+[node name="StatusLabel" type="Label" parent="MarginContainer/VBoxContainer" unique_id=600183729]
 layout_mode = 2
 text = "Model Viewer"
 
-[node name="AnimationRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+[node name="AnimationRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer" unique_id=1745051165]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="AnimationLabel" type="Label" parent="MarginContainer/VBoxContainer/AnimationRow"]
+[node name="AnimationLabel" type="Label" parent="MarginContainer/VBoxContainer/AnimationRow" unique_id=1587330928]
 layout_mode = 2
 text = "Animation"
 
-[node name="AnimationOption" type="OptionButton" parent="MarginContainer/VBoxContainer/AnimationRow"]
+[node name="AnimationOption" type="OptionButton" parent="MarginContainer/VBoxContainer/AnimationRow" unique_id=1969573814]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="PreviewPanel" type="Panel" parent="MarginContainer/VBoxContainer"]
+[node name="PreviewPanel" type="Panel" parent="MarginContainer/VBoxContainer" unique_id=172522274]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
-[node name="PreviewViewportContainer" type="SubViewportContainer" parent="MarginContainer/VBoxContainer/PreviewPanel"]
+[node name="PreviewViewportContainer" type="SubViewportContainer" parent="MarginContainer/VBoxContainer/PreviewPanel" unique_id=505446082]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = 8.0
 offset_top = 8.0
-offset_right = -8.0
+offset_right = -9.0
 offset_bottom = -8.0
 grow_horizontal = 2
 grow_vertical = 2
 stretch = true
 
-[node name="PreviewViewport" type="SubViewport" parent="MarginContainer/VBoxContainer/PreviewPanel/PreviewViewportContainer"]
-size = Vector2i(1200, 640)
-render_target_update_mode = 4
+[node name="PreviewViewport" type="SubViewport" parent="MarginContainer/VBoxContainer/PreviewPanel/PreviewViewportContainer" unique_id=2009868929]
 own_world_3d = true
-transparent_bg = false
+handle_input_locally = false
+size = Vector2i(1223, 784)
+render_target_update_mode = 4
 
-[node name="PreviewWorld" type="Node3D" parent="MarginContainer/VBoxContainer/PreviewPanel/PreviewViewportContainer/PreviewViewport"]
+[node name="PreviewWorld" type="Node3D" parent="MarginContainer/VBoxContainer/PreviewPanel/PreviewViewportContainer/PreviewViewport" unique_id=812832164]
 
-[node name="DirectionalLight3D" type="DirectionalLight3D" parent="MarginContainer/VBoxContainer/PreviewPanel/PreviewViewportContainer/PreviewViewport/PreviewWorld"]
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="MarginContainer/VBoxContainer/PreviewPanel/PreviewViewportContainer/PreviewViewport/PreviewWorld" unique_id=1633138055]
 transform = Transform3D(0.90630776, -0.24240388, 0.34618863, 0, 0.81915206, 0.57357645, -0.42261827, -0.5198368, 0.74240386, 0, 0, 0)
 light_energy = 1.2
 
-[node name="OmniLight3D" type="OmniLight3D" parent="MarginContainer/VBoxContainer/PreviewPanel/PreviewViewportContainer/PreviewViewport/PreviewWorld"]
+[node name="OmniLight3D" type="OmniLight3D" parent="MarginContainer/VBoxContainer/PreviewPanel/PreviewViewportContainer/PreviewViewport/PreviewWorld" unique_id=602799267]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 1.8, 2)
 light_energy = 0.7
 
-[node name="Camera3D" type="Camera3D" parent="MarginContainer/VBoxContainer/PreviewPanel/PreviewViewportContainer/PreviewViewport/PreviewWorld"]
-transform = Transform3D(1, 0, 0, 0, 0.978148, 0.207912, 0, -0.207912, 0.978148, 0, 1.8, 4.2)
-fov = 22.0
+[node name="Camera3D" type="Camera3D" parent="MarginContainer/VBoxContainer/PreviewPanel/PreviewViewportContainer/PreviewViewport/PreviewWorld" unique_id=62603295]
+transform = Transform3D(1, 0, 0, 0, 0.9781476, 0.20791192, 0, -0.20791192, 0.9781476, 0, 0.29534245, 4.736217)
 current = true
+fov = 22.0
+near = 0.01
 
-[node name="ModelRoot" type="Node3D" parent="MarginContainer/VBoxContainer/PreviewPanel/PreviewViewportContainer/PreviewViewport/PreviewWorld"]
+[node name="ModelRoot" type="Node3D" parent="MarginContainer/VBoxContainer/PreviewPanel/PreviewViewportContainer/PreviewViewport/PreviewWorld" unique_id=615298234]

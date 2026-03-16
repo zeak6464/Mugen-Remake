@@ -59,6 +59,7 @@ var preview_fill_light_p2_source: OmniLight3D = null
 const ROSTER_PAGE_SIZE: int = 8
 
 var game_mode: String = "training"
+var watch_match_type: String = ""
 var team_mode_subtype: String = "simul"
 var team_size_p1: int = 2
 var team_size_p2: int = 2
@@ -166,8 +167,9 @@ func _control_player_for_input(event: InputEvent) -> int:
 
 func _resolve_mode() -> void:
 	game_mode = str(get_tree().get_meta("game_mode", "training")).to_lower()
-	if game_mode != "arcade" and game_mode != "versus" and game_mode != "smash" and game_mode != "team" and game_mode != "survival" and game_mode != "watch":
+	if game_mode != "arcade" and game_mode != "versus" and game_mode != "smash" and game_mode != "team" and game_mode != "survival" and game_mode != "watch" and game_mode != "online" and game_mode != "coop" and game_mode != "tournament":
 		game_mode = "training"
+	watch_match_type = str(get_tree().get_meta("watch_match_type", "")).to_lower() if game_mode == "watch" else ""
 	team_mode_subtype = str(get_tree().get_meta("team_mode_subtype", "simul")).to_lower()
 	if team_mode_subtype != "simul" and team_mode_subtype != "turns" and team_mode_subtype != "tag":
 		team_mode_subtype = "simul"
@@ -191,15 +193,32 @@ func _resolve_mode() -> void:
 			_set_label_text(instruction_label, "Smash Mode - Draft both teams")
 			_set_label_text(mode_label, "SMASH")
 		"watch":
-			_set_label_text(instruction_label, "Watch Mode - P1 drafts both CPU teams")
+			if watch_match_type == "team":
+				_set_label_text(instruction_label, "Watch: Tag - P1 drafts both CPU rosters")
+			else:
+				_set_label_text(instruction_label, "Watch Mode - P1 drafts both CPU teams")
 			_set_label_text(mode_label, "WATCH")
+		"coop":
+			_set_label_text(instruction_label, "Co-op vs CPU - P1 and P2 pick your team, then continue")
+			_set_label_text(mode_label, "CO-OP")
+		"tournament":
+			var n: int = clampi(int(get_tree().get_meta("tournament_size", 4)), 4, 16)
+			_set_label_text(instruction_label, "Tournament - Press Attack(P) to draw %d random CPU fighters" % n)
+			_set_label_text(mode_label, "TOURNAMENT")
+		"online":
+			_set_label_text(instruction_label, "Online - Pick your character")
+			_set_label_text(mode_label, "ONLINE")
 		_:
 			_set_label_text(instruction_label, "Training Mode - P1 Draft")
 			_set_label_text(mode_label, "TRAINING")
 
 
 func _uses_dual_player() -> bool:
-	return game_mode == "versus" or game_mode == "smash" or game_mode == "team" or game_mode == "watch"
+	return game_mode == "versus" or game_mode == "smash" or game_mode == "team" or game_mode == "watch" or game_mode == "online" or game_mode == "coop"
+
+
+func _is_team_roster_mode() -> bool:
+	return game_mode == "team" or game_mode == "coop" or (game_mode == "watch" and watch_match_type == "team")
 
 
 func _load_mod_entries() -> void:
@@ -340,6 +359,9 @@ func _move_variant(delta: int) -> void:
 func _confirm_player(player_id: int) -> void:
 	if player_id == 2 and not _uses_dual_player():
 		return
+	if game_mode == "tournament":
+		_commit_selection()
+		return
 	if _is_player_locked(player_id):
 		if _all_required_locked():
 			_commit_selection()
@@ -363,12 +385,30 @@ func _commit_folder_pick(player_id: int) -> void:
 	var form_id: String = _folder_selected_form(mod_entry)
 	var costume_id: String = ""
 
-	if game_mode == "team":
-		var roster: Array[Dictionary] = p1_team_roster if player_id == 1 else p2_team_roster
-		var size_limit: int = team_size_p1 if player_id == 1 else team_size_p2
+	if _is_team_roster_mode():
+		var roster: Array[Dictionary]
+		var size_limit: int
+		if game_mode == "coop":
+			roster = p1_team_roster
+			size_limit = team_size_p1
+		else:
+			roster = p1_team_roster if player_id == 1 else p2_team_roster
+			size_limit = team_size_p1 if player_id == 1 else team_size_p2
 		if roster.size() < size_limit:
 			roster.append({"mod": mod_name, "form": form_id, "costume": costume_id})
-		if player_id == 1:
+		if game_mode == "coop":
+			p1_team_roster = roster
+			if player_id == 1:
+				p1_selected_mod = mod_name
+				p1_selected_form = form_id
+				p1_selected_costume = costume_id
+			else:
+				p2_selected_mod = mod_name
+				p2_selected_form = form_id
+				p2_selected_costume = costume_id
+			p1_locked = p1_team_roster.size() >= 1
+			p2_locked = p1_team_roster.size() >= 2
+		elif player_id == 1:
 			p1_team_roster = roster
 			p1_selected_mod = mod_name
 			p1_selected_form = form_id
@@ -407,7 +447,7 @@ func _handle_cancel() -> void:
 		return
 	if active_player == 1 and p1_locked:
 		p1_locked = false
-		if game_mode == "team" and not p1_team_roster.is_empty():
+		if _is_team_roster_mode() and not p1_team_roster.is_empty():
 			p1_team_roster.remove_at(p1_team_roster.size() - 1)
 		if game_mode == "watch":
 			active_player = 1
@@ -416,8 +456,11 @@ func _handle_cancel() -> void:
 		return
 	if _uses_dual_player() and active_player == 2 and p2_locked:
 		p2_locked = false
-		if game_mode == "team" and not p2_team_roster.is_empty():
-			p2_team_roster.remove_at(p2_team_roster.size() - 1)
+		if _is_team_roster_mode():
+			if game_mode == "coop" and not p1_team_roster.is_empty():
+				p1_team_roster.remove_at(p1_team_roster.size() - 1)
+			elif not p2_team_roster.is_empty():
+				p2_team_roster.remove_at(p2_team_roster.size() - 1)
 		if game_mode == "watch":
 			active_player = 2
 		SystemSFX.play_ui_from(self, "ui_back")
@@ -482,7 +525,11 @@ func _is_player_locked(player_id: int) -> bool:
 
 
 func _all_required_locked() -> bool:
-	if game_mode == "team":
+	if game_mode == "online":
+		if bool(get_tree().get_meta("online_host", false)):
+			return p1_locked
+		return p2_locked
+	if _is_team_roster_mode():
 		return p1_locked and p2_locked
 	if _uses_dual_player():
 		return p1_locked and p2_locked
@@ -618,7 +665,7 @@ func _refresh_team_slots(container: Control, roster: Array[Dictionary], size_req
 		return
 	for child in container.get_children():
 		child.queue_free()
-	var needed: int = size_required if game_mode == "team" else 2
+	var needed: int = size_required if _is_team_roster_mode() else 2
 	for i in range(needed):
 		var slot := Label.new()
 		slot.custom_minimum_size = Vector2(118, 28)
@@ -766,7 +813,10 @@ func _refresh_overlay_and_status() -> void:
 			"Folder open: current form is %s. Use H/S or click to change forms, then press Attack(P) to lock it."
 			% _current_form_display_name(folder_player)
 		)
-	elif game_mode == "team":
+	elif game_mode == "tournament":
+		var n: int = clampi(int(get_tree().get_meta("tournament_size", 4)), 4, 16)
+		_set_label_text(status_label, "Press Attack(P) to draw %d random CPU fighters and start tournament." % n)
+	elif _is_team_roster_mode():
 		_set_label_text(status_label, "Team draft: open a character folder, choose the form, and lock each team slot.")
 	else:
 		_set_label_text(status_label, "Attack(P) opens the character folder, then Attack(P) locks the highlighted Base/Form.")
@@ -779,13 +829,26 @@ func _mod_name_at(index: int) -> String:
 
 
 func _commit_selection() -> void:
+	if game_mode == "tournament":
+		var n: int = clampi(int(get_tree().get_meta("tournament_size", 4)), 4, 16)
+		var entrants: Array = _draw_random_entrants(n)
+		if entrants.size() >= 2:
+			get_tree().set_meta("tournament_entrants", entrants)
+			get_tree().set_meta("tournament_match_index", 0)
+			get_tree().set_meta("tournament_round_results", [])
+			get_tree().change_scene_to_file(stage_select_scene_path)
+		return
 	if p1_selected_mod.is_empty() and not available_mods.is_empty():
 		p1_selected_mod = str(available_mods[0].get("name", ""))
 
-	if game_mode == "team":
+	if _is_team_roster_mode():
 		if p1_team_roster.is_empty() and not p1_selected_mod.is_empty():
 			p1_team_roster.append({"mod": p1_selected_mod, "form": p1_selected_form, "costume": p1_selected_costume})
-		if p2_team_roster.is_empty():
+		if game_mode == "coop":
+			while p2_team_roster.size() < team_size_p2:
+				var seed_mod: String = p1_team_roster[0].get("mod", "") if not p1_team_roster.is_empty() else ""
+				p2_team_roster.append({"mod": _pick_arcade_opponent(seed_mod), "form": "", "costume": ""})
+		elif p2_team_roster.is_empty():
 			if not p2_selected_mod.is_empty():
 				p2_team_roster.append({"mod": p2_selected_mod, "form": p2_selected_form, "costume": p2_selected_costume})
 			elif not p1_team_roster.is_empty():
@@ -803,6 +866,28 @@ func _commit_selection() -> void:
 		get_tree().set_meta("training_p2_mod", str(p2_first.get("mod", "")))
 		get_tree().set_meta("training_p2_form", str(p2_first.get("form", "")))
 		get_tree().set_meta("training_p2_costume", str(p2_first.get("costume", "")))
+		get_tree().change_scene_to_file(stage_select_scene_path)
+		return
+
+	if game_mode == "online":
+		var is_host: bool = bool(get_tree().get_meta("online_host", false))
+		if is_host:
+			get_tree().set_meta("training_p1_mod", p1_selected_mod)
+			get_tree().set_meta("training_p1_form", p1_selected_form)
+			get_tree().set_meta("training_p1_costume", p1_selected_costume)
+			get_tree().set_meta("training_p2_mod", "")
+			get_tree().set_meta("training_p2_form", "")
+			get_tree().set_meta("training_p2_costume", "")
+		else:
+			NetworkManager.send_my_character_selection(p2_selected_mod)
+			get_tree().set_meta("training_p1_mod", "")
+			get_tree().set_meta("training_p1_form", "")
+			get_tree().set_meta("training_p1_costume", "")
+			get_tree().set_meta("training_p2_mod", p2_selected_mod)
+			get_tree().set_meta("training_p2_form", p2_selected_form)
+			get_tree().set_meta("training_p2_costume", p2_selected_costume)
+		get_tree().set_meta("team_roster_p1", [])
+		get_tree().set_meta("team_roster_p2", [])
 		get_tree().change_scene_to_file(stage_select_scene_path)
 		return
 
@@ -833,6 +918,23 @@ func _commit_selection() -> void:
 	get_tree().set_meta("team_roster_p1", [])
 	get_tree().set_meta("team_roster_p2", [])
 	get_tree().change_scene_to_file(stage_select_scene_path)
+
+
+func _draw_random_entrants(n: int) -> Array:
+	var out: Array = []
+	if available_mods.is_empty():
+		return out
+	n = maxi(2, mini(n, 16))
+	for i in range(n):
+		var idx: int = randi() % available_mods.size()
+		var entry: Dictionary = available_mods[idx]
+		var mod_name: String = str(entry.get("name", ""))
+		var forms: Array = entry.get("forms", [])
+		var form_id: String = ""
+		if forms.size() > 0:
+			form_id = str(forms[randi() % forms.size()])
+		out.append({"mod": mod_name, "form": form_id, "costume": ""})
+	return out
 
 
 func _pick_arcade_opponent(player_mod: String) -> String:

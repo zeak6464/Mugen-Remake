@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" uid="uid://ce2sxoq53m8q1" path="res://ui/MainMenu.gd" id="1_main_menu_script"]
 [ext_resource type="Theme" uid="uid://ksxjx5uqcuqd" path="res://ui/theme/GlobalUITheme.tres" id="2_global_theme"]
+[ext_resource type="Texture2D" uid="uid://b8cv63vn2mrf3" path="res://ui/Menu/Title.png" id="3_nmrkx"]
 
 [node name="MainMenu" type="Control" unique_id=48417875]
 layout_mode = 3
@@ -14,21 +15,24 @@ theme = ExtResource("2_global_theme")
 script = ExtResource("1_main_menu_script")
 
 [node name="BackgroundColor" type="ColorRect" parent="." unique_id=1361919415]
-layout_mode = 0
+layout_mode = 1
+anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
 color = Color(0.06, 0.06, 0.08, 1)
+
+[node name="Logo" type="Sprite2D" parent="." unique_id=1281717510]
+position = Vector2(813, 482)
+scale = Vector2(0.5729167, 0.6564941)
+texture = ExtResource("3_nmrkx")
 
 [node name="TitleLabel" type="Label" parent="." unique_id=1287810162]
 layout_mode = 0
-offset_left = 515.0
-offset_top = 119.0
-offset_right = 835.0
-offset_bottom = 158.0
+offset_left = 18.0
+offset_top = 14.0
+offset_right = 338.0
+offset_bottom = 53.0
 theme_override_font_sizes/font_size = 28
-text = "MUGEN REMAKE"
 horizontal_alignment = 1
 
 [node name="CenterContainer" type="CenterContainer" parent="." unique_id=672242037]
@@ -125,6 +129,209 @@ custom_minimum_size = Vector2(156, 30)
 layout_mode = 2
 text = "Close"
 
+[node name="OnlineSubmenu" type="VBoxContainer" parent="CenterContainer/VBoxContainer" unique_id=3000856]
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="OnlineHostButton" type="Button" parent="CenterContainer/VBoxContainer/OnlineSubmenu" unique_id=3000857]
+custom_minimum_size = Vector2(320, 36)
+layout_mode = 2
+text = "Host"
+
+[node name="OnlineJoinButton" type="Button" parent="CenterContainer/VBoxContainer/OnlineSubmenu" unique_id=3000858]
+custom_minimum_size = Vector2(320, 36)
+layout_mode = 2
+text = "Join"
+
+[node name="OnlineSubmenuButtons" type="HBoxContainer" parent="CenterContainer/VBoxContainer/OnlineSubmenu" unique_id=3000859]
+layout_mode = 2
+
+[node name="OnlineBackButton" type="Button" parent="CenterContainer/VBoxContainer/OnlineSubmenu/OnlineSubmenuButtons" unique_id=3000860]
+custom_minimum_size = Vector2(156, 30)
+layout_mode = 2
+text = "Back"
+
+[node name="SinglePlayerSubmenu" type="VBoxContainer" parent="CenterContainer/VBoxContainer" unique_id=3000861]
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="SinglePlayerTrainingButton" type="Button" parent="CenterContainer/VBoxContainer/SinglePlayerSubmenu" unique_id=3000862]
+custom_minimum_size = Vector2(320, 36)
+layout_mode = 2
+text = "Training Mode"
+
+[node name="SinglePlayerArcadeButton" type="Button" parent="CenterContainer/VBoxContainer/SinglePlayerSubmenu" unique_id=3000863]
+custom_minimum_size = Vector2(320, 36)
+layout_mode = 2
+text = "Arcade Mode"
+
+[node name="SinglePlayerSurvivalButton" type="Button" parent="CenterContainer/VBoxContainer/SinglePlayerSubmenu" unique_id=3000864]
+custom_minimum_size = Vector2(320, 36)
+layout_mode = 2
+text = "Survival Mode"
+
+[node name="SinglePlayerWatchButton" type="Button" parent="CenterContainer/VBoxContainer/SinglePlayerSubmenu" unique_id=3000865]
+custom_minimum_size = Vector2(320, 36)
+layout_mode = 2
+text = "Watch Mode"
+
+[node name="SinglePlayerCpuTrainingVsP2Button" type="Button" parent="CenterContainer/VBoxContainer/SinglePlayerSubmenu" unique_id=3000868]
+custom_minimum_size = Vector2(320, 36)
+layout_mode = 2
+text = "CPU Training (Vs Player 2)"
+
+[node name="SinglePlayerCpuTrainingVsCpuButton" type="Button" parent="CenterContainer/VBoxContainer/SinglePlayerSubmenu" unique_id=3000869]
+custom_minimum_size = Vector2(320, 36)
+layout_mode = 2
+text = "CPU Training (Vs CPU)"
+
+[node name="SinglePlayerSubmenuButtons" type="HBoxContainer" parent="CenterContainer/VBoxContainer/SinglePlayerSubmenu" unique_id=3000866]
+layout_mode = 2
+
+[node name="SinglePlayerBackButton" type="Button" parent="CenterContainer/VBoxContainer/SinglePlayerSubmenu/SinglePlayerSubmenuButtons" unique_id=3000867]
+custom_minimum_size = Vector2(156, 30)
+layout_mode = 2
+text = "Back"
+
+[node name="WatchSubmenu" type="VBoxContainer" parent="CenterContainer/VBoxContainer" unique_id=48417876]
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="WatchVersusButton" type="Button" parent="CenterContainer/VBoxContainer/WatchSubmenu" unique_id=48417877]
+custom_minimum_size = Vector2(320, 36)
+layout_mode = 2
+text = "Versus (Rounds)"
+
+[node name="WatchSmashButton" type="Button" parent="CenterContainer/VBoxContainer/WatchSubmenu" unique_id=48417878]
+custom_minimum_size = Vector2(320, 36)
+layout_mode = 2
+text = "Smash (Stocks)"
+
+[node name="WatchTagButton" type="Button" parent="CenterContainer/VBoxContainer/WatchSubmenu" unique_id=48417879]
+custom_minimum_size = Vector2(320, 36)
+layout_mode = 2
+text = "Tag (Team)"
+
+[node name="WatchSubmenuButtons" type="HBoxContainer" parent="CenterContainer/VBoxContainer/WatchSubmenu" unique_id=48417880]
+layout_mode = 2
+
+[node name="WatchBackButton" type="Button" parent="CenterContainer/VBoxContainer/WatchSubmenu/WatchSubmenuButtons" unique_id=48417881]
+custom_minimum_size = Vector2(156, 30)
+layout_mode = 2
+text = "Back"
+
+[node name="EditorsSubmenu" type="VBoxContainer" parent="CenterContainer/VBoxContainer" unique_id=3000868]
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="EditorsBoxButton" type="Button" parent="CenterContainer/VBoxContainer/EditorsSubmenu" unique_id=3000869]
+custom_minimum_size = Vector2(320, 36)
+layout_mode = 2
+text = "Box Tools"
+
+[node name="EditorsJsonButton" type="Button" parent="CenterContainer/VBoxContainer/EditorsSubmenu" unique_id=3000870]
+custom_minimum_size = Vector2(320, 36)
+layout_mode = 2
+text = "Raw Files"
+
+[node name="EditorsCommandsButton" type="Button" parent="CenterContainer/VBoxContainer/EditorsSubmenu" unique_id=3000871]
+custom_minimum_size = Vector2(320, 36)
+layout_mode = 2
+text = "Commands"
+
+[node name="EditorsPreviewButton" type="Button" parent="CenterContainer/VBoxContainer/EditorsSubmenu" unique_id=3000872]
+custom_minimum_size = Vector2(320, 36)
+layout_mode = 2
+text = "Preview Tools"
+
+[node name="EditorsStageButton" type="Button" parent="CenterContainer/VBoxContainer/EditorsSubmenu" unique_id=3000873]
+custom_minimum_size = Vector2(320, 36)
+layout_mode = 2
+text = "Stage Editor"
+
+[node name="EditorsSubmenuButtons" type="HBoxContainer" parent="CenterContainer/VBoxContainer/EditorsSubmenu" unique_id=3000874]
+layout_mode = 2
+
+[node name="EditorsBackButton" type="Button" parent="CenterContainer/VBoxContainer/EditorsSubmenu/EditorsSubmenuButtons" unique_id=3000875]
+custom_minimum_size = Vector2(156, 30)
+layout_mode = 2
+text = "Back"
+
+[node name="ImportSubmenu" type="VBoxContainer" parent="CenterContainer/VBoxContainer" unique_id=3000876]
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="ImportOpenModsButton" type="Button" parent="CenterContainer/VBoxContainer/ImportSubmenu" unique_id=3000877]
+custom_minimum_size = Vector2(320, 36)
+layout_mode = 2
+text = "Open Mods Folder"
+
+[node name="ImportOpenStagesButton" type="Button" parent="CenterContainer/VBoxContainer/ImportSubmenu" unique_id=3000878]
+custom_minimum_size = Vector2(320, 36)
+layout_mode = 2
+text = "Open Stages Folder"
+
+[node name="ImportCharacterButton" type="Button" parent="CenterContainer/VBoxContainer/ImportSubmenu" unique_id=3000879]
+custom_minimum_size = Vector2(320, 36)
+layout_mode = 2
+text = "Import Character"
+
+[node name="ImportStageButton" type="Button" parent="CenterContainer/VBoxContainer/ImportSubmenu" unique_id=3000880]
+custom_minimum_size = Vector2(320, 36)
+layout_mode = 2
+text = "Import Stage"
+
+[node name="ImportSubmenuButtons" type="HBoxContainer" parent="CenterContainer/VBoxContainer/ImportSubmenu" unique_id=3000881]
+layout_mode = 2
+
+[node name="ImportBackButton" type="Button" parent="CenterContainer/VBoxContainer/ImportSubmenu/ImportSubmenuButtons" unique_id=3000882]
+custom_minimum_size = Vector2(156, 30)
+layout_mode = 2
+text = "Back"
+
+[node name="LocalMultiplayerSubmenu" type="VBoxContainer" parent="CenterContainer/VBoxContainer" unique_id=3000883]
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="LocalMultiplayerVersusButton" type="Button" parent="CenterContainer/VBoxContainer/LocalMultiplayerSubmenu" unique_id=3000884]
+custom_minimum_size = Vector2(320, 36)
+layout_mode = 2
+text = "2P Versus"
+
+[node name="LocalMultiplayerSmashButton" type="Button" parent="CenterContainer/VBoxContainer/LocalMultiplayerSubmenu" unique_id=3000885]
+custom_minimum_size = Vector2(320, 36)
+layout_mode = 2
+text = "Smash Mode"
+
+[node name="LocalMultiplayerTeamButton" type="Button" parent="CenterContainer/VBoxContainer/LocalMultiplayerSubmenu" unique_id=3000886]
+custom_minimum_size = Vector2(320, 36)
+layout_mode = 2
+text = "Team Mode"
+
+[node name="LocalMultiplayerCoopButton" type="Button" parent="CenterContainer/VBoxContainer/LocalMultiplayerSubmenu" unique_id=3000890]
+custom_minimum_size = Vector2(320, 36)
+layout_mode = 2
+text = "Co-op vs CPU"
+
+[node name="LocalMultiplayerTournamentButton" type="Button" parent="CenterContainer/VBoxContainer/LocalMultiplayerSubmenu" unique_id=3000891]
+custom_minimum_size = Vector2(320, 36)
+layout_mode = 2
+text = "Tournament Mode"
+
+[node name="LocalMultiplayerSubmenuButtons" type="HBoxContainer" parent="CenterContainer/VBoxContainer/LocalMultiplayerSubmenu" unique_id=3000887]
+layout_mode = 2
+
+[node name="LocalMultiplayerBackButton" type="Button" parent="CenterContainer/VBoxContainer/LocalMultiplayerSubmenu/LocalMultiplayerSubmenuButtons" unique_id=3000888]
+custom_minimum_size = Vector2(156, 30)
+layout_mode = 2
+text = "Back"
+
 [node name="SurvivalModeButton" type="Button" parent="CenterContainer/VBoxContainer" unique_id=1448934072]
 custom_minimum_size = Vector2(320, 36)
 layout_mode = 2
@@ -170,22 +377,22 @@ custom_minimum_size = Vector2(320, 36)
 layout_mode = 2
 text = "Stage Editor"
 
-[node name="OpenModsFolderButton" type="Button" parent="CenterContainer/VBoxContainer"]
+[node name="OpenModsFolderButton" type="Button" parent="CenterContainer/VBoxContainer" unique_id=156968672]
 custom_minimum_size = Vector2(320, 36)
 layout_mode = 2
 text = "Open Mods Folder"
 
-[node name="OpenStagesFolderButton" type="Button" parent="CenterContainer/VBoxContainer"]
+[node name="OpenStagesFolderButton" type="Button" parent="CenterContainer/VBoxContainer" unique_id=1457743254]
 custom_minimum_size = Vector2(320, 36)
 layout_mode = 2
 text = "Open Stages Folder"
 
-[node name="ImportCharacterButton" type="Button" parent="CenterContainer/VBoxContainer"]
+[node name="ImportCharacterButton" type="Button" parent="CenterContainer/VBoxContainer" unique_id=943264877]
 custom_minimum_size = Vector2(320, 36)
 layout_mode = 2
 text = "Import Character"
 
-[node name="ImportStageButton" type="Button" parent="CenterContainer/VBoxContainer"]
+[node name="ImportStageButton" type="Button" parent="CenterContainer/VBoxContainer" unique_id=362738416]
 custom_minimum_size = Vector2(320, 36)
 layout_mode = 2
 text = "Import Stage"
@@ -205,9 +412,9 @@ custom_minimum_size = Vector2(320, 36)
 layout_mode = 2
 text = "Quit Game"
 
-[node name="ImportSummaryPanel" type="Panel" parent="."]
+[node name="ImportSummaryPanel" type="Panel" parent="." unique_id=1041962363]
 visible = false
-anchors_preset = 10
+layout_mode = 0
 anchor_left = 1.0
 anchor_top = 1.0
 anchor_right = 1.0
@@ -219,7 +426,7 @@ offset_bottom = -24.0
 grow_horizontal = 0
 grow_vertical = 0
 
-[node name="MarginContainer" type="MarginContainer" parent="ImportSummaryPanel"]
+[node name="MarginContainer" type="MarginContainer" parent="ImportSummaryPanel" unique_id=1471053544]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -231,46 +438,46 @@ offset_bottom = -12.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="VBoxContainer" type="VBoxContainer" parent="ImportSummaryPanel/MarginContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="ImportSummaryPanel/MarginContainer" unique_id=1667223943]
 layout_mode = 2
 
-[node name="ImportSummaryLabel" type="RichTextLabel" parent="ImportSummaryPanel/MarginContainer/VBoxContainer"]
+[node name="ImportSummaryLabel" type="RichTextLabel" parent="ImportSummaryPanel/MarginContainer/VBoxContainer" unique_id=327432483]
 custom_minimum_size = Vector2(0, 150)
 layout_mode = 2
 bbcode_enabled = true
 fit_content = true
 scroll_following = true
 
-[node name="ActionsRow" type="HBoxContainer" parent="ImportSummaryPanel/MarginContainer/VBoxContainer"]
+[node name="ActionsRow" type="HBoxContainer" parent="ImportSummaryPanel/MarginContainer/VBoxContainer" unique_id=753020225]
 layout_mode = 2
 
-[node name="OpenCharacterEditorButton" type="Button" parent="ImportSummaryPanel/MarginContainer/VBoxContainer/ActionsRow"]
+[node name="OpenCharacterEditorButton" type="Button" parent="ImportSummaryPanel/MarginContainer/VBoxContainer/ActionsRow" unique_id=1201287537]
 custom_minimum_size = Vector2(0, 36)
 layout_mode = 2
 size_flags_horizontal = 3
 text = "Open Character Editor"
 
-[node name="OpenStageEditorButton" type="Button" parent="ImportSummaryPanel/MarginContainer/VBoxContainer/ActionsRow"]
+[node name="OpenStageEditorButton" type="Button" parent="ImportSummaryPanel/MarginContainer/VBoxContainer/ActionsRow" unique_id=1425242973]
 custom_minimum_size = Vector2(0, 36)
 layout_mode = 2
 size_flags_horizontal = 3
 text = "Open Stage Editor"
 
-[node name="CloseImportSummaryButton" type="Button" parent="ImportSummaryPanel/MarginContainer/VBoxContainer/ActionsRow"]
+[node name="CloseImportSummaryButton" type="Button" parent="ImportSummaryPanel/MarginContainer/VBoxContainer/ActionsRow" unique_id=1233829448]
 custom_minimum_size = Vector2(0, 36)
 layout_mode = 2
 size_flags_horizontal = 3
 text = "Close"
 
-[node name="ImportCharacterDialog" type="FileDialog" parent="."]
-title = "Import Character File Or Folder"
+[node name="ImportCharacterDialog" type="FileDialog" parent="." unique_id=1224768658]
+title = "Open a File or Directory"
 size = Vector2i(900, 520)
 file_mode = 3
 access = 2
 filters = PackedStringArray("*.glb ; glTF Binary", "*.gltf ; glTF")
 
-[node name="ImportStageDialog" type="FileDialog" parent="."]
-title = "Import Stage File Or Folder"
+[node name="ImportStageDialog" type="FileDialog" parent="." unique_id=1443197671]
+title = "Open a File or Directory"
 size = Vector2i(900, 520)
 file_mode = 3
 access = 2

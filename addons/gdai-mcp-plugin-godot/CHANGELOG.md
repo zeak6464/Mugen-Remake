@@ -2,6 +2,12 @@
 
 > Get access to beta/dev versions exclusively on the [Discord server](/docs/update-guide).
 
+## 0.3.1
+
+- Improve `execute_editor_script` with static types
+- Improve `get_godot_errors` and add .NET build errors/output
+- Added support for macOS 10.15+
+
 ## 0.3.0
 
 - Update `move_node` to be able to move node to specific index

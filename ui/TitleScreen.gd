@@ -1,6 +1,8 @@
 extends Control
 
 @export var main_menu_scene_path: String = "res://ui/MainMenu.tscn"
+@export var prompt_flash_min_alpha: float = 0.35
+@export var prompt_flash_duration: float = 0.6
 @export var background_video_paths: Array[String] = [
 	"user://ui-skin/videos/titlescreen.ogv",
 	"user://videos/titlescreen.ogv",
@@ -18,8 +20,15 @@ func _ready() -> void:
 	var has_video: bool = _setup_looping_background_video(background_video_paths)
 	if not has_video:
 		UISkin.apply_background(self, "title_screen_bg")
-	prompt_label.text = "Press Attack (P) or Enter to Start"
+	_start_prompt_flash()
 	SystemSFX.play_menu_music_from(self, "titlescreen", true, -8.0)
+
+
+func _start_prompt_flash() -> void:
+	var tween := create_tween()
+	tween.set_loops()
+	tween.tween_property(prompt_label, "modulate:a", prompt_flash_min_alpha, prompt_flash_duration)
+	tween.tween_property(prompt_label, "modulate:a", 1.0, prompt_flash_duration)
 
 
 func _unhandled_input(event: InputEvent) -> void:

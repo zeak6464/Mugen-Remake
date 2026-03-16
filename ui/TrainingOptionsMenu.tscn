@@ -91,6 +91,14 @@ custom_minimum_size = Vector2(0, 44)
 layout_mode = 0
 text = "Open Hitbox Editor"
 
+[node name="RecordForCpuRow" type="HBoxContainer" parent="Root/CenterContainer/Panel/Content/MainScroll/MainVBox"]
+layout_mode = 0
+
+[node name="RecordForCpuCheckBox" type="CheckBox" parent="Root/CenterContainer/Panel/Content/MainScroll/MainVBox/RecordForCpuRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Record for CPU (train AI for this character)"
+
 [node name="ResumeButton" type="Button" parent="Root/CenterContainer/Panel/Content/MainScroll/MainVBox"]
 custom_minimum_size = Vector2(0, 44)
 layout_mode = 0

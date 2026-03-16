@@ -19,6 +19,7 @@ const CPU_GUARD_HOLD_FRAMES: int = 5
 @export var reset_action: StringName = &"round_reset"
 @export var toggle_dummy_action: StringName = &"toggle_dummy_control"
 @export var reset_key: Key = KEY_F5
+@export var replay_key: Key = KEY_R
 @export var toggle_dummy_key: Key = KEY_F6
 @export var toggle_hitbox_debug_key: Key = KEY_BACKSLASH
 @export var toggle_hitbox_debug_key_alt: Key = KEY_F7
@@ -63,6 +64,7 @@ const CPU_GUARD_HOLD_FRAMES: int = 5
 @onready var floor_body: StaticBody3D = $"../Floor"
 
 var mod_loader: ModLoader
+var input_replay_recorder: InputReplayRecorder
 var active_fighter_a: FighterBase = null
 var active_fighter_b: FighterBase = null
 var training_box_editor_layer: CanvasLayer = null
@@ -84,11 +86,22 @@ var round_accumulator: float = 0.0
 var round_active: bool = false
 var round_reset_pending: bool = false
 var round_reset_timer: float = 0.0
+var replay_playback_active: bool = false
+var _last_p2_cpu_frame: Dictionary = {}
 var round_intro_pending: bool = false
 var round_intro_timer: float = 0.0
 var match_over: bool = false
 var match_over_timer: float = 0.0
 var match_over_return_scene: String = "res://ui/CharacterSelect.tscn"
+var tournament_next_match_pending: bool = false
+var tournament_next_match_timer: float = 0.0
+var record_learned_ai: bool = false
+var learned_ai_record_buffer: Array = []
+var learned_ai_record_frame_counter: int = 0
+var learned_ai_cache: Dictionary = {}
+const LEARNED_AI_MAX_SAMPLES: int = 3000
+const LEARNED_AI_RECORD_INTERVAL: int = 5
+const LEARNED_AI_FILENAME: String = "learned_ai.json"
 var status_text: String = "Ready"
 var stage_music_player: AudioStreamPlayer = null
 var loaded_stage_instance: Node = null
@@ -151,9 +164,61 @@ func _physics_process(_delta: float) -> void:
 		return
 	if tag_swap_cooldown_frames > 0:
 		tag_swap_cooldown_frames -= 1
+	if replay_playback_active:
+		var frame_data: Dictionary = input_replay_recorder.get_playback_frame() if input_replay_recorder != null else {}
+		if frame_data.is_empty():
+			_end_replay()
+		else:
+			var p1: Dictionary = frame_data.get("p1", {})
+			var p2: Dictionary = frame_data.get("p2", {})
+			if active_fighter_a != null and active_fighter_a.command_interpreter != null:
+				active_fighter_a.command_interpreter.enqueue_external_input(
+					p1.get("direction", Vector2.ZERO),
+					_to_string_array(p1.get("pressed", [])),
+					_to_string_array(p1.get("held", [])),
+					_to_string_array(p1.get("released", []))
+				)
+			if active_fighter_b != null and active_fighter_b.command_interpreter != null:
+				active_fighter_b.command_interpreter.enqueue_external_input(
+					p2.get("direction", Vector2.ZERO),
+					_to_string_array(p2.get("pressed", [])),
+					_to_string_array(p2.get("held", [])),
+					_to_string_array(p2.get("released", []))
+				)
+			input_replay_recorder.advance_playback()
+	else:
+		_last_p2_cpu_frame = {}
+		if game_mode == "online":
+			_update_online_input()
+		else:
+			_update_cpu_input()
+		if input_replay_recorder != null and input_replay_recorder.is_recording() and round_active:
+			var p1_in: Dictionary = _read_player_input(1)
+			var p2_in: Dictionary
+			if dummy_uses_local_input:
+				p2_in = _read_player_input(2)
+			elif cpu_enabled and not team_mode_enabled:
+				p2_in = _last_p2_cpu_frame
+			else:
+				p2_in = {"direction": Vector2.ZERO, "pressed": [], "held": [], "released": []}
+			input_replay_recorder.record_frame(p1_in, p2_in)
+		if record_learned_ai and (game_mode == "training" or game_mode == "cpu_training") and round_active and active_fighter_a != null and active_fighter_b != null:
+			var mod_dir: String = active_fighter_a.get_mod_directory()
+			if not mod_dir.is_empty():
+				learned_ai_record_frame_counter += 1
+				if learned_ai_record_frame_counter >= LEARNED_AI_RECORD_INTERVAL:
+					learned_ai_record_frame_counter = 0
+					var state: Array = _learned_ai_state_vector(active_fighter_a, active_fighter_b)
+					var action: Dictionary = _read_player_input(1)
+					var pa: Vector3 = active_fighter_a.global_position
+					var pb: Vector3 = active_fighter_b.global_position
+					learned_ai_record_buffer.append({
+						"s": state,
+						"a": _learned_ai_action_to_serializable(action),
+						"m": {"rel_x": pb.x - pa.x, "rel_y": pb.y - pa.y}
+					})
 	_enforce_arena_bounds()
 	_resolve_fighter_pushbox()
-	_update_cpu_input()
 
 
 func request_super_pause(time_ticks: int) -> void:
@@ -175,25 +240,36 @@ func _process(delta: float) -> void:
 func _initialize_arena() -> void:
 	SystemSFX.stop_menu_music_from(self)
 	game_mode = str(get_tree().get_meta("game_mode", "training")).to_lower()
-	if game_mode != "arcade" and game_mode != "versus" and game_mode != "smash" and game_mode != "team" and game_mode != "survival" and game_mode != "watch":
+	if game_mode != "arcade" and game_mode != "versus" and game_mode != "smash" and game_mode != "team" and game_mode != "survival" and game_mode != "watch" and game_mode != "online" and game_mode != "coop" and game_mode != "tournament" and game_mode != "cpu_training":
 		game_mode = "training"
 	watch_mode_enabled = game_mode == "watch"
 	survival_mode_enabled = game_mode == "survival"
-	team_mode_enabled = game_mode == "team"
+	team_mode_enabled = game_mode == "team" or game_mode == "coop"
+	var watch_match_type: String = str(get_tree().get_meta("watch_match_type", "")).to_lower() if watch_mode_enabled else ""
+	if watch_mode_enabled and watch_match_type == "team":
+		team_mode_enabled = true
 	team_mode_subtype = str(get_tree().get_meta("team_mode_subtype", "simul")).to_lower()
 	if team_mode_subtype != "simul" and team_mode_subtype != "turns" and team_mode_subtype != "tag":
 		team_mode_subtype = "simul"
 	team_size_p1 = clampi(int(get_tree().get_meta("team_size_p1", 2)), 2, 4)
 	team_size_p2 = clampi(int(get_tree().get_meta("team_size_p2", 2)), 2, 4)
-	smash_mode_enabled = game_mode == "smash"
+	smash_mode_enabled = game_mode == "smash" or (watch_mode_enabled and watch_match_type == "smash")
+	rounds_to_win = clampi(int(get_tree().get_meta("option_rounds_to_win", rounds_to_win)), 1, 99)
+	round_time_seconds = clampi(int(get_tree().get_meta("option_round_time_seconds", round_time_seconds)), 0, 999)
 	smash_starting_stocks = clampi(int(get_tree().get_meta("option_smash_stocks", smash_starting_stocks)), 1, 99)
+	_apply_game_options()
 	_apply_hud_mode()
-	cpu_enabled = game_mode == "arcade" or survival_mode_enabled or watch_mode_enabled
-	dummy_uses_local_input = game_mode == "versus" or game_mode == "smash" or team_mode_enabled
+	cpu_enabled = game_mode == "arcade" or survival_mode_enabled or watch_mode_enabled or game_mode == "coop" or game_mode == "tournament" or (game_mode == "cpu_training" and str(get_tree().get_meta("cpu_training_opponent", "player")).to_lower() == "cpu")
+	dummy_uses_local_input = game_mode == "versus" or game_mode == "smash" or team_mode_enabled or (game_mode == "cpu_training" and str(get_tree().get_meta("cpu_training_opponent", "player")).to_lower() != "cpu")
+	if game_mode == "cpu_training":
+		record_learned_ai = true
 
 	mod_loader = ModLoader.new()
 	mod_loader.name = "ModLoader"
 	add_child(mod_loader)
+	input_replay_recorder = InputReplayRecorder.new()
+	input_replay_recorder.name = "InputReplayRecorder"
+	add_child(input_replay_recorder)
 	_apply_selected_stage()
 	_apply_stage_configuration()
 	_setup_stage_music()
@@ -213,6 +289,24 @@ func _initialize_arena() -> void:
 	var selected_form_b: String = str(get_tree().get_meta("training_p2_form", ""))
 	var selected_costume_a: String = str(get_tree().get_meta("training_p1_costume", ""))
 	var selected_costume_b: String = str(get_tree().get_meta("training_p2_costume", ""))
+	if game_mode == "tournament":
+		var entrants: Array = get_tree().get_meta("tournament_entrants", [])
+		var match_idx: int = int(get_tree().get_meta("tournament_match_index", 0))
+		var round_results: Array = get_tree().get_meta("tournament_round_results", [])
+		var n: int = entrants.size()
+		var indices: Array = _tournament_get_opponents(n, match_idx, round_results)
+		if indices.size() >= 2:
+			var left_idx: int = int(indices[0])
+			var right_idx: int = int(indices[1])
+			if left_idx >= 0 and right_idx >= 0 and entrants.size() > left_idx and entrants.size() > right_idx:
+				var le: Dictionary = entrants[left_idx]
+				var re: Dictionary = entrants[right_idx]
+				selected_mod_a = str(le.get("mod", ""))
+				selected_mod_b = str(re.get("mod", ""))
+				selected_form_a = str(le.get("form", ""))
+				selected_form_b = str(re.get("form", ""))
+				selected_costume_a = str(le.get("costume", ""))
+				selected_costume_b = str(re.get("costume", ""))
 	if team_mode_enabled and not team_roster_p1.is_empty() and not team_roster_p2.is_empty():
 		_spawn_team_mode_fighters()
 	elif not selected_mod_a.is_empty():
@@ -227,6 +321,8 @@ func _initialize_arena() -> void:
 		_apply_runtime_links(fighter_a_fallback, fighter_b_fallback)
 	_apply_input_buffer_setting()
 	_setup_training_options_menu()
+	if game_mode == "online" and NetworkManager.is_online_session() and NetworkManager.is_host():
+		NetworkManager.start_match(randi())
 
 
 func _spawn_mod_fighters(mod_a_name: String, mod_b_name: String, form_a: String = "", form_b: String = "", costume_a: String = "", costume_b: String = "") -> void:
@@ -284,6 +380,36 @@ func _read_team_roster_meta(meta_key: String, team_size: int) -> Array[Dictionar
 		if out.size() >= team_size:
 			break
 	return out
+
+
+func _apply_game_options() -> void:
+	var tree := get_tree()
+	var scale_val: float = float(tree.get_meta("option_game_speed_scale", 1.0))
+	if scale_val <= 0.0:
+		var cfg := ConfigFile.new()
+		if cfg.load("user://options.cfg") == OK:
+			scale_val = float(cfg.get_value("gameplay", "game_speed_scale", 1.0))
+		if scale_val <= 0.0:
+			scale_val = 1.0
+	Engine.time_scale = scale_val
+
+
+func _apply_life_percent_to_fighter(fighter: FighterBase) -> void:
+	if fighter == null or not is_instance_valid(fighter):
+		return
+	var tree := get_tree()
+	var life_percent: float = float(tree.get_meta("option_life_percent", 100.0))
+	if life_percent <= 0.0:
+		var cfg := ConfigFile.new()
+		if cfg.load("user://options.cfg") == OK:
+			life_percent = float(cfg.get_value("gameplay", "life_percent", 100.0))
+		if life_percent <= 0.0:
+			life_percent = 100.0
+	if life_percent >= 99.0 and life_percent <= 101.0:
+		return
+	var scale: float = life_percent / 100.0
+	fighter.max_health = maxi(1, int(fighter.max_health * scale))
+	fighter.set_health(fighter.max_health)
 
 
 func _clear_team_mode_runtime() -> void:
@@ -379,6 +505,7 @@ func _instantiate_team_fighter(entry: Dictionary, is_p1: bool, slot_idx: int) ->
 			fighter.command_interpreter.action_left = &"p2_left"
 			fighter.command_interpreter.action_right = &"p2_right"
 			fighter.command_interpreter.button_actions = {"P": &"p2_p", "K": &"p2_k", "S": &"p2_s", "H": &"p2_h"}
+	_apply_life_percent_to_fighter(fighter)
 	return fighter
 
 
@@ -406,6 +533,15 @@ func _apply_runtime_links(fighter_a: FighterBase, fighter_b: FighterBase) -> voi
 	fighter_b.use_floor_y_fallback_grounding = false
 	fighter_a.set_opponent(fighter_b)
 	fighter_b.set_opponent(fighter_a)
+	_apply_life_percent_to_fighter(fighter_a)
+	_apply_life_percent_to_fighter(fighter_b)
+	if team_mode_enabled:
+		for f in team_fighters_p1:
+			if f != null and is_instance_valid(f):
+				_apply_life_percent_to_fighter(f)
+		for f in team_fighters_p2:
+			if f != null and is_instance_valid(f):
+				_apply_life_percent_to_fighter(f)
 	_configure_smash_mode_for_fighters()
 	_configure_player_input_bindings()
 	_apply_control_modes()
@@ -418,7 +554,11 @@ func _apply_runtime_links(fighter_a: FighterBase, fighter_b: FighterBase) -> voi
 		input_buffer_viewer.target_fighter_path = input_buffer_viewer.get_path_to(fighter_a)
 	_apply_hitbox_debug_state()
 	call_deferred("_apply_hitbox_debug_state")
-	_start_round()
+	var replay_path: String = get_tree().get_meta("replay_path", "")
+	if not replay_path.is_empty() and get_tree().get_meta("replay_mode", false):
+		_start_replay_from_file(replay_path)
+	else:
+		_start_round()
 
 
 func _input(event: InputEvent) -> void:
@@ -436,6 +576,11 @@ func _input(event: InputEvent) -> void:
 		return
 	if training_options_open:
 		return
+	if round_reset_pending and not replay_playback_active and _is_key_pressed(event, replay_key):
+		if dummy_uses_local_input and input_replay_recorder != null and input_replay_recorder.get_recorded_frame_count() > 0:
+			_start_replay()
+			get_viewport().set_input_as_handled()
+			return
 	if _is_action_or_key_pressed(event, reset_action, reset_key):
 		_reset_round()
 	elif _is_action_or_key_pressed(event, toggle_dummy_action, toggle_dummy_key):
@@ -483,6 +628,8 @@ func _setup_training_options_menu() -> void:
 		training_options_menu.open_hitbox_editor_requested.connect(_on_training_open_hitbox_editor_requested)
 	if training_options_menu.has_signal("return_to_menu_requested"):
 		training_options_menu.return_to_menu_requested.connect(_on_training_return_to_menu_requested)
+	if training_options_menu.has_signal("record_learned_ai_requested"):
+		training_options_menu.record_learned_ai_requested.connect(_on_record_learned_ai_requested)
 
 
 func _toggle_training_options_menu() -> void:
@@ -508,6 +655,8 @@ func _set_training_options_visible(visible_value: bool) -> void:
 		training_options_menu.call("show_menu")
 	else:
 		get_tree().paused = false
+		if record_learned_ai:
+			_learned_ai_flush_record_buffer()
 		_close_training_box_editor_overlay(false)
 		training_options_menu.call("hide_menu")
 		if not round_reset_pending:
@@ -555,8 +704,12 @@ func _on_training_toggle_hitbox_requested() -> void:
 	_refresh_training_options_menu_state()
 
 
+func _on_record_learned_ai_requested(enabled: bool) -> void:
+	record_learned_ai = enabled
+
+
 func _on_training_open_hitbox_editor_requested() -> void:
-	if game_mode != "training":
+	if game_mode != "training" and game_mode != "cpu_training":
 		return
 	_ensure_training_box_editor()
 	_sync_training_box_editor_target()
@@ -567,6 +720,8 @@ func _on_training_open_hitbox_editor_requested() -> void:
 
 
 func _on_training_return_to_menu_requested() -> void:
+	if record_learned_ai:
+		_learned_ai_flush_record_buffer()
 	get_tree().paused = false
 	get_tree().change_scene_to_file("res://ui/MainMenu.tscn")
 
@@ -574,7 +729,7 @@ func _on_training_return_to_menu_requested() -> void:
 func _refresh_training_options_menu_state() -> void:
 	if training_options_menu == null:
 		return
-	training_options_menu.call("set_menu_state", game_mode == "training", dummy_uses_local_input, show_hitbox_debug)
+	training_options_menu.call("set_menu_state", game_mode == "training" or game_mode == "cpu_training", dummy_uses_local_input, show_hitbox_debug, record_learned_ai)
 	training_options_menu.call("set_move_list_text", _build_pause_move_list_text())
 
 
@@ -725,6 +880,157 @@ func _reset_fighter(fighter: FighterBase, spawn_position: Vector3) -> void:
 		fighter.state_controller.change_state(initial_state)
 
 
+func _start_replay_from_file(file_path: String) -> void:
+	var file := FileAccess.open(file_path, FileAccess.READ)
+	if file == null:
+		status_text = "Replay file not found."
+		_start_round()
+		return
+	var json_text: String = file.get_as_text()
+	file.close()
+	var parsed = JSON.parse_string(json_text)
+	if parsed == null:
+		status_text = "Invalid replay file."
+		_start_round()
+		return
+	var frames_data: Array = []
+	if typeof(parsed) == TYPE_DICTIONARY and parsed.has("frames"):
+		frames_data = parsed.get("frames", [])
+	elif typeof(parsed) == TYPE_ARRAY:
+		frames_data = parsed
+	else:
+		status_text = "Invalid replay file."
+		_start_round()
+		return
+	if input_replay_recorder == null:
+		_start_round()
+		return
+	input_replay_recorder.from_serializable(frames_data)
+	if input_replay_recorder.get_playback_length() <= 0:
+		status_text = "Replay has no frames."
+		_start_round()
+		return
+	replay_playback_active = true
+	round_active = true
+	round_intro_pending = false
+	round_reset_pending = false
+	round_reset_timer = 0.0
+	round_time_left = round_time_seconds
+	round_accumulator = 0.0
+	status_text = "Replay"
+	get_tree().set_meta("replay_return_scene", "res://ui/ReplaySelect.tscn")
+	if active_fighter_a != null and active_fighter_a.command_interpreter != null:
+		active_fighter_a.command_interpreter.clear_external_input_queue()
+		active_fighter_a.command_interpreter.set_input_mode(CommandInterpreter.InputMode.EXTERNAL)
+		active_fighter_a.command_interpreter.read_local_input = false
+	if active_fighter_b != null and active_fighter_b.command_interpreter != null:
+		active_fighter_b.command_interpreter.clear_external_input_queue()
+		active_fighter_b.command_interpreter.set_input_mode(CommandInterpreter.InputMode.EXTERNAL)
+		active_fighter_b.command_interpreter.read_local_input = false
+
+
+func _start_replay() -> void:
+	if input_replay_recorder == null or input_replay_recorder.get_recorded_frame_count() <= 0:
+		return
+	input_replay_recorder.set_playback_data(input_replay_recorder.get_recorded_frames())
+	_reset_round_for_replay()
+	replay_playback_active = true
+	round_reset_pending = false
+	round_reset_timer = 0.0
+	status_text = "Replay"
+	if active_fighter_a != null and active_fighter_a.command_interpreter != null:
+		active_fighter_a.command_interpreter.clear_external_input_queue()
+		active_fighter_a.command_interpreter.set_input_mode(CommandInterpreter.InputMode.EXTERNAL)
+		active_fighter_a.command_interpreter.read_local_input = false
+	if active_fighter_b != null and active_fighter_b.command_interpreter != null:
+		active_fighter_b.command_interpreter.clear_external_input_queue()
+		active_fighter_b.command_interpreter.set_input_mode(CommandInterpreter.InputMode.EXTERNAL)
+		active_fighter_b.command_interpreter.read_local_input = false
+
+
+func _reset_round_for_replay() -> void:
+	if active_fighter_a == null or active_fighter_b == null:
+		return
+	if smash_mode_enabled:
+		p1_stocks = maxi(1, smash_starting_stocks)
+		p2_stocks = maxi(1, smash_starting_stocks)
+	_reset_fighter(active_fighter_a, fighter_a_spawn)
+	_reset_fighter(active_fighter_b, fighter_b_spawn)
+	_clear_fighter_projectiles(active_fighter_a)
+	_clear_fighter_projectiles(active_fighter_b)
+	active_fighter_a.set_opponent(active_fighter_b)
+	active_fighter_b.set_opponent(active_fighter_a)
+	round_time_left = round_time_seconds
+	round_accumulator = 0.0
+	round_active = true
+	round_intro_pending = false
+	_restore_camera_targets_for_round()
+	_refresh_camera_tracked_fighters()
+	_set_fighter_input_enabled(false)
+
+
+func _clear_fighter_projectiles(fighter: FighterBase) -> void:
+	if fighter == null:
+		return
+	var ps = fighter.projectile_system
+	if ps != null and ps.has_method("clear_active_projectiles"):
+		ps.clear_active_projectiles()
+
+
+func _end_replay() -> void:
+	replay_playback_active = false
+	round_active = false
+	status_text = "Replay ended"
+	var file_replay: bool = not get_tree().get_meta("replay_path", "").is_empty()
+	if file_replay:
+		round_reset_pending = false
+		round_reset_timer = 0.0
+		match_over = true
+		match_over_return_scene = get_tree().get_meta("replay_return_scene", "res://ui/ReplaySelect.tscn")
+		match_over_timer = 2.0
+	else:
+		round_reset_pending = true
+		round_reset_timer = 2.0
+	if active_fighter_a != null and active_fighter_a.command_interpreter != null:
+		active_fighter_a.command_interpreter.set_input_mode(CommandInterpreter.InputMode.LOCAL)
+	if active_fighter_b != null and active_fighter_b.command_interpreter != null:
+		active_fighter_b.command_interpreter.set_input_mode(CommandInterpreter.InputMode.LOCAL)
+
+
+func _save_replay_to_file() -> bool:
+	if input_replay_recorder == null:
+		return false
+	var dir := DirAccess.open("user://")
+	if dir == null:
+		return false
+	if not dir.dir_exists("replays"):
+		if dir.make_dir_recursive("replays") != OK:
+			return false
+	var now := Time.get_datetime_dict_from_system()
+	var filename: String = "replay_%04d%02d%02d_%02d%02d%02d.json" % [now.year, now.month, now.day, now.hour, now.minute, now.second]
+	var path: String = "user://replays/%s" % filename
+	var file := FileAccess.open(path, FileAccess.WRITE)
+	if file == null:
+		return false
+	var tree := get_tree()
+	var payload: Dictionary = {
+		"meta": {
+			"training_p1_mod": str(tree.get_meta("training_p1_mod", "")),
+			"training_p2_mod": str(tree.get_meta("training_p2_mod", "")),
+			"training_p1_form": str(tree.get_meta("training_p1_form", "")),
+			"training_p2_form": str(tree.get_meta("training_p2_form", "")),
+			"training_p1_costume": str(tree.get_meta("training_p1_costume", "")),
+			"training_p2_costume": str(tree.get_meta("training_p2_costume", "")),
+			"training_stage_folder": str(tree.get_meta("training_stage_folder", "")),
+			"game_mode": str(game_mode)
+		},
+		"frames": input_replay_recorder.to_serializable()
+	}
+	file.store_string(JSON.stringify(payload))
+	file.close()
+	return true
+
+
 func _get_initial_state(fighter: FighterBase) -> String:
 	var candidate: String = str(fighter.character_data.get("initial_state", ""))
 	if not candidate.is_empty() and fighter.state_controller.states_data.has(candidate):
@@ -851,6 +1157,12 @@ func _is_key_pressed(event: InputEvent, key: Key) -> bool:
 
 
 func _apply_control_modes() -> void:
+	if game_mode == "online":
+		_apply_online_control_modes()
+		return
+	if game_mode == "tournament":
+		_apply_tournament_control_modes()
+		return
 	if team_mode_enabled:
 		_apply_team_control_modes()
 		return
@@ -901,7 +1213,64 @@ func _apply_control_modes() -> void:
 		camera_controller.stage_right_limit = camera_default_right_limit
 
 
+func _apply_tournament_control_modes() -> void:
+	if active_fighter_a != null and active_fighter_a.command_interpreter != null:
+		active_fighter_a.command_interpreter.clear_external_input_queue()
+		active_fighter_a.command_interpreter.reset_latest_input()
+		active_fighter_a.command_interpreter.set_input_mode(CommandInterpreter.InputMode.EXTERNAL)
+		active_fighter_a.command_interpreter.read_local_input = false
+		active_fighter_a.accepts_player_movement_input = true
+	if active_fighter_b != null and active_fighter_b.command_interpreter != null:
+		active_fighter_b.command_interpreter.clear_external_input_queue()
+		active_fighter_b.command_interpreter.reset_latest_input()
+		active_fighter_b.command_interpreter.set_input_mode(CommandInterpreter.InputMode.EXTERNAL)
+		active_fighter_b.command_interpreter.read_local_input = false
+		active_fighter_b.accepts_player_movement_input = true
+	if camera_controller != null:
+		camera_controller.stage_left_limit = camera_default_left_limit
+		camera_controller.stage_right_limit = camera_default_right_limit
+
+
+func _apply_online_control_modes() -> void:
+	if active_fighter_a != null and active_fighter_a.command_interpreter != null:
+		active_fighter_a.command_interpreter.clear_external_input_queue()
+		active_fighter_a.command_interpreter.reset_latest_input()
+		active_fighter_a.command_interpreter.set_input_mode(CommandInterpreter.InputMode.EXTERNAL)
+		active_fighter_a.command_interpreter.read_local_input = false
+		active_fighter_a.accepts_player_movement_input = true
+	if active_fighter_b != null and active_fighter_b.command_interpreter != null:
+		active_fighter_b.command_interpreter.clear_external_input_queue()
+		active_fighter_b.command_interpreter.reset_latest_input()
+		active_fighter_b.command_interpreter.set_input_mode(CommandInterpreter.InputMode.EXTERNAL)
+		active_fighter_b.command_interpreter.read_local_input = false
+		active_fighter_b.accepts_player_movement_input = true
+	if camera_controller != null:
+		camera_controller.stage_left_limit = camera_default_left_limit
+		camera_controller.stage_right_limit = camera_default_right_limit
+
+
 func _apply_team_control_modes() -> void:
+	# Co-op: both P1 team fighters use local input (P1 and P2); all P2 team are CPU.
+	if game_mode == "coop":
+		for i in range(team_fighters_p1.size()):
+			var fighter: FighterBase = team_fighters_p1[i] if i < team_fighters_p1.size() else null
+			if fighter == null or not is_instance_valid(fighter) or fighter.command_interpreter == null:
+				continue
+			fighter.command_interpreter.set_input_mode(CommandInterpreter.InputMode.LOCAL)
+			fighter.command_interpreter.read_local_input = true
+			fighter.accepts_player_movement_input = true
+		for fighter in team_fighters_p2:
+			if fighter == null or not is_instance_valid(fighter) or fighter.command_interpreter == null:
+				continue
+			fighter.command_interpreter.clear_external_input_queue()
+			fighter.command_interpreter.reset_latest_input()
+			fighter.command_interpreter.set_input_mode(CommandInterpreter.InputMode.EXTERNAL)
+			fighter.command_interpreter.read_local_input = false
+			fighter.accepts_player_movement_input = true
+		if camera_controller != null:
+			camera_controller.stage_left_limit = camera_default_left_limit
+			camera_controller.stage_right_limit = camera_default_right_limit
+		return
 	# Active slots always follow normal P1/P2 local-vs-cpu rules.
 	if active_fighter_a != null and active_fighter_a.command_interpreter != null:
 		active_fighter_a.command_interpreter.set_input_mode(CommandInterpreter.InputMode.LOCAL)
@@ -1082,7 +1451,7 @@ func _advance_training_hitbox_selection() -> void:
 
 
 func _build_hitbox_edit_status_text() -> String:
-	if game_mode != "training":
+	if game_mode != "training" and game_mode != "cpu_training":
 		return "Live Hitbox Edit: Training Only"
 	if not hitbox_edit_mode:
 		return "Live Hitbox Edit: OFF"
@@ -2118,16 +2487,23 @@ func _update_round_logic(delta: float) -> void:
 		if round_intro_timer <= 0.0:
 			round_intro_pending = false
 			round_active = true
+			if input_replay_recorder != null and game_mode != "online" and (dummy_uses_local_input or get_tree().get_meta("save_replay", false)):
+				input_replay_recorder.start_recording()
 			status_text = "Fight!"
 			SystemSFX.play_battle_from(self, "round_fight")
 			_set_fighter_input_enabled(true)
-	elif round_active:
-		if not smash_mode_enabled:
+	elif round_active and not replay_playback_active:
+		if not smash_mode_enabled and round_time_seconds > 0:
 			round_accumulator += delta
 			while round_accumulator >= 1.0:
 				round_accumulator -= 1.0
 				round_time_left = maxi(0, round_time_left - 1)
 		_check_round_end_conditions()
+	elif tournament_next_match_pending:
+		tournament_next_match_timer -= delta
+		if tournament_next_match_timer <= 0.0:
+			tournament_next_match_pending = false
+			_prepare_next_tournament_match()
 	elif round_reset_pending:
 		round_reset_timer -= delta
 		if round_reset_timer <= 0.0:
@@ -2197,7 +2573,7 @@ func _check_round_end_conditions() -> void:
 			_end_round_with_winner(0, "Double KO")
 		return
 
-	if round_time_left <= 0:
+	if round_time_seconds > 0 and round_time_left <= 0:
 		if active_fighter_a.health > active_fighter_b.health:
 			_end_round_with_winner(1, "Time Up - P1 Wins")
 		elif active_fighter_b.health > active_fighter_a.health:
@@ -2209,7 +2585,16 @@ func _check_round_end_conditions() -> void:
 func _end_round_with_winner(winner: int, message: String) -> void:
 	round_active = false
 	round_intro_pending = false
+	if (game_mode == "training" or game_mode == "cpu_training") and record_learned_ai:
+		_learned_ai_flush_record_buffer()
+	var replay_saved: bool = false
+	if input_replay_recorder != null and input_replay_recorder.is_recording():
+		input_replay_recorder.stop_recording()
+		if get_tree().get_meta("save_replay", false) and input_replay_recorder.get_recorded_frame_count() > 0:
+			replay_saved = _save_replay_to_file()
 	status_text = message
+	if replay_saved:
+		status_text += " (Replay saved)"
 	if winner == 1:
 		p1_wins += 1
 	elif winner == 2:
@@ -2254,13 +2639,50 @@ func _end_round_with_winner(winner: int, message: String) -> void:
 		round_reset_timer = 0.0
 		status_text = "P%d Match Wins! Returning..." % winner if game_mode == "arcade" else "P%d Match Wins!" % winner
 		SystemSFX.play_battle_from(self, "round_match")
-	else:
-		round_reset_pending = true
-		round_reset_timer = round_reset_delay_seconds
-		if message.begins_with("Time Up"):
-			SystemSFX.play_battle_from(self, "time_up")
+		return
+	if game_mode == "tournament" and winner != 0 and (p1_wins >= rounds_to_win or p2_wins >= rounds_to_win):
+		var match_idx: int = int(get_tree().get_meta("tournament_match_index", 0))
+		var round_results: Array = get_tree().get_meta("tournament_round_results", [])
+		var entrants: Array = get_tree().get_meta("tournament_entrants", [])
+		var n: int = entrants.size()
+		var total: int = _tournament_total_matches(n)
+		var indices: Array = _tournament_get_opponents(n, match_idx, round_results)
+		var winner_idx: int = -1
+		if indices.size() >= 2:
+			var left_idx: int = int(indices[0])
+			var right_idx: int = int(indices[1])
+			winner_idx = left_idx if winner == 1 else right_idx
+		round_results.append(winner_idx)
+		get_tree().set_meta("tournament_round_results", round_results)
+		var next_idx: int = match_idx + 1
+		get_tree().set_meta("tournament_match_index", next_idx)
+		round_active = false
+		if next_idx >= total:
+			var champ_name: String = "Unknown"
+			if winner_idx >= 0 and winner_idx < entrants.size():
+				champ_name = str(entrants[winner_idx].get("mod", "Unknown"))
+			match_over = true
+			match_over_return_scene = "res://ui/MainMenu.tscn"
+			match_over_timer = maxf(2.0, arcade_match_end_delay_seconds)
+			round_reset_pending = false
+			round_reset_timer = 0.0
+			tournament_next_match_pending = false
+			status_text = "Champion: %s!" % champ_name
+			SystemSFX.play_battle_from(self, "round_match")
 		else:
+			tournament_next_match_pending = true
+			tournament_next_match_timer = maxf(1.0, round_reset_delay_seconds)
+			round_reset_pending = false
+			round_reset_timer = 0.0
+			status_text = "Next match..."
 			SystemSFX.play_battle_from(self, "round_win")
+		return
+	round_reset_pending = true
+	round_reset_timer = round_reset_delay_seconds
+	if message.begins_with("Time Up"):
+		SystemSFX.play_battle_from(self, "time_up")
+	else:
+		SystemSFX.play_battle_from(self, "round_win")
 
 
 func _play_round_end_states(winner: int) -> void:
@@ -2324,8 +2746,84 @@ func _prepare_next_round() -> void:
 	status_text = "Smash - Next Round" if smash_mode_enabled else "Round %d" % round_number
 
 
+func _tournament_get_opponents(num_entrants: int, match_idx: int, round_results: Array) -> Array:
+	if num_entrants < 2:
+		return [-1, -1]
+	var first_round_matches: int = int(num_entrants / 2)
+	if match_idx < first_round_matches:
+		return [match_idx * 2, match_idx * 2 + 1]
+	var source_start: int = 0
+	var source_size: int = first_round_matches
+	var match_start: int = first_round_matches
+	while source_size > 1 and match_start + int(source_size / 2) <= match_idx:
+		match_start += int(source_size / 2)
+		source_start += int(source_size / 2)
+		source_size = int(source_size / 2)
+	var offset: int = match_idx - match_start
+	var base: int = source_start + offset * 2
+	if base + 1 >= round_results.size():
+		return [-1, -1]
+	return [int(round_results[base]), int(round_results[base + 1])]
+
+
+func _tournament_total_matches(num_entrants: int) -> int:
+	return maxi(0, num_entrants - 1)
+
+
+func _prepare_next_tournament_match() -> void:
+	p1_wins = 0
+	p2_wins = 0
+	round_number = 1
+	round_reset_pending = false
+	round_reset_timer = 0.0
+	if active_fighter_a != null and is_instance_valid(active_fighter_a):
+		active_fighter_a.queue_free()
+	if active_fighter_b != null and is_instance_valid(active_fighter_b):
+		active_fighter_b.queue_free()
+	active_fighter_a = null
+	active_fighter_b = null
+	var entrants: Array = get_tree().get_meta("tournament_entrants", [])
+	var match_idx: int = int(get_tree().get_meta("tournament_match_index", 0))
+	var round_results: Array = get_tree().get_meta("tournament_round_results", [])
+	var n: int = entrants.size()
+	var total: int = _tournament_total_matches(n)
+	var indices: Array = _tournament_get_opponents(n, match_idx, round_results)
+	if match_idx < int(n / 2):
+		status_text = "Tournament - Round 1 Match %d" % (match_idx + 1)
+	elif total > 1 and match_idx < total - 1:
+		status_text = "Tournament - Match %d" % (match_idx + 1)
+	else:
+		status_text = "Tournament - Final"
+	if indices.size() >= 2:
+		var left_idx: int = int(indices[0])
+		var right_idx: int = int(indices[1])
+		if left_idx >= 0 and right_idx >= 0 and entrants.size() > left_idx and entrants.size() > right_idx:
+			var le: Dictionary = entrants[left_idx]
+			var re: Dictionary = entrants[right_idx]
+			_spawn_mod_fighters(
+				str(le.get("mod", "")),
+				str(re.get("mod", "")),
+				str(le.get("form", "")),
+				str(re.get("form", "")),
+				str(le.get("costume", "")),
+				str(re.get("costume", ""))
+			)
+
+
 func _set_fighter_input_enabled(enabled: bool) -> void:
 	if team_mode_enabled and team_mode_subtype == "simul":
+		if game_mode == "coop":
+			for fighter in team_fighters_p1:
+				if fighter == null or not is_instance_valid(fighter) or fighter.command_interpreter == null:
+					continue
+				fighter.accepts_player_movement_input = enabled
+				fighter.command_interpreter.read_local_input = enabled
+			for fighter in team_fighters_p2:
+				if fighter == null or not is_instance_valid(fighter) or fighter.command_interpreter == null:
+					continue
+				fighter.accepts_player_movement_input = enabled
+				fighter.command_interpreter.read_local_input = false
+			return
 		for fighter in team_fighters_p1:
 			if fighter == null or not is_instance_valid(fighter) or fighter.command_interpreter == null:
 				continue
@@ -2371,12 +2869,16 @@ func _update_cpu_input() -> void:
 		return
 	if team_mode_enabled:
 		if team_mode_subtype == "simul":
-			for fighter in team_fighters_p1:
-				if fighter == null or not is_instance_valid(fighter) or fighter == active_fighter_a:
-					continue
-				_drive_cpu_fighter(fighter, active_fighter_b)
+			if game_mode != "coop":
+				for fighter in team_fighters_p1:
+					if fighter == null or not is_instance_valid(fighter) or fighter == active_fighter_a:
+						continue
+					_drive_cpu_fighter(fighter, active_fighter_b)
 			for fighter in team_fighters_p2:
 				if fighter == null or not is_instance_valid(fighter):
+					continue
+				if game_mode == "coop":
+					_drive_cpu_fighter(fighter, active_fighter_a)
 					continue
 				if fighter == active_fighter_b and dummy_uses_local_input:
 					continue
@@ -2385,13 +2887,235 @@ func _update_cpu_input() -> void:
 		if not dummy_uses_local_input:
 			_drive_cpu_fighter(active_fighter_b, active_fighter_a)
 		return
-	if not cpu_enabled:
+	if not cpu_enabled and game_mode != "tournament":
 		return
-	if watch_mode_enabled:
+	if watch_mode_enabled or game_mode == "tournament":
 		_drive_cpu_fighter(active_fighter_a, active_fighter_b)
 		_drive_cpu_fighter(active_fighter_b, active_fighter_a)
 		return
 	_drive_cpu_fighter(active_fighter_b, active_fighter_a)
+
+
+func _to_string_array(arr: Variant) -> Array[String]:
+	var out: Array[String] = []
+	if arr is Array:
+		for x in arr:
+			out.append(str(x))
+	return out
+
+
+func _read_player_input(player: int) -> Dictionary:
+	var prefix: String = "p1_" if player == 1 else "p2_"
+	var x: float = 0.0
+	var y: float = 0.0
+	if InputMap.has_action(prefix + "right"):
+		x += Input.get_action_strength(prefix + "right")
+	if InputMap.has_action(prefix + "left"):
+		x -= Input.get_action_strength(prefix + "left")
+	if InputMap.has_action(prefix + "down"):
+		y -= Input.get_action_strength(prefix + "down")
+	if InputMap.has_action(prefix + "up"):
+		y += Input.get_action_strength(prefix + "up")
+	var pressed: Array[String] = []
+	var held: Array[String] = []
+	var released: Array[String] = []
+	for btn in ["P", "K", "S", "H"]:
+		var action: StringName = StringName(prefix + btn.to_lower())
+		if btn == "P":
+			action = StringName(prefix + "p")
+		elif btn == "K":
+			action = StringName(prefix + "k")
+		elif btn == "S":
+			action = StringName(prefix + "s")
+		elif btn == "H":
+			action = StringName(prefix + "h")
+		if InputMap.has_action(action):
+			if Input.is_action_just_pressed(action):
+				pressed.append(btn)
+			if Input.is_action_pressed(action):
+				held.append(btn)
+			if Input.is_action_just_released(action):
+				released.append(btn)
+	return {
+		"direction": Vector2(x, y),
+		"pressed": pressed,
+		"held": held,
+		"released": released
+	}
+
+
+func _apply_online_frame(_frame_id: int, p1_input: Dictionary, p2_input: Dictionary) -> void:
+	if active_fighter_a != null and active_fighter_a.command_interpreter != null:
+		active_fighter_a.command_interpreter.enqueue_external_input(
+			p1_input.get("direction", Vector2.ZERO),
+			_to_string_array(p1_input.get("pressed", [])),
+			_to_string_array(p1_input.get("held", [])),
+			_to_string_array(p1_input.get("released", []))
+		)
+	if active_fighter_b != null and active_fighter_b.command_interpreter != null:
+		active_fighter_b.command_interpreter.enqueue_external_input(
+			p2_input.get("direction", Vector2.ZERO),
+			_to_string_array(p2_input.get("pressed", [])),
+			_to_string_array(p2_input.get("held", [])),
+			_to_string_array(p2_input.get("released", []))
+		)
+
+
+func _update_online_input() -> void:
+	if not NetworkManager.is_online_session() or active_fighter_a == null or active_fighter_b == null:
+		return
+	var read_p1: Callable = func(): return _read_player_input(1)
+	var read_p2: Callable = func(): return _read_player_input(2)
+	var apply: Callable = func(fid: int, p1: Dictionary, p2: Dictionary): _apply_online_frame(fid, p1, p2)
+	if NetworkManager.is_host():
+		NetworkManager.poll_and_advance(read_p1, read_p2, apply)
+	else:
+		var max_catch_up: int = 5
+		for _i in range(max_catch_up):
+			if not NetworkManager.poll_and_advance(Callable(), Callable(), apply):
+				break
+		var my_in: Dictionary = _read_player_input(2)
+		NetworkManager.send_my_input(
+			my_in.get("direction", Vector2.ZERO),
+			my_in.get("pressed", []),
+			my_in.get("held", []),
+			my_in.get("released", [])
+		)
+
+
+func _learned_ai_state_vector(fighter: FighterBase, target: FighterBase) -> Array:
+	var dx: float = target.global_position.x - fighter.global_position.x
+	var abs_dx: float = absf(dx)
+	var dist_bucket: int = 0
+	if abs_dx > 4.5:
+		dist_bucket = 2
+	elif abs_dx > 1.8:
+		dist_bucket = 1
+	var facing_right: bool = true
+	if fighter.command_interpreter != null:
+		facing_right = fighter.command_interpreter.get_facing_right()
+	var facing: int = 1 if (dx > 0 and facing_right) or (dx < 0 and not facing_right) else -1
+	var opp_movetype: int = 0
+	if target.has_method("get_runtime_movetype"):
+		var mt: String = str(target.call("get_runtime_movetype"))
+		if mt == "A":
+			opp_movetype = 1
+		elif mt == "H":
+			opp_movetype = 2
+	var self_control: int = 1 if bool(fighter.get("state_control_enabled")) else 0
+	var dy: float = target.global_position.y - fighter.global_position.y
+	var rel_y_bucket: int = 0
+	if dy > 0.4:
+		rel_y_bucket = 1
+	elif dy < -0.4:
+		rel_y_bucket = 2
+	return [dist_bucket, facing, opp_movetype, self_control, rel_y_bucket]
+
+
+func _learned_ai_action_to_serializable(action: Dictionary) -> Dictionary:
+	var d: Vector2 = action.get("direction", Vector2.ZERO)
+	return {
+		"d": [d.x, d.y],
+		"p": _to_string_array(action.get("pressed", [])),
+		"h": _to_string_array(action.get("held", [])),
+		"r": _to_string_array(action.get("released", []))
+	}
+
+
+func _learned_ai_action_from_serializable(data: Dictionary) -> Dictionary:
+	var arr_d: Array = data.get("d", [0.0, 0.0])
+	var dir: Vector2 = Vector2(float(arr_d[0]) if arr_d.size() > 0 else 0.0, float(arr_d[1]) if arr_d.size() > 1 else 0.0)
+	return _cpu_input_frame(dir, _to_string_array(data.get("p", [])), _to_string_array(data.get("h", [])), _to_string_array(data.get("r", [])))
+
+
+func _learned_ai_load(mod_directory: String) -> Array:
+	if mod_directory.is_empty():
+		return []
+	if learned_ai_cache.has(mod_directory):
+		return learned_ai_cache[mod_directory]
+	var path: String = "%s%s" % [mod_directory, LEARNED_AI_FILENAME]
+	if not FileAccess.file_exists(path):
+		learned_ai_cache[mod_directory] = []
+		return []
+	var file: FileAccess = FileAccess.open(path, FileAccess.READ)
+	if file == null:
+		learned_ai_cache[mod_directory] = []
+		return []
+	var text: String = file.get_as_text()
+	file.close()
+	var parsed = JSON.parse_string(text)
+	if parsed == null or not (parsed is Dictionary):
+		learned_ai_cache[mod_directory] = []
+		return []
+	var samples: Array = parsed.get("samples", [])
+	if not (samples is Array):
+		learned_ai_cache[mod_directory] = []
+		return []
+	learned_ai_cache[mod_directory] = samples
+	return samples
+
+
+func _learned_ai_save(mod_directory: String, new_samples: Array) -> void:
+	if mod_directory.is_empty() or new_samples.is_empty():
+		return
+	var existing: Array = _learned_ai_load(mod_directory)
+	for s in new_samples:
+		existing.append(s)
+	while existing.size() > LEARNED_AI_MAX_SAMPLES:
+		existing.remove_at(0)
+	learned_ai_cache[mod_directory] = existing
+	var path: String = "%s%s" % [mod_directory, LEARNED_AI_FILENAME]
+	var file: FileAccess = FileAccess.open(path, FileAccess.WRITE)
+	if file == null:
+		return
+	file.store_string(JSON.stringify({"samples": existing}))
+	file.close()
+
+
+func _learned_ai_lookup(cpu: FighterBase, target: FighterBase) -> Dictionary:
+	var mod_dir: String = cpu.get_mod_directory()
+	if mod_dir.is_empty():
+		return {}
+	var samples: Array = _learned_ai_load(mod_dir)
+	if samples.is_empty():
+		return {}
+	var state: Array = _learned_ai_state_vector(cpu, target)
+	var matches: Array = []
+	for entry in samples:
+		if not (entry is Dictionary):
+			continue
+		var s: Array = entry.get("s", [])
+		var compare_len: int = mini(s.size(), state.size())
+		if compare_len < 4:
+			continue
+		var same: bool = true
+		for i in range(compare_len):
+			var si: int = int(s[i]) if i < s.size() else 0
+			var st: int = int(state[i]) if i < state.size() else 0
+			if si != st:
+				same = false
+				break
+		if same:
+			matches.append(entry)
+	if matches.is_empty():
+		return {}
+	var chosen: Dictionary = matches[cpu_rng.randi_range(0, matches.size() - 1)]
+	var a: Variant = chosen.get("a", {})
+	if a is Dictionary:
+		return _learned_ai_action_from_serializable(a)
+	return {}
+
+
+func _learned_ai_flush_record_buffer() -> void:
+	if learned_ai_record_buffer.is_empty():
+		return
+	if active_fighter_a == null or not is_instance_valid(active_fighter_a):
+		return
+	var mod_dir: String = active_fighter_a.get_mod_directory()
+	if mod_dir.is_empty():
+		return
+	_learned_ai_save(mod_dir, learned_ai_record_buffer.duplicate())
+	learned_ai_record_buffer.clear()
 
 
 func _drive_cpu_fighter(cpu: FighterBase, target: FighterBase) -> void:
@@ -2400,6 +3124,10 @@ func _drive_cpu_fighter(cpu: FighterBase, target: FighterBase) -> void:
 	if cpu.health <= 0:
 		return
 	if cpu.command_interpreter == null:
+		return
+	var learned_action: Dictionary = _learned_ai_lookup(cpu, target)
+	if not learned_action.is_empty():
+		_cpu_submit_ai_frame(cpu, learned_action)
 		return
 	var brain: Dictionary = _cpu_brain(cpu)
 	_tick_cpu_brain(brain)
@@ -2785,11 +3513,18 @@ func _cpu_input_frame(direction: Vector2, pressed: Array[String] = [], held: Arr
 
 
 func _cpu_submit_ai_frame(cpu: FighterBase, frame: Dictionary) -> void:
+	if cpu == active_fighter_b:
+		_last_p2_cpu_frame = {
+			"direction": frame.get("direction", Vector2.ZERO),
+			"pressed": (frame.get("pressed", []) as Array).duplicate(),
+			"held": (frame.get("held", []) as Array).duplicate(),
+			"released": (frame.get("released", []) as Array).duplicate()
+		}
 	cpu.command_interpreter.enqueue_external_input(
 		frame.get("direction", Vector2.ZERO),
-		frame.get("pressed", []),
-		frame.get("held", []),
-		frame.get("released", [])
+		_to_string_array(frame.get("pressed", [])),
+		_to_string_array(frame.get("held", [])),
+		_to_string_array(frame.get("released", []))
 	)
 
 
@@ -2821,6 +3556,8 @@ func _update_hud() -> void:
 			p2_team_status = _build_simul_team_status(false)
 	if smash_mode_enabled and active_fighter_a != null and active_fighter_b != null:
 		status_display = "P1 %d stock | %.0f%%   vs   P2 %d stock | %.0f%%" % [p1_stocks, active_fighter_a.smash_percent, p2_stocks, active_fighter_b.smash_percent]
+	if round_reset_pending and not replay_playback_active and dummy_uses_local_input and input_replay_recorder != null and input_replay_recorder.get_recorded_frame_count() > 0:
+		status_display += " | R=Replay"
 	target_hud.call(
 		"set_battle_state",
 		{

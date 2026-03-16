@@ -4,7 +4,9 @@ const RING_MENU_SCENE: PackedScene = preload("res://ui/components/RingMenu.tscn"
 const CONTENT_IMPORT_SERVICE = preload("res://engine/ContentImportService.gd")
 
 @export var training_scene_path: String = "res://ui/CharacterSelect.tscn"
+@export var match_options_scene_path: String = "res://ui/MatchOptionsMenu.tscn"
 @export var options_scene_path: String = "res://ui/OptionsMenu.tscn"
+@export var replay_select_path: String = "res://ui/ReplaySelect.tscn"
 @export var box_editor_scene_path: String = "res://ui/CharacterEditor.tscn"
 @export var json_editor_scene_path: String = "res://ui/CharacterEditor.tscn"
 @export var stage_editor_scene_path: String = "res://ui/StageEditor.tscn"
@@ -22,6 +24,43 @@ const CONTENT_IMPORT_SERVICE = preload("res://engine/ContentImportService.gd")
 @onready var smash_button: Button = $CenterContainer/VBoxContainer/SmashModeButton
 @onready var team_button: Button = $CenterContainer/VBoxContainer/TeamModeButton
 @onready var team_submenu: Control = $CenterContainer/VBoxContainer/TeamModeSubmenu
+@onready var online_submenu: Control = $CenterContainer/VBoxContainer/OnlineSubmenu
+@onready var online_host_button: Button = $CenterContainer/VBoxContainer/OnlineSubmenu/OnlineHostButton
+@onready var online_join_button: Button = $CenterContainer/VBoxContainer/OnlineSubmenu/OnlineJoinButton
+@onready var online_back_button: Button = $CenterContainer/VBoxContainer/OnlineSubmenu/OnlineSubmenuButtons/OnlineBackButton
+@onready var single_player_submenu: Control = $CenterContainer/VBoxContainer/SinglePlayerSubmenu
+@onready var single_player_training_button: Button = $CenterContainer/VBoxContainer/SinglePlayerSubmenu/SinglePlayerTrainingButton
+@onready var single_player_arcade_button: Button = $CenterContainer/VBoxContainer/SinglePlayerSubmenu/SinglePlayerArcadeButton
+@onready var single_player_survival_button: Button = $CenterContainer/VBoxContainer/SinglePlayerSubmenu/SinglePlayerSurvivalButton
+@onready var single_player_watch_button: Button = $CenterContainer/VBoxContainer/SinglePlayerSubmenu/SinglePlayerWatchButton
+@onready var single_player_cpu_training_vs_p2_button: Button = $CenterContainer/VBoxContainer/SinglePlayerSubmenu/SinglePlayerCpuTrainingVsP2Button
+@onready var single_player_cpu_training_vs_cpu_button: Button = $CenterContainer/VBoxContainer/SinglePlayerSubmenu/SinglePlayerCpuTrainingVsCpuButton
+@onready var single_player_back_button: Button = $CenterContainer/VBoxContainer/SinglePlayerSubmenu/SinglePlayerSubmenuButtons/SinglePlayerBackButton
+@onready var watch_submenu: Control = $CenterContainer/VBoxContainer/WatchSubmenu
+@onready var watch_versus_button: Button = $CenterContainer/VBoxContainer/WatchSubmenu/WatchVersusButton
+@onready var watch_smash_button: Button = $CenterContainer/VBoxContainer/WatchSubmenu/WatchSmashButton
+@onready var watch_tag_button: Button = $CenterContainer/VBoxContainer/WatchSubmenu/WatchTagButton
+@onready var watch_submenu_back_button: Button = $CenterContainer/VBoxContainer/WatchSubmenu/WatchSubmenuButtons/WatchBackButton
+@onready var editors_submenu: Control = $CenterContainer/VBoxContainer/EditorsSubmenu
+@onready var editors_box_button: Button = $CenterContainer/VBoxContainer/EditorsSubmenu/EditorsBoxButton
+@onready var editors_json_button: Button = $CenterContainer/VBoxContainer/EditorsSubmenu/EditorsJsonButton
+@onready var editors_commands_button: Button = $CenterContainer/VBoxContainer/EditorsSubmenu/EditorsCommandsButton
+@onready var editors_preview_button: Button = $CenterContainer/VBoxContainer/EditorsSubmenu/EditorsPreviewButton
+@onready var editors_stage_button: Button = $CenterContainer/VBoxContainer/EditorsSubmenu/EditorsStageButton
+@onready var editors_back_button: Button = $CenterContainer/VBoxContainer/EditorsSubmenu/EditorsSubmenuButtons/EditorsBackButton
+@onready var import_submenu: Control = $CenterContainer/VBoxContainer/ImportSubmenu
+@onready var import_submenu_open_mods_button: Button = $CenterContainer/VBoxContainer/ImportSubmenu/ImportOpenModsButton
+@onready var import_submenu_open_stages_button: Button = $CenterContainer/VBoxContainer/ImportSubmenu/ImportOpenStagesButton
+@onready var import_submenu_character_button: Button = $CenterContainer/VBoxContainer/ImportSubmenu/ImportCharacterButton
+@onready var import_submenu_stage_button: Button = $CenterContainer/VBoxContainer/ImportSubmenu/ImportStageButton
+@onready var import_submenu_back_button: Button = $CenterContainer/VBoxContainer/ImportSubmenu/ImportSubmenuButtons/ImportBackButton
+@onready var local_multiplayer_submenu: Control = $CenterContainer/VBoxContainer/LocalMultiplayerSubmenu
+@onready var local_multiplayer_versus_button: Button = $CenterContainer/VBoxContainer/LocalMultiplayerSubmenu/LocalMultiplayerVersusButton
+@onready var local_multiplayer_smash_button: Button = $CenterContainer/VBoxContainer/LocalMultiplayerSubmenu/LocalMultiplayerSmashButton
+@onready var local_multiplayer_team_button: Button = $CenterContainer/VBoxContainer/LocalMultiplayerSubmenu/LocalMultiplayerTeamButton
+@onready var local_multiplayer_coop_button: Button = $CenterContainer/VBoxContainer/LocalMultiplayerSubmenu/LocalMultiplayerCoopButton
+@onready var local_multiplayer_tournament_button: Button = $CenterContainer/VBoxContainer/LocalMultiplayerSubmenu/LocalMultiplayerTournamentButton
+@onready var local_multiplayer_back_button: Button = $CenterContainer/VBoxContainer/LocalMultiplayerSubmenu/LocalMultiplayerSubmenuButtons/LocalMultiplayerBackButton
 @onready var team_subtype_option: OptionButton = $CenterContainer/VBoxContainer/TeamModeSubmenu/TeamSubtypeRow/TeamSubtypeOption
 @onready var team_p1_size_option: OptionButton = $CenterContainer/VBoxContainer/TeamModeSubmenu/TeamP1SizeRow/TeamP1SizeOption
 @onready var team_p2_size_option: OptionButton = $CenterContainer/VBoxContainer/TeamModeSubmenu/TeamP2SizeRow/TeamP2SizeOption
@@ -93,6 +132,68 @@ func _ready() -> void:
 	import_stage_dialog.file_selected.connect(_on_import_stage_path_selected)
 	import_stage_dialog.dir_selected.connect(_on_import_stage_path_selected)
 	quit_button.pressed.connect(_on_quit_game_pressed)
+	if online_host_button != null:
+		online_host_button.pressed.connect(_on_online_host_pressed)
+	if online_join_button != null:
+		online_join_button.pressed.connect(_on_online_join_pressed)
+	if online_back_button != null:
+		online_back_button.pressed.connect(_on_online_back_pressed)
+	if single_player_training_button != null:
+		single_player_training_button.pressed.connect(_on_training_mode_pressed)
+	if single_player_arcade_button != null:
+		single_player_arcade_button.pressed.connect(_on_arcade_mode_pressed)
+	if single_player_survival_button != null:
+		single_player_survival_button.pressed.connect(_on_survival_mode_pressed)
+	if single_player_watch_button != null:
+		single_player_watch_button.pressed.connect(_on_watch_mode_pressed)
+	if single_player_cpu_training_vs_p2_button != null:
+		single_player_cpu_training_vs_p2_button.pressed.connect(_on_cpu_training_vs_p2_pressed)
+	if single_player_cpu_training_vs_cpu_button != null:
+		single_player_cpu_training_vs_cpu_button.pressed.connect(_on_cpu_training_vs_cpu_pressed)
+	if single_player_back_button != null:
+		single_player_back_button.pressed.connect(_on_single_player_back_pressed)
+	if watch_versus_button != null:
+		watch_versus_button.pressed.connect(_on_watch_versus_pressed)
+	if watch_smash_button != null:
+		watch_smash_button.pressed.connect(_on_watch_smash_pressed)
+	if watch_tag_button != null:
+		watch_tag_button.pressed.connect(_on_watch_tag_pressed)
+	if watch_submenu_back_button != null:
+		watch_submenu_back_button.pressed.connect(_on_watch_submenu_back_pressed)
+	if editors_box_button != null:
+		editors_box_button.pressed.connect(_on_box_editor_pressed)
+	if editors_json_button != null:
+		editors_json_button.pressed.connect(_on_json_editor_pressed)
+	if editors_commands_button != null:
+		editors_commands_button.pressed.connect(_on_commands_editor_pressed)
+	if editors_preview_button != null:
+		editors_preview_button.pressed.connect(_on_character_preview_pressed)
+	if editors_stage_button != null:
+		editors_stage_button.pressed.connect(_on_stage_editor_pressed)
+	if editors_back_button != null:
+		editors_back_button.pressed.connect(_on_editors_back_pressed)
+	if import_submenu_open_mods_button != null:
+		import_submenu_open_mods_button.pressed.connect(_on_open_mods_folder_pressed)
+	if import_submenu_open_stages_button != null:
+		import_submenu_open_stages_button.pressed.connect(_on_open_stages_folder_pressed)
+	if import_submenu_character_button != null:
+		import_submenu_character_button.pressed.connect(_on_import_character_pressed)
+	if import_submenu_stage_button != null:
+		import_submenu_stage_button.pressed.connect(_on_import_stage_pressed)
+	if import_submenu_back_button != null:
+		import_submenu_back_button.pressed.connect(_on_import_back_pressed)
+	if local_multiplayer_versus_button != null:
+		local_multiplayer_versus_button.pressed.connect(_on_versus_mode_pressed)
+	if local_multiplayer_smash_button != null:
+		local_multiplayer_smash_button.pressed.connect(_on_smash_mode_pressed)
+	if local_multiplayer_team_button != null:
+		local_multiplayer_team_button.pressed.connect(_on_local_team_pressed)
+	if local_multiplayer_coop_button != null:
+		local_multiplayer_coop_button.pressed.connect(_on_coop_mode_pressed)
+	if local_multiplayer_tournament_button != null:
+		local_multiplayer_tournament_button.pressed.connect(_on_tournament_mode_pressed)
+	if local_multiplayer_back_button != null:
+		local_multiplayer_back_button.pressed.connect(_on_local_multiplayer_back_pressed)
 	var window := get_window()
 	if window != null and not window.files_dropped.is_connected(_on_files_dropped):
 		window.files_dropped.connect(_on_files_dropped)
@@ -100,6 +201,18 @@ func _ready() -> void:
 	options_status_label.visible = false
 	character_editor_submenu.visible = false
 	team_submenu.visible = false
+	if online_submenu != null:
+		online_submenu.visible = false
+	if single_player_submenu != null:
+		single_player_submenu.visible = false
+	if editors_submenu != null:
+		editors_submenu.visible = false
+	if import_submenu != null:
+		import_submenu.visible = false
+	if local_multiplayer_submenu != null:
+		local_multiplayer_submenu.visible = false
+	if watch_submenu != null:
+		watch_submenu.visible = false
 	import_summary_panel.visible = false
 	_build_team_mode_options()
 	_setup_main_ring_menu()
@@ -111,7 +224,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if viewport == null:
 		return
 	# Ring navigation is the primary top-level navigation mode.
-	if not team_submenu.visible and not character_editor_submenu.visible and main_ring_menu != null:
+	if not team_submenu.visible and not character_editor_submenu.visible and (online_submenu == null or not online_submenu.visible) and (single_player_submenu == null or not single_player_submenu.visible) and (editors_submenu == null or not editors_submenu.visible) and (import_submenu == null or not import_submenu.visible) and (local_multiplayer_submenu == null or not local_multiplayer_submenu.visible) and (watch_submenu == null or not watch_submenu.visible) and main_ring_menu != null:
 		var prev_page_pressed: bool = _menu_action_pressed(event, &"p1_h") or _menu_action_pressed(event, &"p2_h")
 		var next_page_pressed: bool = _menu_action_pressed(event, &"p1_s") or _menu_action_pressed(event, &"p2_s")
 		var left_pressed_ring: bool = _menu_action_pressed(event, &"p1_left") or _menu_action_pressed(event, &"p2_left")
@@ -187,12 +300,36 @@ func _unhandled_input(event: InputEvent) -> void:
 			viewport.set_input_as_handled()
 			_on_team_back_pressed()
 			return
+		if online_submenu != null and online_submenu.visible:
+			viewport.set_input_as_handled()
+			_on_online_back_pressed()
+			return
+		if single_player_submenu != null and single_player_submenu.visible:
+			viewport.set_input_as_handled()
+			_on_single_player_back_pressed()
+			return
+		if watch_submenu != null and watch_submenu.visible:
+			viewport.set_input_as_handled()
+			_on_watch_submenu_back_pressed()
+			return
+		if editors_submenu != null and editors_submenu.visible:
+			viewport.set_input_as_handled()
+			_on_editors_back_pressed()
+			return
+		if import_submenu != null and import_submenu.visible:
+			viewport.set_input_as_handled()
+			_on_import_back_pressed()
+			return
+		if local_multiplayer_submenu != null and local_multiplayer_submenu.visible:
+			viewport.set_input_as_handled()
+			_on_local_multiplayer_back_pressed()
+			return
 		if character_editor_submenu.visible:
 			viewport.set_input_as_handled()
 			SystemSFX.play_ui_from(self, "ui_back")
 			character_editor_submenu.visible = false
 			if main_ring_menu != null:
-				main_ring_menu.visible = not team_submenu.visible
+				main_ring_menu.visible = not team_submenu.visible and (online_submenu == null or not online_submenu.visible) and (single_player_submenu == null or not single_player_submenu.visible) and (editors_submenu == null or not editors_submenu.visible) and (import_submenu == null or not import_submenu.visible) and (local_multiplayer_submenu == null or not local_multiplayer_submenu.visible) and (watch_submenu == null or not watch_submenu.visible)
 			return
 
 
@@ -214,20 +351,13 @@ func _setup_main_ring_menu() -> void:
 
 func _build_main_ring_items() -> void:
 	main_ring_items = [
-		{"id": "training", "label": "Training Mode"},
-		{"id": "arcade", "label": "Arcade Mode"},
-		{"id": "versus", "label": "2P Versus"},
-		{"id": "smash", "label": "Smash Mode"},
-		{"id": "team", "label": "Team Mode"},
-		{"id": "survival", "label": "Survival Mode"},
-		{"id": "watch", "label": "Watch Mode"},
+		{"id": "single_player", "label": "Single Player"},
+		{"id": "online", "label": "Online"},
+		{"id": "local_multiplayer", "label": "Local Multiplayer"},
+		{"id": "replays", "label": "Replays"},
 		{"id": "model_viewer", "label": "Model Viewer"},
-		{"id": "character_editor", "label": "Character Editor"},
-		{"id": "stage_editor", "label": "Stage Editor"},
-		{"id": "open_mods", "label": "Open Mods Folder"},
-		{"id": "open_stages", "label": "Open Stages Folder"},
-		{"id": "import_character", "label": "Import Character"},
-		{"id": "import_stage", "label": "Import Stage"},
+		{"id": "editors", "label": "Editors"},
+		{"id": "import", "label": "Import"},
 		{"id": "options", "label": "Options"},
 		{"id": "quit", "label": "Quit Game"}
 	]
@@ -238,34 +368,20 @@ func _activate_main_ring_selection(index: int) -> void:
 		return
 	var item: Dictionary = main_ring_items[index]
 	match str(item.get("id", "")):
-		"training":
-			_on_training_mode_pressed()
-		"arcade":
-			_on_arcade_mode_pressed()
-		"versus":
-			_on_versus_mode_pressed()
-		"smash":
-			_on_smash_mode_pressed()
-		"team":
-			_on_team_mode_pressed()
-		"survival":
-			_on_survival_mode_pressed()
-		"watch":
-			_on_watch_mode_pressed()
+		"single_player":
+			_on_single_player_pressed()
+		"online":
+			_on_online_pressed()
+		"local_multiplayer":
+			_on_local_multiplayer_pressed()
+		"replays":
+			_on_replays_pressed()
 		"model_viewer":
 			_on_model_viewer_pressed()
-		"character_editor":
-			_on_character_editor_pressed()
-		"stage_editor":
-			_on_stage_editor_pressed()
-		"open_mods":
-			_on_open_mods_folder_pressed()
-		"open_stages":
-			_on_open_stages_folder_pressed()
-		"import_character":
-			_on_import_character_pressed()
-		"import_stage":
-			_on_import_stage_pressed()
+		"editors":
+			_on_editors_pressed()
+		"import":
+			_on_import_pressed()
 		"options":
 			_on_options_pressed()
 		"quit":
@@ -310,6 +426,43 @@ func _menu_focus_controls() -> Array[Control]:
 		_append_focus_if_visible(out, team_p2_size_option)
 		_append_focus_if_visible(out, team_start_button)
 		_append_focus_if_visible(out, team_back_button)
+	if online_submenu != null and online_submenu.visible:
+		_append_focus_if_visible(out, online_host_button)
+		_append_focus_if_visible(out, online_join_button)
+		_append_focus_if_visible(out, online_back_button)
+	if single_player_submenu != null and single_player_submenu.visible:
+		_append_focus_if_visible(out, single_player_training_button)
+		_append_focus_if_visible(out, single_player_arcade_button)
+		_append_focus_if_visible(out, single_player_survival_button)
+		_append_focus_if_visible(out, single_player_watch_button)
+		_append_focus_if_visible(out, single_player_cpu_training_vs_p2_button)
+		_append_focus_if_visible(out, single_player_cpu_training_vs_cpu_button)
+		_append_focus_if_visible(out, single_player_back_button)
+	if watch_submenu != null and watch_submenu.visible:
+		_append_focus_if_visible(out, watch_versus_button)
+		_append_focus_if_visible(out, watch_smash_button)
+		_append_focus_if_visible(out, watch_tag_button)
+		_append_focus_if_visible(out, watch_submenu_back_button)
+	if editors_submenu != null and editors_submenu.visible:
+		_append_focus_if_visible(out, editors_box_button)
+		_append_focus_if_visible(out, editors_json_button)
+		_append_focus_if_visible(out, editors_commands_button)
+		_append_focus_if_visible(out, editors_preview_button)
+		_append_focus_if_visible(out, editors_stage_button)
+		_append_focus_if_visible(out, editors_back_button)
+	if import_submenu != null and import_submenu.visible:
+		_append_focus_if_visible(out, import_submenu_open_mods_button)
+		_append_focus_if_visible(out, import_submenu_open_stages_button)
+		_append_focus_if_visible(out, import_submenu_character_button)
+		_append_focus_if_visible(out, import_submenu_stage_button)
+		_append_focus_if_visible(out, import_submenu_back_button)
+	if local_multiplayer_submenu != null and local_multiplayer_submenu.visible:
+		_append_focus_if_visible(out, local_multiplayer_versus_button)
+		_append_focus_if_visible(out, local_multiplayer_smash_button)
+		_append_focus_if_visible(out, local_multiplayer_team_button)
+		_append_focus_if_visible(out, local_multiplayer_coop_button)
+		_append_focus_if_visible(out, local_multiplayer_tournament_button)
+		_append_focus_if_visible(out, local_multiplayer_back_button)
 	_append_focus_if_visible(out, survival_button)
 	_append_focus_if_visible(out, watch_button)
 	_append_focus_if_visible(out, options_button)
@@ -355,39 +508,208 @@ func _adjust_option_button(option: OptionButton, delta: int) -> void:
 	SystemSFX.play_ui_from(self, "ui_move")
 
 
+func _on_single_player_pressed() -> void:
+	SystemSFX.play_ui_from(self, "ui_confirm")
+	if single_player_submenu != null:
+		single_player_submenu.visible = true
+	if main_ring_menu != null:
+		main_ring_menu.visible = false
+
+
+func _on_single_player_back_pressed() -> void:
+	SystemSFX.play_ui_from(self, "ui_back")
+	if single_player_submenu != null:
+		single_player_submenu.visible = false
+	if main_ring_menu != null:
+		main_ring_menu.visible = not team_submenu.visible and not character_editor_submenu.visible and (online_submenu == null or not online_submenu.visible) and (editors_submenu == null or not editors_submenu.visible) and (import_submenu == null or not import_submenu.visible) and (local_multiplayer_submenu == null or not local_multiplayer_submenu.visible) and (watch_submenu == null or not watch_submenu.visible)
+
+
 func _on_training_mode_pressed() -> void:
 	SystemSFX.play_ui_from(self, "ui_confirm")
 	_clear_team_mode_meta()
 	get_tree().set_meta("game_mode", "training")
-	get_tree().change_scene_to_file(training_scene_path)
+	get_tree().change_scene_to_file(match_options_scene_path)
+
+
+func _on_cpu_training_vs_p2_pressed() -> void:
+	SystemSFX.play_ui_from(self, "ui_confirm")
+	_clear_team_mode_meta()
+	get_tree().set_meta("game_mode", "cpu_training")
+	get_tree().set_meta("cpu_training_opponent", "player")
+	get_tree().change_scene_to_file(match_options_scene_path)
+
+
+func _on_cpu_training_vs_cpu_pressed() -> void:
+	SystemSFX.play_ui_from(self, "ui_confirm")
+	_clear_team_mode_meta()
+	get_tree().set_meta("game_mode", "cpu_training")
+	get_tree().set_meta("cpu_training_opponent", "cpu")
+	get_tree().change_scene_to_file(match_options_scene_path)
 
 
 func _on_arcade_mode_pressed() -> void:
 	SystemSFX.play_ui_from(self, "ui_confirm")
 	_clear_team_mode_meta()
 	get_tree().set_meta("game_mode", "arcade")
-	get_tree().change_scene_to_file(training_scene_path)
+	get_tree().change_scene_to_file(match_options_scene_path)
+
+
+func _on_local_multiplayer_pressed() -> void:
+	SystemSFX.play_ui_from(self, "ui_confirm")
+	if local_multiplayer_submenu != null:
+		local_multiplayer_submenu.visible = true
+	if main_ring_menu != null:
+		main_ring_menu.visible = false
+
+
+func _on_local_multiplayer_back_pressed() -> void:
+	SystemSFX.play_ui_from(self, "ui_back")
+	if local_multiplayer_submenu != null:
+		local_multiplayer_submenu.visible = false
+	if main_ring_menu != null:
+		main_ring_menu.visible = not team_submenu.visible and not character_editor_submenu.visible and (online_submenu == null or not online_submenu.visible) and (single_player_submenu == null or not single_player_submenu.visible) and (editors_submenu == null or not editors_submenu.visible) and (import_submenu == null or not import_submenu.visible) and (local_multiplayer_submenu == null or not local_multiplayer_submenu.visible) and (watch_submenu == null or not watch_submenu.visible)
+
+
+func _on_local_team_pressed() -> void:
+	SystemSFX.play_ui_from(self, "ui_confirm")
+	if local_multiplayer_submenu != null:
+		local_multiplayer_submenu.visible = false
+	if team_submenu != null:
+		team_submenu.visible = true
+	if main_ring_menu != null:
+		main_ring_menu.visible = false
 
 
 func _on_versus_mode_pressed() -> void:
 	SystemSFX.play_ui_from(self, "ui_confirm")
 	_clear_team_mode_meta()
 	get_tree().set_meta("game_mode", "versus")
-	get_tree().change_scene_to_file(training_scene_path)
+	get_tree().change_scene_to_file(match_options_scene_path)
+
+
+func _on_online_pressed() -> void:
+	SystemSFX.play_ui_from(self, "ui_confirm")
+	if online_submenu != null:
+		online_submenu.visible = true
+	if main_ring_menu != null:
+		main_ring_menu.visible = false
+
+
+func _on_online_back_pressed() -> void:
+	SystemSFX.play_ui_from(self, "ui_back")
+	if online_submenu != null:
+		online_submenu.visible = false
+	if main_ring_menu != null:
+		main_ring_menu.visible = not character_editor_submenu.visible and (single_player_submenu == null or not single_player_submenu.visible) and (editors_submenu == null or not editors_submenu.visible) and (import_submenu == null or not import_submenu.visible) and (local_multiplayer_submenu == null or not local_multiplayer_submenu.visible) and (watch_submenu == null or not watch_submenu.visible)
+
+
+func _on_online_host_pressed() -> void:
+	SystemSFX.play_ui_from(self, "ui_confirm")
+	_clear_team_mode_meta()
+	var err: Error = NetworkManager.host(49152)
+	if err != OK:
+		options_status_label.visible = true
+		options_status_label.text = "Failed to host (port 49152 may be in use)."
+		return
+	get_tree().set_meta("game_mode", "online")
+	get_tree().set_meta("online_host", true)
+	get_tree().change_scene_to_file(match_options_scene_path)
+
+
+func _on_online_join_pressed() -> void:
+	SystemSFX.play_ui_from(self, "ui_confirm")
+	_show_join_ip_dialog()
+
+
+func _show_join_ip_dialog() -> void:
+	var win: Window = Window.new()
+	win.title = "Join Game"
+	win.size = Vector2i(320, 120)
+	win.unresizable = true
+	var vbox: VBoxContainer = VBoxContainer.new()
+	vbox.set_anchors_preset(Control.PRESET_FULL_RECT)
+	vbox.set_offsets_preset(Control.PRESET_FULL_RECT)
+	vbox.add_theme_constant_override("separation", 8)
+	var margin: MarginContainer = MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 16)
+	margin.add_theme_constant_override("margin_right", 16)
+	margin.add_theme_constant_override("margin_top", 16)
+	margin.add_theme_constant_override("margin_bottom", 16)
+	margin.add_child(vbox)
+	win.add_child(margin)
+	var label: Label = Label.new()
+	label.text = "Host IP address:"
+	vbox.add_child(label)
+	var line_edit: LineEdit = LineEdit.new()
+	line_edit.placeholder_text = "127.0.0.1"
+	line_edit.text = "127.0.0.1"
+	line_edit.custom_minimum_size.x = 200
+	vbox.add_child(line_edit)
+	var row: HBoxContainer = HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	var cancel_btn: Button = Button.new()
+	cancel_btn.text = "Cancel"
+	var connect_btn: Button = Button.new()
+	connect_btn.text = "Connect"
+	row.add_child(cancel_btn)
+	row.add_child(connect_btn)
+	vbox.add_child(row)
+	cancel_btn.pressed.connect(func():
+		win.queue_free()
+	)
+	connect_btn.pressed.connect(func():
+		var ip: String = line_edit.text.strip_edges()
+		if ip.is_empty():
+			ip = "127.0.0.1"
+		var err: Error = NetworkManager.join(ip, 49152)
+		win.queue_free()
+		if err != OK:
+			options_status_label.visible = true
+			options_status_label.text = "Failed to connect to %s" % ip
+			return
+		_clear_team_mode_meta()
+		get_tree().set_meta("game_mode", "online")
+		get_tree().set_meta("online_host", false)
+		get_tree().change_scene_to_file(match_options_scene_path)
+	)
+	get_tree().root.add_child(win)
+	win.popup_centered()
+	line_edit.grab_focus()
 
 
 func _on_smash_mode_pressed() -> void:
 	SystemSFX.play_ui_from(self, "ui_confirm")
 	_clear_team_mode_meta()
 	get_tree().set_meta("game_mode", "smash")
-	get_tree().change_scene_to_file(training_scene_path)
+	get_tree().change_scene_to_file(match_options_scene_path)
+
+
+func _on_coop_mode_pressed() -> void:
+	SystemSFX.play_ui_from(self, "ui_confirm")
+	if local_multiplayer_submenu != null:
+		local_multiplayer_submenu.visible = false
+	_clear_team_mode_meta()
+	get_tree().set_meta("game_mode", "coop")
+	get_tree().set_meta("team_mode_subtype", "simul")
+	get_tree().set_meta("team_size_p1", 2)
+	get_tree().set_meta("team_size_p2", 1)
+	get_tree().change_scene_to_file(match_options_scene_path)
+
+
+func _on_tournament_mode_pressed() -> void:
+	SystemSFX.play_ui_from(self, "ui_confirm")
+	if local_multiplayer_submenu != null:
+		local_multiplayer_submenu.visible = false
+	_clear_team_mode_meta()
+	get_tree().set_meta("game_mode", "tournament")
+	get_tree().change_scene_to_file(match_options_scene_path)
 
 
 func _on_team_mode_pressed() -> void:
 	SystemSFX.play_ui_from(self, "ui_confirm")
 	team_submenu.visible = not team_submenu.visible
 	if main_ring_menu != null:
-		main_ring_menu.visible = not team_submenu.visible and not character_editor_submenu.visible
+		main_ring_menu.visible = not team_submenu.visible and not character_editor_submenu.visible and (online_submenu == null or not online_submenu.visible) and (single_player_submenu == null or not single_player_submenu.visible) and (editors_submenu == null or not editors_submenu.visible) and (import_submenu == null or not import_submenu.visible) and (local_multiplayer_submenu == null or not local_multiplayer_submenu.visible) and (watch_submenu == null or not watch_submenu.visible)
 
 
 func _on_team_start_pressed() -> void:
@@ -396,28 +718,70 @@ func _on_team_start_pressed() -> void:
 	get_tree().set_meta("team_mode_subtype", _selected_team_subtype())
 	get_tree().set_meta("team_size_p1", _selected_team_size(team_p1_size_option))
 	get_tree().set_meta("team_size_p2", _selected_team_size(team_p2_size_option))
-	get_tree().change_scene_to_file(training_scene_path)
+	get_tree().change_scene_to_file(match_options_scene_path)
 
 
 func _on_team_back_pressed() -> void:
 	SystemSFX.play_ui_from(self, "ui_back")
 	team_submenu.visible = false
 	if main_ring_menu != null:
-		main_ring_menu.visible = not character_editor_submenu.visible
+		main_ring_menu.visible = not character_editor_submenu.visible and (online_submenu == null or not online_submenu.visible) and (single_player_submenu == null or not single_player_submenu.visible) and (editors_submenu == null or not editors_submenu.visible) and (import_submenu == null or not import_submenu.visible) and (local_multiplayer_submenu == null or not local_multiplayer_submenu.visible) and (watch_submenu == null or not watch_submenu.visible)
 
 
 func _on_survival_mode_pressed() -> void:
 	SystemSFX.play_ui_from(self, "ui_confirm")
 	_clear_team_mode_meta()
 	get_tree().set_meta("game_mode", "survival")
-	get_tree().change_scene_to_file(training_scene_path)
+	get_tree().change_scene_to_file(match_options_scene_path)
 
 
 func _on_watch_mode_pressed() -> void:
 	SystemSFX.play_ui_from(self, "ui_confirm")
+	if single_player_submenu != null:
+		single_player_submenu.visible = false
+	if watch_submenu != null:
+		watch_submenu.visible = true
+	if main_ring_menu != null:
+		main_ring_menu.visible = false
+
+
+func _on_watch_versus_pressed() -> void:
+	SystemSFX.play_ui_from(self, "ui_confirm")
 	_clear_team_mode_meta()
 	get_tree().set_meta("game_mode", "watch")
-	get_tree().change_scene_to_file(training_scene_path)
+	get_tree().set_meta("watch_match_type", "versus")
+	get_tree().change_scene_to_file(match_options_scene_path)
+
+
+func _on_watch_smash_pressed() -> void:
+	SystemSFX.play_ui_from(self, "ui_confirm")
+	_clear_team_mode_meta()
+	get_tree().set_meta("game_mode", "watch")
+	get_tree().set_meta("watch_match_type", "smash")
+	get_tree().change_scene_to_file(match_options_scene_path)
+
+
+func _on_watch_tag_pressed() -> void:
+	SystemSFX.play_ui_from(self, "ui_confirm")
+	get_tree().set_meta("game_mode", "watch")
+	get_tree().set_meta("watch_match_type", "team")
+	get_tree().set_meta("team_mode_subtype", "tag")
+	get_tree().set_meta("team_size_p1", 2)
+	get_tree().set_meta("team_size_p2", 2)
+	get_tree().change_scene_to_file(match_options_scene_path)
+
+
+func _on_watch_submenu_back_pressed() -> void:
+	SystemSFX.play_ui_from(self, "ui_back")
+	if watch_submenu != null:
+		watch_submenu.visible = false
+	if main_ring_menu != null:
+		main_ring_menu.visible = not team_submenu.visible and not character_editor_submenu.visible and (online_submenu == null or not online_submenu.visible) and (single_player_submenu == null or not single_player_submenu.visible) and (editors_submenu == null or not editors_submenu.visible) and (import_submenu == null or not import_submenu.visible) and (local_multiplayer_submenu == null or not local_multiplayer_submenu.visible) and (watch_submenu == null or not watch_submenu.visible)
+
+
+func _on_replays_pressed() -> void:
+	SystemSFX.play_ui_from(self, "ui_confirm")
+	get_tree().change_scene_to_file(replay_select_path)
 
 
 func _on_model_viewer_pressed() -> void:
@@ -434,7 +798,7 @@ func _on_character_editor_pressed() -> void:
 	SystemSFX.play_ui_from(self, "ui_confirm")
 	character_editor_submenu.visible = not character_editor_submenu.visible
 	if main_ring_menu != null:
-		main_ring_menu.visible = not character_editor_submenu.visible and not team_submenu.visible
+		main_ring_menu.visible = not character_editor_submenu.visible and not team_submenu.visible and (import_submenu == null or not import_submenu.visible) and (local_multiplayer_submenu == null or not local_multiplayer_submenu.visible) and (watch_submenu == null or not watch_submenu.visible)
 
 
 func _set_legacy_main_buttons_visible(visible_value: bool) -> void:
@@ -480,9 +844,41 @@ func _on_character_preview_pressed() -> void:
 	get_tree().change_scene_to_file(box_editor_scene_path)
 
 
+func _on_editors_pressed() -> void:
+	SystemSFX.play_ui_from(self, "ui_confirm")
+	if editors_submenu != null:
+		editors_submenu.visible = true
+	if main_ring_menu != null:
+		main_ring_menu.visible = false
+
+
+func _on_editors_back_pressed() -> void:
+	SystemSFX.play_ui_from(self, "ui_back")
+	if editors_submenu != null:
+		editors_submenu.visible = false
+	if main_ring_menu != null:
+		main_ring_menu.visible = not team_submenu.visible and not character_editor_submenu.visible and (online_submenu == null or not online_submenu.visible) and (single_player_submenu == null or not single_player_submenu.visible) and (import_submenu == null or not import_submenu.visible) and (editors_submenu == null or not editors_submenu.visible) and (local_multiplayer_submenu == null or not local_multiplayer_submenu.visible) and (watch_submenu == null or not watch_submenu.visible)
+
+
 func _on_stage_editor_pressed() -> void:
 	SystemSFX.play_ui_from(self, "ui_confirm")
 	get_tree().change_scene_to_file(stage_editor_scene_path)
+
+
+func _on_import_pressed() -> void:
+	SystemSFX.play_ui_from(self, "ui_confirm")
+	if import_submenu != null:
+		import_submenu.visible = true
+	if main_ring_menu != null:
+		main_ring_menu.visible = false
+
+
+func _on_import_back_pressed() -> void:
+	SystemSFX.play_ui_from(self, "ui_back")
+	if import_submenu != null:
+		import_submenu.visible = false
+	if main_ring_menu != null:
+		main_ring_menu.visible = not team_submenu.visible and not character_editor_submenu.visible and (online_submenu == null or not online_submenu.visible) and (single_player_submenu == null or not single_player_submenu.visible) and (editors_submenu == null or not editors_submenu.visible) and (import_submenu == null or not import_submenu.visible) and (local_multiplayer_submenu == null or not local_multiplayer_submenu.visible) and (watch_submenu == null or not watch_submenu.visible)
 
 
 func _on_open_mods_folder_pressed() -> void:

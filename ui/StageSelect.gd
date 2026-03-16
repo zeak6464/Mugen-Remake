@@ -88,7 +88,7 @@ func _event_action_pressed(event: InputEvent, action: StringName) -> bool:
 
 func _resolve_mode() -> void:
 	game_mode = str(get_tree().get_meta("game_mode", "training")).to_lower()
-	if game_mode != "arcade" and game_mode != "versus" and game_mode != "smash" and game_mode != "team" and game_mode != "survival" and game_mode != "watch":
+	if game_mode != "arcade" and game_mode != "versus" and game_mode != "smash" and game_mode != "team" and game_mode != "survival" and game_mode != "watch" and game_mode != "online" and game_mode != "coop" and game_mode != "tournament":
 		game_mode = "training"
 	match game_mode:
 		"arcade":
@@ -103,6 +103,12 @@ func _resolve_mode() -> void:
 			instruction_label.text = "Smash Mode"
 		"watch":
 			instruction_label.text = "Watch Mode"
+		"coop":
+			instruction_label.text = "Co-op vs CPU"
+		"tournament":
+			instruction_label.text = "Tournament - Select stage"
+		"online":
+			instruction_label.text = "Online"
 		_:
 			instruction_label.text = "Training Mode"
 
@@ -323,6 +329,24 @@ func _start_selected_stage() -> void:
 	if folder_path.is_empty():
 		return
 	SystemSFX.play_ui_from(self, "ui_confirm")
+	if game_mode == "online":
+		if NetworkManager.is_host():
+			var p2_mod: String = NetworkManager.get_opponent_character()
+			if p2_mod.is_empty():
+				if status_label != null:
+					status_label.text = "Waiting for opponent to pick character..."
+				return
+			get_tree().set_meta("training_stage_folder", folder_path)
+			NetworkManager.start_battle_and_go(
+				str(get_tree().get_meta("training_p1_mod", "")),
+				p2_mod,
+				folder_path,
+				training_scene_path
+			)
+		else:
+			if status_label != null:
+				status_label.text = "Waiting for host to start..."
+		return
 	get_tree().set_meta("training_stage_folder", folder_path)
 	get_tree().change_scene_to_file(training_scene_path)
 

@@ -1,0 +1,118 @@
+[gd_scene load_steps=3 format=3 uid="uid://match_options_menu"]
+
+[ext_resource type="Script" path="res://ui/MatchOptionsMenu.gd" id="1_script"]
+[ext_resource type="Theme" uid="uid://ksxjx5uqcuqd" path="res://ui/theme/GlobalUITheme.tres" id="2_theme"]
+
+[node name="MatchOptionsMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("2_theme")
+script = ExtResource("1_script")
+
+[node name="BackgroundColor" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.06, 0.06, 0.08, 1)
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme_override_constants/margin_left = 40
+theme_override_constants/margin_top = 40
+theme_override_constants/margin_right = 40
+theme_override_constants/margin_bottom = 40
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="TitleLabel" type="Label" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "Match Options"
+horizontal_alignment = 1
+
+[node name="RoundsRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="RoundsLabel" type="Label" parent="MarginContainer/VBoxContainer/RoundsRow"]
+custom_minimum_size = Vector2(180, 0)
+layout_mode = 2
+text = "Rounds to Win"
+
+[node name="RoundsOption" type="OptionButton" parent="MarginContainer/VBoxContainer/RoundsRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="TimeLimitRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="TimeLimitLabel" type="Label" parent="MarginContainer/VBoxContainer/TimeLimitRow"]
+custom_minimum_size = Vector2(180, 0)
+layout_mode = 2
+text = "Time Limit"
+
+[node name="TimeLimitOption" type="OptionButton" parent="MarginContainer/VBoxContainer/TimeLimitRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="TournamentSizeRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+visible = false
+
+[node name="TournamentSizeLabel" type="Label" parent="MarginContainer/VBoxContainer/TournamentSizeRow"]
+custom_minimum_size = Vector2(180, 0)
+layout_mode = 2
+text = "Tournament Size"
+
+[node name="TournamentSizeOption" type="OptionButton" parent="MarginContainer/VBoxContainer/TournamentSizeRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="StocksRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+visible = false
+
+[node name="StocksLabel" type="Label" parent="MarginContainer/VBoxContainer/StocksRow"]
+custom_minimum_size = Vector2(180, 0)
+layout_mode = 2
+text = "Stock Count"
+
+[node name="StocksOption" type="OptionButton" parent="MarginContainer/VBoxContainer/StocksRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="SaveReplayRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="SaveReplayLabel" type="Label" parent="MarginContainer/VBoxContainer/SaveReplayRow"]
+custom_minimum_size = Vector2(180, 0)
+layout_mode = 2
+text = "Save Replay"
+
+[node name="SaveReplayCheck" type="CheckBox" parent="MarginContainer/VBoxContainer/SaveReplayRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Save replay to file"
+
+[node name="ButtonsRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 24
+
+[node name="FightButton" type="Button" parent="MarginContainer/VBoxContainer/ButtonsRow"]
+custom_minimum_size = Vector2(160, 40)
+layout_mode = 2
+text = "Fight"
+
+[node name="BackButton" type="Button" parent="MarginContainer/VBoxContainer/ButtonsRow"]
+custom_minimum_size = Vector2(160, 40)
+layout_mode = 2
+text = "Back"

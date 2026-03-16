@@ -336,10 +336,14 @@ func _update_preview() -> void:
 	p2_marker.position = p2
 	if preview_p1_character != null:
 		preview_p1_character.position = p1
-		preview_p1_character.look_at(Vector3(p2.x, p1.y, p2.z), Vector3.UP)
+		var look_tgt_p1: Vector3 = Vector3(p2.x, p1.y, p2.z)
+		if not p1.is_equal_approx(look_tgt_p1):
+			preview_p1_character.look_at(look_tgt_p1, Vector3.UP)
 	if preview_p2_character != null:
 		preview_p2_character.position = p2
-		preview_p2_character.look_at(Vector3(p1.x, p2.y, p1.z), Vector3.UP)
+		var look_tgt_p2: Vector3 = Vector3(p1.x, p2.y, p1.z)
+		if not p2.is_equal_approx(look_tgt_p2):
+			preview_p2_character.look_at(look_tgt_p2, Vector3.UP)
 	left_bound.position = Vector3(arena_left, floor_y + 1.0, 0.0)
 	right_bound.position = Vector3(arena_right, floor_y + 1.0, 0.0)
 	camera_marker.position = cam_pos

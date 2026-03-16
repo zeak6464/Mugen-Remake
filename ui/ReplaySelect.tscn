@@ -1,0 +1,73 @@
+[gd_scene load_steps=3 format=3 uid="uid://replay_select"]
+
+[ext_resource type="Script" path="res://ui/ReplaySelect.gd" id="1_script"]
+[ext_resource type="Theme" uid="uid://ksxjx5uqcuqd" path="res://ui/theme/GlobalUITheme.tres" id="2_theme"]
+
+[node name="ReplaySelect" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("2_theme")
+script = ExtResource("1_script")
+
+[node name="BackgroundColor" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.06, 0.06, 0.08, 1)
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme_override_constants/margin_left = 40
+theme_override_constants/margin_top = 40
+theme_override_constants/margin_right = 40
+theme_override_constants/margin_bottom = 40
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="TitleLabel" type="Label" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "Watch Replay"
+horizontal_alignment = 1
+
+[node name="ReplayListPanel" type="PanelContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ReplayList" type="ItemList" parent="MarginContainer/VBoxContainer/ReplayListPanel"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="StatusLabel" type="Label" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Select a replay and press Play."
+
+[node name="ButtonsRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 24
+
+[node name="PlayButton" type="Button" parent="MarginContainer/VBoxContainer/ButtonsRow"]
+custom_minimum_size = Vector2(160, 40)
+layout_mode = 2
+text = "Play"
+
+[node name="DeleteButton" type="Button" parent="MarginContainer/VBoxContainer/ButtonsRow"]
+custom_minimum_size = Vector2(160, 40)
+layout_mode = 2
+text = "Delete"
+
+[node name="BackButton" type="Button" parent="MarginContainer/VBoxContainer/ButtonsRow"]
+custom_minimum_size = Vector2(160, 40)
+layout_mode = 2
+text = "Back"
