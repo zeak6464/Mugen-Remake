@@ -53,6 +53,10 @@ const CPU_GUARD_HOLD_FRAMES: int = 5
 @export var smash_offstage_margin: float = 0.25
 @export var smash_offstage_min_fall_speed: float = 6.0
 @export var simul_ko_remove_delay_seconds: float = 0.8
+## Tag only: summon a bench partner for a random attack (Storm-style). Separate cooldown from tag swap.
+@export var tag_assist_cooldown_frames: int = 90
+@export var tag_assist_lifetime_seconds: float = 4.0
+@export var tag_assist_spawn_offset: Vector3 = Vector3(1.15, 0.0, 0.0)
 
 @onready var fighter_a_fallback: FighterBase = $"../FighterA"
 @onready var fighter_b_fallback: FighterBase = $"../FighterB"
@@ -135,10 +139,13 @@ var team_turns_next_idx_p2: int = 0
 var team_tag_active_idx_p1: int = 0
 var team_tag_active_idx_p2: int = 0
 var tag_swap_cooldown_frames: int = 0
+var tag_assist_cooldown_p1: int = 0
+var tag_assist_cooldown_p2: int = 0
 var simul_ko_retire_timers: Dictionary = {}
 var cpu_rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var cpu_brains: Dictionary = {}
 var smash_mode_enabled: bool = false
+var training_smash_rules: bool = false
 var smash_blast_left_default: float = -32.0
 var smash_blast_right_default: float = 32.0
 var smash_blast_top_default: float = 22.0
@@ -168,6 +175,10 @@ func _physics_process(_delta: float) -> void:
 		return
 	if tag_swap_cooldown_frames > 0:
 		tag_swap_cooldown_frames -= 1
+	if tag_assist_cooldown_p1 > 0:
+		tag_assist_cooldown_p1 -= 1
+	if tag_assist_cooldown_p2 > 0:
+		tag_assist_cooldown_p2 -= 1
 	if replay_playback_active:
 		var frame_data: Dictionary = input_replay_recorder.get_playback_frame() if input_replay_recorder != null else {}
 		if frame_data.is_empty():
@@ -257,14 +268,36 @@ func _initialize_arena() -> void:
 		team_mode_subtype = "simul"
 	team_size_p1 = clampi(int(get_tree().get_meta("team_size_p1", 2)), 2, 4)
 	team_size_p2 = clampi(int(get_tree().get_meta("team_size_p2", 2)), 2, 4)
-	smash_mode_enabled = game_mode == "smash" or (watch_mode_enabled and watch_match_type == "smash")
+	training_smash_rules = (game_mode == "training" or game_mode == "cpu_training") and bool(
+		get_tree().get_meta("training_smash_rules", false)
+	)
+	smash_mode_enabled = (
+		game_mode == "smash"
+		or (watch_mode_enabled and watch_match_type == "smash")
+		or training_smash_rules
+	)
 	rounds_to_win = clampi(int(get_tree().get_meta("option_rounds_to_win", rounds_to_win)), 1, 99)
 	round_time_seconds = clampi(int(get_tree().get_meta("option_round_time_seconds", round_time_seconds)), 0, 999)
 	smash_starting_stocks = clampi(int(get_tree().get_meta("option_smash_stocks", smash_starting_stocks)), 1, 99)
 	_apply_game_options()
 	_apply_hud_mode()
 	cpu_enabled = game_mode == "arcade" or survival_mode_enabled or watch_mode_enabled or game_mode == "coop" or game_mode == "tournament" or (game_mode == "cpu_training" and str(get_tree().get_meta("cpu_training_opponent", "player")).to_lower() == "cpu")
-	dummy_uses_local_input = game_mode == "versus" or game_mode == "smash" or team_mode_enabled or (game_mode == "cpu_training" and str(get_tree().get_meta("cpu_training_opponent", "player")).to_lower() != "cpu")
+	dummy_uses_local_input = (
+		game_mode == "versus"
+		or game_mode == "smash"
+		or team_mode_enabled
+		or (game_mode == "cpu_training" and str(get_tree().get_meta("cpu_training_opponent", "player")).to_lower() != "cpu")
+		or (
+			training_smash_rules
+			and (
+				game_mode == "training"
+				or (
+					game_mode == "cpu_training"
+					and str(get_tree().get_meta("cpu_training_opponent", "player")).to_lower() == "player"
+				)
+			)
+		)
+	)
 	if game_mode == "cpu_training":
 		record_learned_ai = true
 
@@ -318,15 +351,23 @@ func _initialize_arena() -> void:
 			selected_mod_b = selected_mod_a
 		_spawn_mod_fighters(selected_mod_a, selected_mod_b, selected_form_a, selected_form_b, selected_costume_a, selected_costume_b)
 	elif mods.size() >= 2:
-		_spawn_mod_fighters(mods[0]["name"], mods[1]["name"])
+		_spawn_mod_fighters(_mod_scan_load_key(mods[0]), _mod_scan_load_key(mods[1]))
 	elif mods.size() == 1:
-		_spawn_mod_fighters(mods[0]["name"], mods[0]["name"])
+		var only: String = _mod_scan_load_key(mods[0])
+		_spawn_mod_fighters(only, only)
 	else:
 		_apply_runtime_links(fighter_a_fallback, fighter_b_fallback)
 	_apply_input_buffer_setting()
 	_setup_training_options_menu()
 	if game_mode == "online" and NetworkManager.is_online_session() and NetworkManager.is_host():
 		NetworkManager.start_match(randi())
+
+
+func _mod_scan_load_key(scan_entry: Dictionary) -> String:
+	var p: String = str(scan_entry.get("path", "")).strip_edges()
+	if not p.is_empty():
+		return p
+	return str(scan_entry.get("name", "")).strip_edges()
 
 
 func _spawn_mod_fighters(mod_a_name: String, mod_b_name: String, form_a: String = "", form_b: String = "", costume_a: String = "", costume_b: String = "") -> void:
@@ -509,7 +550,8 @@ func _instantiate_team_fighter(entry: Dictionary, is_p1: bool, slot_idx: int) ->
 			fighter.command_interpreter.action_left = &"p2_left"
 			fighter.command_interpreter.action_right = &"p2_right"
 			fighter.command_interpreter.button_actions = {"P": &"p2_p", "K": &"p2_k", "S": &"p2_s", "H": &"p2_h"}
-	_apply_life_percent_to_fighter(fighter)
+		_apply_life_percent_to_fighter(fighter)
+	_apply_motion_assist_for_fighter(fighter, is_p1)
 	return fighter
 
 
@@ -571,6 +613,15 @@ func _apply_runtime_links(fighter_a: FighterBase, fighter_b: FighterBase) -> voi
 
 func _input(event: InputEvent) -> void:
 	if team_mode_enabled and team_mode_subtype == "tag":
+		if round_active and not round_intro_pending:
+			if _is_assist_action_pressed(event, true):
+				_try_summon_tag_assist(true)
+				get_viewport().set_input_as_handled()
+				return
+			if _is_assist_action_pressed(event, false):
+				_try_summon_tag_assist(false)
+				get_viewport().set_input_as_handled()
+				return
 		if _is_tag_action_pressed(event, true):
 			_try_tag_swap(true)
 			get_viewport().set_input_as_handled()
@@ -614,6 +665,15 @@ func _is_tag_action_pressed(event: InputEvent, is_p1: bool) -> bool:
 	if not InputMap.has_action(fallback_action):
 		return false
 	return event.is_action_pressed(fallback_action)
+
+
+func _is_assist_action_pressed(event: InputEvent, is_p1: bool) -> bool:
+	if not (event is InputEvent):
+		return false
+	var assist_action: StringName = &"p1_assist" if is_p1 else &"p2_assist"
+	if InputMap.has_action(assist_action) and event.is_action_pressed(assist_action):
+		return true
+	return false
 
 
 func _setup_training_options_menu() -> void:
@@ -770,9 +830,11 @@ func _sync_training_box_editor_target() -> void:
 		return
 	if active_fighter_a == null:
 		return
-	var mod_name: String = _derive_mod_name_from_path(active_fighter_a.get_mod_directory())
-	if not mod_name.is_empty() and training_box_editor.has_method("select_mod_by_name"):
-		training_box_editor.call("select_mod_by_name", mod_name)
+	var mod_dir: String = active_fighter_a.get_mod_directory().strip_edges()
+	if not mod_dir.ends_with("/"):
+		mod_dir += "/"
+	if not mod_dir.is_empty() and training_box_editor.has_method("select_mod_by_name"):
+		training_box_editor.call("select_mod_by_name", mod_dir)
 	if training_box_editor.has_method("select_box_type_by_key"):
 		training_box_editor.call("select_box_type_by_key", "hitboxes")
 	var state_id: String = active_fighter_a.state_controller.current_state if active_fighter_a.state_controller != null else ""
@@ -1343,6 +1405,27 @@ func _configure_player_input_bindings() -> void:
 			"S": StringName("p2_s"),
 			"H": StringName("p2_h")
 		}
+	_apply_motion_assist_for_fighter(active_fighter_a, true)
+	_apply_motion_assist_for_fighter(active_fighter_b, false)
+	if team_mode_enabled:
+		for f in team_fighters_p1:
+			if f != null and is_instance_valid(f):
+				_apply_motion_assist_for_fighter(f, true)
+		for f in team_fighters_p2:
+			if f != null and is_instance_valid(f):
+				_apply_motion_assist_for_fighter(f, false)
+
+
+func _apply_motion_assist_for_fighter(fighter: FighterBase, is_p1: bool) -> void:
+	if fighter == null or not is_instance_valid(fighter) or fighter.command_interpreter == null:
+		return
+	var cfg := ConfigFile.new()
+	var enabled: bool = true
+	var dev: int = -1
+	if cfg.load("user://options.cfg") == OK:
+		enabled = bool(cfg.get_value("input", "joy_motion_assist", true))
+		dev = int(cfg.get_value("input", "joypad_device_p1" if is_p1 else "joypad_device_p2", -1))
+	fighter.command_interpreter.configure_motion_assist(enabled, dev)
 
 
 func _apply_hitbox_debug_state() -> void:
@@ -1504,15 +1587,17 @@ func _setup_stage_music() -> void:
 		add_child(stage_music_player)
 
 	var stage_def: Dictionary = _load_stage_def("%s/stage.def" % stage_folder_path)
-	var music_path: String = str(stage_def.get("music", fallback_stage_music_path))
+	var override_music: String = str(get_tree().get_meta("training_stage_music_path", "")).strip_edges()
+	var music_path: String = ""
+	if not override_music.is_empty():
+		music_path = _resolve_stage_resource_path(stage_folder_path, override_music)
+	else:
+		music_path = str(stage_def.get("music", fallback_stage_music_path))
 	if music_path.is_empty():
 		return
 
-	music_path = _resolve_stage_resource_path(stage_folder_path, music_path)
-	if not ResourceLoader.exists(music_path):
-		return
-	var stream := ResourceLoader.load(music_path)
-	if stream == null or not (stream is AudioStream):
+	var stream := _load_music_stream(music_path)
+	if stream == null:
 		return
 
 	var loop_music: bool = bool(stage_def.get("music_loop", fallback_music_loop))
@@ -1943,6 +2028,30 @@ func _apply_stream_loop(stream: AudioStream, loop_music: bool) -> void:
 		(stream as AudioStreamOggVorbis).loop = loop_music
 	elif stream is AudioStreamWAV:
 		(stream as AudioStreamWAV).loop_mode = AudioStreamWAV.LOOP_FORWARD if loop_music else AudioStreamWAV.LOOP_DISABLED
+	elif stream is AudioStreamMP3:
+		(stream as AudioStreamMP3).loop = loop_music
+
+
+func _load_music_stream(path: String) -> AudioStream:
+	if path.is_empty():
+		return null
+	var lower: String = path.to_lower()
+	if ResourceLoader.exists(path):
+		var res: Resource = ResourceLoader.load(path)
+		if res is AudioStream:
+			return res as AudioStream
+	var abs_path: String = path
+	if path.begins_with("user://") or path.begins_with("res://"):
+		abs_path = ProjectSettings.globalize_path(path)
+	if abs_path.is_empty() or not FileAccess.file_exists(abs_path):
+		return null
+	if lower.ends_with(".ogg"):
+		return AudioStreamOggVorbis.load_from_file(abs_path)
+	if lower.ends_with(".mp3"):
+		return AudioStreamMP3.load_from_file(abs_path)
+	if lower.ends_with(".wav"):
+		return AudioStreamWAV.load_from_file(abs_path)
+	return null
 
 
 func _bootstrap_sample_mod() -> void:
@@ -2496,6 +2605,154 @@ func _find_next_tag_available_index(is_p1: bool) -> int:
 	return -1
 
 
+## Storm-style / team assists: only living teammates who are not the current point fighter.
+## Tag: bench HP lives in roster entry `saved_health` (0 = KO'd). Point character is excluded — they're already in play.
+func is_roster_slot_eligible_for_assist(is_p1: bool, roster_index: int) -> bool:
+	if not team_mode_enabled or roster_index < 0:
+		return false
+	if team_mode_subtype == "tag":
+		var roster: Array[Dictionary] = team_roster_p1 if is_p1 else team_roster_p2
+		if roster_index >= roster.size():
+			return false
+		var active_idx: int = team_tag_active_idx_p1 if is_p1 else team_tag_active_idx_p2
+		if roster_index == active_idx:
+			return false
+		var hp: int = int(roster[roster_index].get("saved_health", 1))
+		return hp > 0
+	if team_mode_subtype == "simul":
+		var fighters: Array[FighterBase] = team_fighters_p1 if is_p1 else team_fighters_p2
+		if roster_index >= fighters.size():
+			return false
+		var f: FighterBase = fighters[roster_index]
+		if f == null or not is_instance_valid(f):
+			return false
+		return f.health > 0
+	return false
+
+
+func _try_summon_tag_assist(is_p1: bool) -> void:
+	if mod_loader == null or not mod_loader.has_method("spawn_character_from_mod_path"):
+		return
+	if is_p1 and tag_assist_cooldown_p1 > 0:
+		return
+	if not is_p1 and tag_assist_cooldown_p2 > 0:
+		return
+	var point: FighterBase = active_fighter_a if is_p1 else active_fighter_b
+	if point == null or not is_instance_valid(point):
+		return
+	var roster: Array[Dictionary] = team_roster_p1 if is_p1 else team_roster_p2
+	var eligible: Array[int] = []
+	for i in range(roster.size()):
+		if is_roster_slot_eligible_for_assist(is_p1, i):
+			eligible.append(i)
+	if eligible.is_empty():
+		return
+	var pick: int = eligible[randi() % eligible.size()]
+	var entry: Dictionary = roster[pick]
+	var mod_path: String = ContentResolver.normalize_root(str(entry.get("mod", "")).strip_edges())
+	if mod_path.is_empty():
+		return
+	var state_id: String = _pick_random_assist_state_id(mod_path)
+	var parent_node: Node = point.get_parent()
+	if parent_node == null:
+		return
+	var assist: FighterBase = mod_loader.spawn_character_from_mod_path(mod_path, parent_node, state_id, "", false)
+	if assist == null:
+		return
+	assist.name = "TagAssist_%s_%d" % ["P1" if is_p1 else "P2", pick]
+	assist.set_meta("is_helper", true)
+	assist.set_meta("tag_assist", true)
+	assist.helper_parent_ref = point
+	assist.helper_root_ref = point
+	if str(entry.get("form", "")).strip_edges() != "":
+		assist.apply_start_form(str(entry.get("form", "")))
+	if str(entry.get("costume", "")).strip_edges() != "":
+		assist.apply_start_costume(str(entry.get("costume", "")))
+	if assist.state_controller != null and assist.state_controller.states_data.has(state_id):
+		assist.state_controller.change_state(state_id)
+	var world_pos: Vector3 = point.global_position
+	var off: Vector3 = tag_assist_spawn_offset
+	if point.command_interpreter != null and not point.command_interpreter.get_facing_right():
+		off.x = -off.x
+	assist.global_position = world_pos + off
+	assist.velocity = Vector3.ZERO
+	assist.floor_y_level = point.floor_y_level
+	assist.lock_to_z_axis = point.lock_to_z_axis
+	assist.locked_z_position = point.locked_z_position
+	assist.lock_to_x_axis = point.lock_to_x_axis
+	assist.locked_x_position = point.locked_x_position
+	assist.team_id = point.team_id
+	if point.opponent != null and is_instance_valid(point.opponent):
+		assist.set_opponent(point.opponent)
+	if assist.command_interpreter != null:
+		assist.command_interpreter.set_input_mode(CommandInterpreter.InputMode.EXTERNAL)
+		assist.command_interpreter.read_local_input = false
+		if point.command_interpreter != null:
+			assist.command_interpreter.set_facing_direction(point.command_interpreter.get_facing_right())
+	assist.accepts_player_movement_input = false
+	if is_p1:
+		tag_assist_cooldown_p1 = maxi(1, tag_assist_cooldown_frames)
+	else:
+		tag_assist_cooldown_p2 = maxi(1, tag_assist_cooldown_frames)
+	var life: float = tag_assist_lifetime_seconds
+	if life > 0.0:
+		get_tree().create_timer(life).timeout.connect(_free_tag_assist_if_valid.bind(assist))
+
+
+func _free_tag_assist_if_valid(assist: FighterBase) -> void:
+	if assist != null and is_instance_valid(assist):
+		assist.queue_free()
+
+
+func _pick_random_assist_state_id(mod_path: String) -> String:
+	var def_path: String = "%scharacter.def" % mod_path
+	var def_data: Dictionary = ContentResolver.load_character_def(def_path)
+	var allow_raw: String = str(def_data.get("assist_states", "")).strip_edges()
+	if not allow_raw.is_empty():
+		var parts: PackedStringArray = allow_raw.split(",", false)
+		var allowed: Array[String] = []
+		for p in parts:
+			var s: String = p.strip_edges()
+			if not s.is_empty():
+				allowed.append(s)
+		if not allowed.is_empty():
+			return allowed[randi() % allowed.size()]
+	var st_path: String = "%sstates.json" % mod_path
+	if not FileAccess.file_exists(st_path):
+		return "idle"
+	var f: FileAccess = FileAccess.open(st_path, FileAccess.READ)
+	if f == null:
+		return "idle"
+	var parsed: Variant = JSON.parse_string(f.get_as_text())
+	if typeof(parsed) != TYPE_DICTIONARY:
+		return "idle"
+	var states: Dictionary = parsed
+	var candidates: Array[String] = []
+	for k in states.keys():
+		var sid: String = str(k)
+		if _assist_state_id_is_probably_non_attack(sid):
+			continue
+		candidates.append(sid)
+	if candidates.is_empty():
+		for k2 in states.keys():
+			candidates.append(str(k2))
+	if candidates.is_empty():
+		return "idle"
+	return candidates[randi() % candidates.size()]
+
+
+func _assist_state_id_is_probably_non_attack(state_id: String) -> bool:
+	var lower: String = state_id.to_lower()
+	var bad: PackedStringArray = [
+		"idle", "walk", "run", "jump", "crouch", "turn", "landing", "ko", "victory", "win", "lose", "down",
+		"hurt", "hit", "guard", "block", "tech", "intro", "outro", "dizzy", "thrown", "grabbed"
+	]
+	for b in bad:
+		if lower.contains(b):
+			return true
+	return false
+
+
 func _try_tag_swap(is_p1: bool) -> void:
 	if not team_mode_enabled or team_mode_subtype != "tag":
 		return
@@ -2738,7 +2995,8 @@ func _end_round_with_winner(winner: int, message: String) -> void:
 		if next_idx >= total:
 			var champ_name: String = "Unknown"
 			if winner_idx >= 0 and winner_idx < entrants.size():
-				champ_name = str(entrants[winner_idx].get("mod", "Unknown"))
+				var ent: Dictionary = entrants[winner_idx]
+				champ_name = str(ent.get("mod_display", ent.get("mod", "Unknown")))
 			status_text = "Champion: %s!" % champ_name
 		else:
 			status_text = "Match complete - Bracket"
@@ -2817,16 +3075,18 @@ func _prepare_next_round() -> void:
 func _tournament_get_opponents(num_entrants: int, match_idx: int, round_results: Array) -> Array:
 	if num_entrants < 2:
 		return [-1, -1]
-	var first_round_matches: int = int(num_entrants / 2)
+	var first_round_matches: int = num_entrants >> 1
 	if match_idx < first_round_matches:
 		return [match_idx * 2, match_idx * 2 + 1]
 	var source_start: int = 0
 	var source_size: int = first_round_matches
 	var match_start: int = first_round_matches
-	while source_size > 1 and match_start + int(source_size / 2) <= match_idx:
-		match_start += int(source_size / 2)
-		source_start += int(source_size / 2)
-		source_size = int(source_size / 2)
+	var half: int = source_size >> 1
+	while source_size > 1 and match_start + half <= match_idx:
+		match_start += half
+		source_start += half
+		source_size = half
+		half = source_size >> 1
 	var offset: int = match_idx - match_start
 	var base: int = source_start + offset * 2
 	if base + 1 >= round_results.size():
@@ -3642,6 +3902,7 @@ func _update_hud() -> void:
 			"p1_name": p1_name,
 			"p2_name": p2_name,
 			"time_left": round_time_left,
+			"time_unlimited": not smash_mode_enabled and round_time_seconds <= 0,
 			"round_number": round_number,
 			"p1_wins": p1_wins,
 			"p2_wins": p2_wins,

@@ -1,0 +1,12 @@
+{
+	"costumes": {
+		"metal_mario": {
+			"shader_path": "shaders/alt_emerald.gdshader",
+			"shader_user_uniforms": {
+				"albedo_color": [0.82, 0.86, 0.91, 1.0],
+				"metallic": 0.94,
+				"roughness": 0.16
+			}
+		}
+	}
+}

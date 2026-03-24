@@ -1,5 +1,7 @@
 ## Character Creation Guide
 
+Related: **[ENGINE_OVERVIEW.md](ENGINE_OVERVIEW.md)** (runtime map) · **[STATE_CONTROLLERS_GUIDE.md](STATE_CONTROLLERS_GUIDE.md)** (state machine) · **[docs/README.md](README.md)** (index)
+
 This is the fastest way to create a playable character for this project.
 
 If you already have a `.glb`, `.gltf`, or a folder with a model inside it, you can now skip the manual starter setup:
@@ -33,6 +35,71 @@ Recommended optional files:
 - `projectiles.json`
 - `transformations.json`
 - `costumes.json`
+- `parts.json` (optional; separate `.glb` / `.gltf` per slot on one base rig)
+
+---
+
+### `parts.json` (mix-and-match / Mii-style)
+
+Use this when each slot is its **own imported file** (authors drop meshes into the mod folder), all skinned to the **same skeleton/bone names** as `base_model`.
+
+| Key | Description |
+|-----|-------------|
+| `enabled` | If `true`, load `base_model` and merge every non-empty `slots` entry. |
+| `base_model` | Path relative to the mod folder (or `res://` / `user://`). Must contain a `Skeleton3D`. |
+| `slot_order` | Optional array of slot names; **draw order** (earlier = underneath). Slots not listed are appended after. |
+| `slots` | Map of slot name → path to a part `.glb` / `.gltf` (empty string = skip). |
+
+Example:
+
+```json
+{
+  "enabled": true,
+  "base_model": "body_base.glb",
+  "slot_order": ["torso", "head", "hair", "accessory_1"],
+  "slots": {
+    "torso": "parts/shirt_red.glb",
+    "head": "parts/head_neutral.glb",
+    "hair": "parts/hair_spiky.glb",
+    "accessory_1": ""
+  }
+}
+```
+
+**Authoring rules:** Part files must match the base skeleton (bone names/rest pose). Meshes are reparented to the base skeleton with identity local transform; offset your mesh in the DCC if needed.
+
+**Note:** Costume `model_path` swaps replace the whole assembled model; use parts **or** full costume swaps unless you extend the pipeline.
+
+---
+
+### `costumes.json` (alt models + per-costume shader)
+
+```json
+{
+  "costumes": {
+    "alt_red": {
+      "model_path": "costumes/body_red.glb",
+      "shader_path": "res://shaders/character_toon.gdshader",
+      "shader_user_uniforms": {
+        "base_tint": [1.0, 0.2, 0.2, 1.0],
+        "rim_power": 2.5
+      }
+    },
+    "glow": {
+      "shader_path": "my_cel.gdshader",
+      "shader_user_uniforms": "{\"shade_steps\":4}"
+    }
+  }
+}
+```
+
+| Key | Description |
+|-----|-------------|
+| `model_path` | Optional. Same rules as `character.def` `model_path` (relative to mod). |
+| `shader_path` | Optional. Overrides `character.def` for this costume only (relative to mod or `res://` / `user://`). |
+| `shader_user_uniforms` | Optional. Object or JSON string. Merged on top of `character.def`’s `shader_user_uniforms` (costume keys win). |
+
+If you omit `shader_path`, the costume keeps the base character shader and only uniform overrides apply. Switching back to the default costume restores `character.def` shading.
 
 ---
 

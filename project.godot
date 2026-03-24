@@ -11,6 +11,7 @@ config_version=5
 [application]
 
 config/name="Mugen Remake"
+config/description="Open, data-driven 3D fighting engine: MUGEN-style mod folders, JSON states & commands, in-engine editors, classic vs Smash-style modes. Godot 4.6."
 run/main_scene="res://ui/TitleScreen.tscn"
 config/features=PackedStringArray("4.6", "Forward Plus")
 config/icon="res://icon.svg"
@@ -143,6 +144,16 @@ p1_tag={
 p2_tag={
 "deadzone": 0.5,
 "events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":0,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":78,"physical_keycode":78,"key_label":0,"unicode":0,"location":0,"echo":false,"script":null)
+]
+}
+p1_assist={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":0,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":44,"physical_keycode":44,"key_label":0,"unicode":0,"location":0,"echo":false,"script":null)
+]
+}
+p2_assist={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":0,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":46,"physical_keycode":46,"key_label":0,"unicode":0,"location":0,"echo":false,"script":null)
 ]
 }
 

@@ -7,6 +7,12 @@ const CESIUM_BASELINE_ROOT: String = "res://mods/CesiumMan/"
 const CHARACTER_SUPPORT_FILES: Dictionary = {
 	"transformations.json": {"forms": {}},
 	"costumes.json": {"costumes": {}},
+	"parts.json": {
+		"enabled": false,
+		"base_model": "",
+		"slot_order": ["head", "hair", "face", "torso", "arms", "legs", "feet", "accessory_1", "accessory_2"],
+		"slots": {}
+	},
 	"hurtboxes.json": {"hurtboxes": []}
 }
 

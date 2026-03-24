@@ -1,0 +1,12 @@
+{
+	"costumes": {
+		"emerald_suit": {
+			"shader_path": "shaders/alt_emerald.gdshader",
+			"shader_user_uniforms": {
+				"albedo_color": [0.18, 0.92, 0.42, 1.0],
+				"metallic": 0.65,
+				"roughness": 0.3
+			}
+		}
+	}
+}

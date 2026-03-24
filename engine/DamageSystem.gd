@@ -174,7 +174,7 @@ func _apply_damage_resolution(attacker: Node, defender: Node, hit_data: Dictiona
 	if smash_mode_enabled and defender.has_method("get_smash_knockback_multiplier"):
 		knockback_scale = maxf(1.0, float(defender.call("get_smash_knockback_multiplier")))
 	if smash_mode_enabled:
-		knockback_scale *= 1.0 + (smash_percent_damage * 0.01)
+		knockback_scale *= 1.0 + (smash_percent_damage * 0.014)
 	pushback *= knockback_scale
 	launch_velocity *= knockback_scale
 

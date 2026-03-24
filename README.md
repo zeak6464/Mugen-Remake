@@ -1,112 +1,98 @@
 # Mugen Remake
 
-`Mugen Remake` is a Godot-based fighting game engine inspired by MUGEN, with support for 3D characters, data-driven movesets, stage imports, and in-engine editing tools.
+**Mugen Remake** is a **Godot 4.6** fighting game **engine** inspired by MUGEN: **3D characters**, **folder-based mods**, **JSON/DEF-driven** movesets, and **in-engine tools** so creators can ship content without recompiling the game.
 
-The project is built around editable mod folders, JSON/DEF-driven character data, and a runtime that supports both traditional fighter behavior and platform-fighter style rules such as stocks, blast zones, and multi-jump characters.
+If you want a **next-gen “MUGEN but 3D”** foundation—traditional rounds *or* stock/percent rules—this repo is meant to be **forked, extended, and credited** as your own lane of the genre.
+
+## Why use this instead of only MUGEN / other engines?
+
+| | Mugen Remake |
+|---|----------------|
+| **Content model** | Mod folders: `character.def` + `states.json` + assets |
+| **Rendering** | Full **3D** (Forward+), materials, stages as 3D scenes |
+| **Rules** | **2D fighter** rounds + **Smash-like** stocks/percent in one codebase |
+| **Tooling** | **Hitbox editor**, **stage editor**, **JSON editor**, **import** from glTF |
+| **Stack** | **GDScript**, **Jolt** physics, small core—readable for contributors |
+
+It is **not** a drop-in MUGEN bytecode emulator; it is a **spiritual successor** with a **modern pipeline** for 3D.
 
 ## Current focus
 
-- 3D character and stage workflow
-- MUGEN-inspired data-driven authoring
-- in-game editors and creator tools
-- mod import pipeline for characters and stages
-- support for traditional fighter systems and Smash-style rulesets
+- 3D character and stage workflow  
+- MUGEN-**inspired**, data-driven authoring  
+- In-game editors and creator tools  
+- Import pipeline for characters and stages  
+- Traditional fighter systems **and** Smash-style rulesets  
+- UX and documentation so **other developers** can adopt the engine  
 
 ## Current features
 
-- Game modes:
-  - `Training`
-  - `Arcade`
-  - `2P Versus`
-  - `Smash`
-  - `Team`
-  - `Survival`
-  - `Watch`
-- Character systems:
-  - `states.json`, `commands.json`, `physics.json`, `character.def`
-  - hitboxes, throwboxes, persistent hurtboxes
-  - projectiles with custom visuals, trails, and projectile clashes
-  - sound definitions via `sounds.json`
-  - transformations/forms and costumes
-  - multi-jump support
-- Tools:
-  - `Character Editor`
-  - `Stage Editor`
-  - `Model Viewer`
-  - in-battle training menu and hitbox tools
-- Content pipeline:
-  - import `.glb` / `.gltf` characters and stages
-  - auto-generate missing starter files
-  - baseline import templates based on `CesiumMan`
+- **Game modes**: Training, Arcade, 2P Versus, Smash, Team (simul / turns / tag), Survival, Watch, Co-op vs CPU, Tournament flow, experimental online host/join  
+- **Character systems**: `states.json`, `commands.json`, `physics.json`, `character.def`; hitboxes, throw boxes, persistent hurtboxes; projectiles with trails and clashes; `sounds.json`; transformations/forms and costumes; multi-jump  
+- **Tools**: Character Editor, Stage Editor, Model Viewer, in-battle training menu  
+- **Content pipeline**: import `.glb` / `.gltf`, scaffold starter files, bundled reference content  
 
 ## Tech stack
 
-- `Godot 4.6+`
-- `GDScript`
-- data-driven runtime using JSON and DEF-style files
+- **Godot 4.6+**  
+- **GDScript**  
+- Data-driven runtime: JSON + DEF-style files  
 
 ## Project layout
 
-- `engine/` core runtime systems
-- `ui/` menus, editors, viewers, and HUD
-- `stages/` battle scene and arena controller
-- `mods/` bundled sample characters/mod content
-- `docs/` authoring and gameplay guides
+- `engine/` — core runtime (fighters, states, hits, damage, mods, import)  
+- `ui/` — menus, editors, viewers, HUD  
+- `stages/` — arena scene + `TestArenaController` (rounds, teams, HUD, replays)  
+- `mods/` — bundled characters / examples  
+- `docs/` — **[documentation index](docs/README.md)**  
 
 ## Getting started
 
-1. Open the project in Godot.
-2. Run the main scene.
-3. Use the main menu to enter a mode, import content, or open the editors.
+1. Install **Godot 4.6** (match project features).  
+2. Open this folder as a project.  
+3. Run **Play** (starts at `TitleScreen`).  
+4. Use the **ring menu** for modes, **Import** for glTF drops, **Editors** for data and collision.  
 
-Default desktop play controls for `P1`:
+**Default P1 keys**
 
-- Move: `W A S D`
-- `P`: `J`
-- `K`: `K`
-- `S`: `U`
-- `H`: `I`
-- Pause / training menu: `Esc`
+- Move: `W A S D`  
+- Attack: `J` (`p1_p`)  
+- Other: `K`, `U`, `I`  
+- Pause / training menu: `Esc`  
+
+Full flow and menus: [docs/IN_GAME_GUIDE.md](docs/IN_GAME_GUIDE.md).
+
+## For developers & contributors
+
+- **[docs/ENGINE_OVERVIEW.md](docs/ENGINE_OVERVIEW.md)** — architecture and module map  
+- **[docs/ROADMAP.md](docs/ROADMAP.md)** — directional priorities  
+- **[CONTRIBUTING.md](CONTRIBUTING.md)** — how to contribute  
 
 ## Modding workflow
 
-Characters and stages can be authored directly in project folders or imported through the UI.
+Characters and stages live under:
 
-Typical character files:
+- `res://mods/` or `user://mods/`  
+- `res://stages/` or `user://stages/`  
 
-- `character.def`
-- `states.json`
-- `commands.json`
-- `physics.json`
-- optional `sounds.json`
-- optional `projectiles.json`
-- optional `hurtboxes.json`
-- optional `transformations.json`
-- optional `costumes.json`
-
-The runtime supports content from both:
-
-- `res://mods/`
-- `user://mods/`
-
-Stages are scanned from:
-
-- `res://stages/`
-- `user://stages/`
+Typical character files include `character.def`, `states.json`, `commands.json`, `physics.json`, plus optional `sounds.json`, `projectiles.json`, `hurtboxes.json`, `transformations.json`, `costumes.json`, and more—see **[docs/Character_Guide.md](docs/Character_Guide.md)**.
 
 ## Documentation
 
-- `docs/Character_Guide.md` character setup, files, commands, projectiles, sounds
-- `docs/IN_GAME_GUIDE.md` menus, flow, modes, tools
-- `docs/STATE_CONTROLLERS_GUIDE.md` controller reference and copyable recipes
+| Doc | Purpose |
+|-----|---------|
+| [docs/README.md](docs/README.md) | Index of all docs |
+| [docs/Character_Guide.md](docs/Character_Guide.md) | Character setup |
+| [docs/IN_GAME_GUIDE.md](docs/IN_GAME_GUIDE.md) | Menus and tools |
+| [docs/STATE_CONTROLLERS_GUIDE.md](docs/STATE_CONTROLLERS_GUIDE.md) | State controllers |
 
 ## What this project is good for
 
-- MUGEN-style characters with 3D models
-- anime fighters and crossover fighters
-- platform-fighter experiments with stocks and blast zones
-- data-driven prototypes that need strong modding support
+- MUGEN-style **rosters** with **3D** presentation  
+- Anime / crossover fighters and rapid content iteration  
+- **Platform-fighter experiments** (stocks, blast zones) sharing core tech with **traditional rounds**  
+- **Research engines**: readable GDScript, fork-friendly structure  
 
 ## Status
 
-This project is actively focused on expanding engine coverage, creator workflow, and modding support rather than presenting itself as a finished commercial game.
+**Active development**—expanding engine coverage, creator workflow, and modding story. The goal is to be an **engine people reach for** when they want **MUGEN’s modularity** in a **3D, Godot-native** package—not a single finished commercial SKU.

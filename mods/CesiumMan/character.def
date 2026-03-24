@@ -3,6 +3,7 @@ display_name = CesiumMan
 author = Khronos Sample Model
 version = 1.0
 initial_state = idle
+model_path = model.glb
 model_offset_y = 0.0
 model_scale = 1.0
 collision_scale = 1.0

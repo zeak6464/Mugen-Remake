@@ -1,4 +1,4 @@
-[gd_scene format=3 uid="uid://dp7tvye7oj88a"]
+[gd_scene load_steps=7 format=3 uid="uid://dp7tvye7oj88a"]
 
 [ext_resource type="Script" uid="uid://dyt6dgvp0onec" path="res://ui/BattleHUD.gd" id="1_hud"]
 [ext_resource type="Texture2D" uid="uid://mvweiis8laa4" path="res://ui/Battle/HP/Red.png" id="2_hp_red"]
@@ -7,178 +7,264 @@
 [ext_resource type="Texture2D" uid="uid://cqkc4xjal6afo" path="res://ui/Battle/Resources/White.png" id="5_res_white"]
 [ext_resource type="Theme" uid="uid://ksxjx5uqcuqd" path="res://ui/theme/GlobalUITheme.tres" id="6_global_theme"]
 
-[node name="BattleHUD" type="CanvasLayer" unique_id=659552136]
+[node name="BattleHUD" type="CanvasLayer"]
+layer = 10
 script = ExtResource("1_hud")
 
-[node name="TopBar" type="Control" parent="." unique_id=684118356]
+[node name="TopBar" type="Control" parent="."]
 layout_mode = 3
 anchors_preset = 10
 anchor_right = 1.0
-offset_left = 16.0
-offset_top = 10.0
-offset_right = -16.0
-offset_bottom = 130.0
+offset_bottom = 158.0
 grow_horizontal = 2
 theme = ExtResource("6_global_theme")
 
-[node name="P1HealthBar" type="TextureProgressBar" parent="TopBar" unique_id=792713366]
-layout_mode = 0
-offset_left = 10.0
-offset_top = 10.0
-offset_right = 410.0
-offset_bottom = 40.0
-max_value = 1000.0
-value = 1000.0
-nine_patch_stretch = true
-stretch_margin_left = 4
-stretch_margin_top = 4
-stretch_margin_right = 4
-stretch_margin_bottom = 4
-texture_under = ExtResource("2_hp_red")
-texture_progress = ExtResource("3_hp_green")
-
-[node name="P2HealthBar" type="TextureProgressBar" parent="TopBar" unique_id=21256224]
-layout_mode = 0
-offset_left = 851.0
-offset_top = 3.0
-offset_right = 1251.0
-offset_bottom = 33.0
-max_value = 1000.0
-value = 1000.0
-fill_mode = 1
-nine_patch_stretch = true
-stretch_margin_left = 4
-stretch_margin_top = 4
-stretch_margin_right = 4
-stretch_margin_bottom = 4
-texture_under = ExtResource("2_hp_red")
-texture_progress = ExtResource("3_hp_green")
-
-[node name="P1ResourceBar" type="TextureProgressBar" parent="TopBar" unique_id=1796791219]
-layout_mode = 0
-offset_left = 10.0
-offset_top = 72.0
-offset_right = 410.0
-offset_bottom = 92.0
-nine_patch_stretch = true
-stretch_margin_left = 4
-stretch_margin_top = 4
-stretch_margin_right = 4
-stretch_margin_bottom = 4
-texture_under = ExtResource("5_res_white")
-texture_progress = ExtResource("4_res_blue")
-
-[node name="P2ResourceBar" type="TextureProgressBar" parent="TopBar" unique_id=518287884]
-layout_mode = 0
-offset_left = 851.0
-offset_top = 72.0
-offset_right = 1251.0
-offset_bottom = 92.0
-fill_mode = 1
-nine_patch_stretch = true
-stretch_margin_left = 4
-stretch_margin_top = 4
-stretch_margin_right = 4
-stretch_margin_bottom = 4
-texture_under = ExtResource("5_res_white")
-texture_progress = ExtResource("4_res_blue")
-
-[node name="P1Health" type="Label" parent="TopBar" unique_id=1875861950]
-layout_mode = 0
-offset_left = 10.0
-offset_top = 44.0
-offset_right = 220.0
-offset_bottom = 66.0
-text = "P1 HP: 0"
-
-[node name="P2Health" type="Label" parent="TopBar" unique_id=960853890]
-layout_mode = 0
-offset_left = 1034.0
-offset_top = 31.0
-offset_right = 1244.0
-offset_bottom = 57.0
-text = "P2 HP: 0"
-horizontal_alignment = 2
-
-[node name="P1Resource" type="Label" parent="TopBar" unique_id=872577295]
-layout_mode = 0
-offset_left = 10.0
-offset_top = 94.0
-offset_right = 220.0
-offset_bottom = 116.0
-text = "P1 RES: 0"
-
-[node name="P2Resource" type="Label" parent="TopBar" unique_id=994850194]
-layout_mode = 0
-offset_left = 1034.0
-offset_top = 94.0
-offset_right = 1244.0
-offset_bottom = 120.0
-text = "P2 RES: 0"
-horizontal_alignment = 2
-
-[node name="CenterInfo" type="Control" parent="TopBar" unique_id=1822989176]
-anchors_preset = 0
-anchor_left = 0.5
-anchor_top = 0.8
-anchor_right = 0.5
-anchor_bottom = 0.8
-offset_left = -90.0
-offset_top = -103.0
-offset_right = 90.0
-offset_bottom = 40.0
+[node name="BarBacking" type="ColorRect" parent="TopBar"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
 grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.02, 0.025, 0.06, 0.92)
+mouse_filter = 2
 
-[node name="Timer" type="Label" parent="TopBar/CenterInfo" unique_id=393702497]
-layout_mode = 0
-text = "Time: 99"
+[node name="BarGlow" type="ColorRect" parent="TopBar"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 56.0
+grow_horizontal = 2
+color = Color(0.18, 0.28, 0.5, 0.22)
+mouse_filter = 2
+
+[node name="BarAccent" type="ColorRect" parent="TopBar"]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -3.0
+grow_horizontal = 2
+color = Color(0.45, 0.62, 0.95, 1)
+mouse_filter = 2
+
+[node name="MainHBox" type="HBoxContainer" parent="TopBar"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 18.0
+offset_top = 10.0
+offset_right = -18.0
+offset_bottom = -12.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 22
+
+[node name="P1Column" type="VBoxContainer" parent="TopBar/MainHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 5
+
+[node name="P1Tag" type="Label" parent="TopBar/MainHBox/P1Column"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.58, 0.78, 1, 1)
+theme_override_font_sizes/font_size = 12
+text = "PLAYER 1"
+
+[node name="P1Name" type="Label" parent="TopBar/MainHBox/P1Column"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "Fighter"
+text_overrun_behavior = 3
+
+[node name="P1HpFrame" type="PanelContainer" parent="TopBar/MainHBox/P1Column"]
+layout_mode = 2
+
+[node name="P1HealthBar" type="TextureProgressBar" parent="TopBar/MainHBox/P1Column/P1HpFrame"]
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+size_flags_horizontal = 3
+max_value = 1000.0
+value = 1000.0
+nine_patch_stretch = true
+stretch_margin_left = 4
+stretch_margin_top = 4
+stretch_margin_right = 4
+stretch_margin_bottom = 4
+texture_under = ExtResource("2_hp_red")
+texture_progress = ExtResource("3_hp_green")
+
+[node name="P1Health" type="Label" parent="TopBar/MainHBox/P1Column"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(0.82, 0.88, 1, 1)
+text = "HP 1000 / 1000"
+
+[node name="P1ResFrame" type="PanelContainer" parent="TopBar/MainHBox/P1Column"]
+layout_mode = 2
+
+[node name="P1ResourceBar" type="TextureProgressBar" parent="TopBar/MainHBox/P1Column/P1ResFrame"]
+custom_minimum_size = Vector2(0, 14)
+layout_mode = 2
+size_flags_horizontal = 3
+nine_patch_stretch = true
+stretch_margin_left = 4
+stretch_margin_top = 4
+stretch_margin_right = 4
+stretch_margin_bottom = 4
+texture_under = ExtResource("5_res_white")
+texture_progress = ExtResource("4_res_blue")
+
+[node name="P1Resource" type="Label" parent="TopBar/MainHBox/P1Column"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(0.72, 0.8, 1, 1)
+text = "METER 0 / 100"
+
+[node name="CenterColumn" type="VBoxContainer" parent="TopBar/MainHBox"]
+custom_minimum_size = Vector2(232, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_constants/separation = 3
+alignment = 1
+
+[node name="TimerLabelSmall" type="Label" parent="TopBar/MainHBox/CenterColumn"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+theme_override_colors/font_color = Color(0.65, 0.72, 0.88, 1)
+text = "TIME"
 horizontal_alignment = 1
 
-[node name="Round" type="Label" parent="TopBar/CenterInfo" unique_id=7751782]
-layout_mode = 0
-offset_top = 29.0
-offset_right = 77.0
-offset_bottom = 55.0
-text = "Round: 1"
+[node name="Timer" type="Label" parent="TopBar/MainHBox/CenterColumn"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 44
+theme_override_colors/font_color = Color(0.96, 0.98, 1, 1)
+text = "99"
 horizontal_alignment = 1
 
-[node name="Score" type="Label" parent="TopBar/CenterInfo" unique_id=2122346264]
-layout_mode = 0
-offset_top = 53.0
-offset_right = 94.0
-offset_bottom = 79.0
-text = "Score: 0 - 0"
+[node name="Round" type="Label" parent="TopBar/MainHBox/CenterColumn"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(0.8, 0.86, 1, 1)
+text = "ROUND 1"
 horizontal_alignment = 1
 
-[node name="Status" type="Label" parent="TopBar/CenterInfo" unique_id=194968488]
-layout_mode = 0
-offset_top = 80.0
-offset_right = 49.0
-offset_bottom = 106.0
-text = "Fight!"
+[node name="Score" type="Label" parent="TopBar/MainHBox/CenterColumn"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 17
+theme_override_colors/font_color = Color(1, 0.92, 0.55, 1)
+text = "0  ·  0"
 horizontal_alignment = 1
 
-[node name="TeamInfo" type="Label" parent="TopBar/CenterInfo" unique_id=2075502403]
-layout_mode = 0
-offset_top = 113.0
-offset_right = 1.0
-offset_bottom = 139.0
+[node name="Status" type="Label" parent="TopBar/MainHBox/CenterColumn"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+theme_override_colors/font_color = Color(0.78, 0.84, 0.96, 1)
+text = "FIGHT!"
 horizontal_alignment = 1
+autowrap_mode = 2
 
-[node name="ResultDamage" type="VBoxContainer" parent="TopBar/CenterInfo"]
+[node name="TeamInfo" type="Label" parent="TopBar/MainHBox/CenterColumn"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+theme_override_colors/font_color = Color(0.7, 0.88, 0.95, 1)
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="ResultDamage" type="VBoxContainer" parent="TopBar/MainHBox/CenterColumn"]
 visible = false
-layout_mode = 0
-offset_left = -80.0
-offset_top = 106.0
-offset_right = 80.0
-offset_bottom = 156.0
-
-[node name="P1Damage" type="Label" parent="TopBar/CenterInfo/ResultDamage"]
 layout_mode = 2
-text = "P1 Damage: 0"
+theme_override_constants/separation = 2
+
+[node name="P1Damage" type="Label" parent="TopBar/MainHBox/CenterColumn/ResultDamage"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
 horizontal_alignment = 1
 
-[node name="P2Damage" type="Label" parent="TopBar/CenterInfo/ResultDamage"]
+[node name="P2Damage" type="Label" parent="TopBar/MainHBox/CenterColumn/ResultDamage"]
 layout_mode = 2
-text = "P2 Damage: 0"
+theme_override_font_sizes/font_size = 12
+horizontal_alignment = 1
+
+[node name="P2Column" type="VBoxContainer" parent="TopBar/MainHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 5
+
+[node name="P2Tag" type="Label" parent="TopBar/MainHBox/P2Column"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.62, 0.62, 1)
+theme_override_font_sizes/font_size = 12
+text = "PLAYER 2"
+horizontal_alignment = 2
+
+[node name="P2Name" type="Label" parent="TopBar/MainHBox/P2Column"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "Fighter"
+horizontal_alignment = 2
+text_overrun_behavior = 3
+
+[node name="P2HpFrame" type="PanelContainer" parent="TopBar/MainHBox/P2Column"]
+layout_mode = 2
+
+[node name="P2HealthBar" type="TextureProgressBar" parent="TopBar/MainHBox/P2Column/P2HpFrame"]
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+size_flags_horizontal = 3
+max_value = 1000.0
+value = 1000.0
+fill_mode = 1
+nine_patch_stretch = true
+stretch_margin_left = 4
+stretch_margin_top = 4
+stretch_margin_right = 4
+stretch_margin_bottom = 4
+texture_under = ExtResource("2_hp_red")
+texture_progress = ExtResource("3_hp_green")
+
+[node name="P2Health" type="Label" parent="TopBar/MainHBox/P2Column"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(0.82, 0.88, 1, 1)
+text = "HP 1000 / 1000"
+horizontal_alignment = 2
+
+[node name="P2ResFrame" type="PanelContainer" parent="TopBar/MainHBox/P2Column"]
+layout_mode = 2
+
+[node name="P2ResourceBar" type="TextureProgressBar" parent="TopBar/MainHBox/P2Column/P2ResFrame"]
+custom_minimum_size = Vector2(0, 14)
+layout_mode = 2
+size_flags_horizontal = 3
+fill_mode = 1
+nine_patch_stretch = true
+stretch_margin_left = 4
+stretch_margin_top = 4
+stretch_margin_right = 4
+stretch_margin_bottom = 4
+texture_under = ExtResource("5_res_white")
+texture_progress = ExtResource("4_res_blue")
+
+[node name="P2Resource" type="Label" parent="TopBar/MainHBox/P2Column"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(0.72, 0.8, 1, 1)
+text = "METER 0 / 100"
+horizontal_alignment = 2
+
+[node name="BottomHint" type="Label" parent="."]
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -26.0
+grow_horizontal = 2
+grow_vertical = 0
+theme = ExtResource("6_global_theme")
+theme_override_colors/font_color = Color(0.55, 0.6, 0.72, 0.85)
+theme_override_font_sizes/font_size = 12
+text = "Pause  ·  Esc / Start"
 horizontal_alignment = 1

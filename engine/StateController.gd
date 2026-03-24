@@ -92,7 +92,7 @@ func _apply_state_enter_data(state_data: Dictionary) -> void:
 		var played := false
 		if fighter != null and fighter.has_method("play_state_animation"):
 			played = bool(fighter.call("play_state_animation", animation_name, should_loop))
-		if not played and animation_player != null:
+		if not played and animation_player != null and animation_player.has_animation(animation_name):
 			var anim: Animation = animation_player.get_animation(animation_name)
 			if anim != null:
 				anim.loop_mode = Animation.LOOP_LINEAR if should_loop else Animation.LOOP_NONE
@@ -107,7 +107,11 @@ func _apply_state_enter_data(state_data: Dictionary) -> void:
 			if state_data.has("ctrl"):
 				fighter.call("set_state_control_enabled", bool(state_data.get("ctrl", false)))
 			elif state_data.has("allow_movement"):
-				fighter.call("set_state_control_enabled", bool(state_data.get("allow_movement", true)))
+				var allow_move: bool = bool(state_data.get("allow_movement", true))
+				# Crouch uses allow_movement=false only to block horizontal speed; it must NOT set Ctrl=0 or
+				# FighterBase._apply_locomotion bails out before crouch->idle release and the player appears frozen.
+				if not (current_state == "crouch" and not allow_move):
+					fighter.call("set_state_control_enabled", allow_move)
 		var sound_timeline: Array = state_data.get("sounds", [])
 		fighter.call("play_state_sounds_for_frame", sound_timeline, 0)
 		var projectile_timeline: Array = state_data.get("projectiles", [])

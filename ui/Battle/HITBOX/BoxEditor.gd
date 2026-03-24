@@ -84,6 +84,7 @@ var embedded_mode: bool = false
 
 func _ready() -> void:
 	UISkin.ensure_ui_fits_screen()
+	UISkin.attach_focus_arrow(self)
 	_connect_signals()
 	_ensure_preview_boxes_root()
 	_scan_mods()
@@ -147,16 +148,16 @@ func _scan_mods() -> void:
 		mod_entries.append(
 			{
 				"name": str(entry.get("name", "")),
+				"display_name": str(entry.get("display_name", entry.get("name", ""))),
 				"mod_path": str(entry.get("mod_path", "")),
 				"states_path": str(entry.get("states_path", "")),
 				"model_path": str(entry.get("model_path", ""))
 			}
 		)
-	mod_entries.sort_custom(func(a, b): return str(a.get("name", "")) < str(b.get("name", "")))
+	mod_entries.sort_custom(func(a, b): return str(a.get("display_name", "")) < str(b.get("display_name", "")))
 
 	for i in range(mod_entries.size()):
-		var mod_name_text: String = str(mod_entries[i].get("name", ""))
-		mod_option.add_item(mod_name_text, i)
+		mod_option.add_item(str(mod_entries[i].get("display_name", mod_entries[i].get("name", ""))), i)
 
 	if mod_entries.is_empty():
 		status_label.text = "No mods with states.json found."
@@ -196,7 +197,7 @@ func _on_mod_selected(index: int) -> void:
 	_rebuild_state_option()
 	_refresh_preview_model()
 	_update_preview_box()
-	status_label.text = "Loaded %s" % str(entry.get("name", ""))
+	status_label.text = "Loaded %s" % str(entry.get("display_name", entry.get("name", "")))
 
 
 func _rebuild_state_option() -> void:
@@ -365,11 +366,19 @@ func _apply_embedded_mode() -> void:
 		close_button.text = "Back" if embedded_mode else "Close"
 
 
-func select_mod_by_name(mod_name: String) -> bool:
-	if mod_name.is_empty():
+func select_mod_by_name(mod_key: String) -> bool:
+	if mod_key.is_empty():
 		return false
+	var key: String = mod_key.strip_edges()
 	for i in range(mod_entries.size()):
-		if str(mod_entries[i].get("name", "")) == mod_name:
+		var e: Dictionary = mod_entries[i]
+		if str(e.get("mod_path", "")).strip_edges() == key:
+			mod_option.select(i)
+			_on_mod_selected(i)
+			return true
+	for i in range(mod_entries.size()):
+		var e2: Dictionary = mod_entries[i]
+		if str(e2.get("name", "")) == key or str(e2.get("display_name", "")) == key:
 			mod_option.select(i)
 			_on_mod_selected(i)
 			return true

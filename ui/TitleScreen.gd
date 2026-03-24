@@ -16,10 +16,10 @@ var background_video_player: VideoStreamPlayer = null
 
 
 func _ready() -> void:
-	UISkin.ensure_ui_fits_screen()
+	_ensure_ui_fits_screen()
 	var has_video: bool = _setup_looping_background_video(background_video_paths)
 	if not has_video:
-		UISkin.apply_background(self, "title_screen_bg")
+		_apply_title_background_fallback()
 	_start_prompt_flash()
 	SystemSFX.play_menu_music_from(self, "titlescreen", true, -8.0)
 
@@ -113,3 +113,17 @@ func _resolve_imported_resource_path(source_path: String) -> String:
 	if cfg.load(import_path) != OK:
 		return ""
 	return str(cfg.get_value("remap", "path", "")).strip_edges()
+
+
+func _ensure_ui_fits_screen() -> void:
+	var width: int = int(ProjectSettings.get_setting("display/window/size/viewport_width", 1280))
+	var height: int = int(ProjectSettings.get_setting("display/window/size/viewport_height", 720))
+	var window := get_window()
+	if window != null:
+		window.min_size = Vector2i(maxi(1, width), maxi(1, height))
+
+
+func _apply_title_background_fallback() -> void:
+	var bg := get_node_or_null("BackgroundColor") as ColorRect
+	if bg != null:
+		bg.visible = true

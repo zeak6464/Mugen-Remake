@@ -20,6 +20,7 @@ var embedded_mode: bool = false
 
 func _ready() -> void:
 	UISkin.ensure_ui_fits_screen()
+	UISkin.attach_focus_arrow(self)
 	_connect_signals()
 	_scan_mods()
 	_select_default_mod()
@@ -39,12 +40,17 @@ func _scan_mods() -> void:
 	mod_entries.clear()
 	mod_option.clear()
 	for entry in ContentResolver.scan_character_entries(mods_roots, "any"):
-		mod_entries.append({"name": str(entry.get("name", "")), "path": str(entry.get("path", ""))})
-	mod_entries.sort_custom(func(a, b): return str(a.get("name", "")) < str(b.get("name", "")))
+		mod_entries.append(
+			{
+				"name": str(entry.get("name", "")),
+				"path": str(entry.get("path", "")),
+				"display_name": str(entry.get("display_name", entry.get("name", "")))
+			}
+		)
+	mod_entries.sort_custom(func(a, b): return str(a.get("display_name", "")) < str(b.get("display_name", "")))
 
 	for i in range(mod_entries.size()):
-		var mod_name: String = str(mod_entries[i].get("name", ""))
-		mod_option.add_item(mod_name, i)
+		mod_option.add_item(str(mod_entries[i].get("display_name", mod_entries[i].get("name", ""))), i)
 
 	if mod_entries.is_empty():
 		status_label.text = "No mods found."
@@ -192,11 +198,19 @@ func _apply_embedded_mode() -> void:
 		back_button.visible = not embedded_mode
 
 
-func select_mod_by_name(mod_name: String) -> bool:
-	if mod_name.is_empty():
+func select_mod_by_name(mod_key: String) -> bool:
+	if mod_key.is_empty():
 		return false
+	var key: String = mod_key.strip_edges()
 	for i in range(mod_entries.size()):
-		if str(mod_entries[i].get("name", "")) == mod_name:
+		var e: Dictionary = mod_entries[i]
+		if str(e.get("path", "")).strip_edges() == key:
+			mod_option.select(i)
+			_on_mod_selected(i)
+			return true
+	for i in range(mod_entries.size()):
+		var e2: Dictionary = mod_entries[i]
+		if str(e2.get("name", "")) == key or str(e2.get("display_name", "")) == key:
 			mod_option.select(i)
 			_on_mod_selected(i)
 			return true

@@ -254,21 +254,36 @@ func _rpc_character_selection(mod_name: String) -> void:
 	_opponent_character_mod = str(mod_name).strip_edges()
 
 
-func start_battle_and_go(p1_mod: String, p2_mod: String, stage_folder: String, battle_scene_path: String) -> void:
+func start_battle_and_go(
+	p1_mod: String,
+	p2_mod: String,
+	stage_folder: String,
+	battle_scene_path: String,
+	stage_music_path: String = ""
+) -> void:
 	if not _is_host or not is_online_session():
 		return
-	_rpc_start_battle.rpc(p1_mod, p2_mod, stage_folder, battle_scene_path)
+	var music_trim: String = str(stage_music_path).strip_edges()
+	_rpc_start_battle.rpc(p1_mod, p2_mod, stage_folder, battle_scene_path, music_trim)
 	if get_tree() != null:
 		get_tree().set_meta("training_p1_mod", p1_mod)
 		get_tree().set_meta("training_p2_mod", p2_mod)
 		get_tree().set_meta("training_stage_folder", stage_folder)
+		get_tree().set_meta("training_stage_music_path", music_trim)
 		get_tree().change_scene_to_file(battle_scene_path)
 
 
 @rpc("authority", "call_remote", "reliable")
-func _rpc_start_battle(p1_mod: String, p2_mod: String, stage_folder: String, battle_scene_path: String) -> void:
+func _rpc_start_battle(
+	p1_mod: String,
+	p2_mod: String,
+	stage_folder: String,
+	battle_scene_path: String,
+	stage_music_path: String = ""
+) -> void:
 	if get_tree() != null:
 		get_tree().set_meta("training_p1_mod", p1_mod)
 		get_tree().set_meta("training_p2_mod", p2_mod)
 		get_tree().set_meta("training_stage_folder", stage_folder)
+		get_tree().set_meta("training_stage_music_path", str(stage_music_path).strip_edges())
 		get_tree().change_scene_to_file(battle_scene_path)

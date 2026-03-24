@@ -3,30 +3,36 @@ extends Control
 @export var mods_roots: Array[String] = ["user://mods/", "res://mods/"]
 @export var default_mod_name: String = ""
 
-@onready var mod_option: OptionButton = $MarginContainer/VBoxContainer/TopRow/ModOption
-@onready var prev_button: Button = $MarginContainer/VBoxContainer/TopRow/PrevButton
-@onready var next_button: Button = $MarginContainer/VBoxContainer/TopRow/NextButton
-@onready var back_button: Button = $MarginContainer/VBoxContainer/TopRow/BackButton
-@onready var status_label: Label = $MarginContainer/VBoxContainer/StatusLabel
-@onready var animation_option: OptionButton = $MarginContainer/VBoxContainer/AnimationRow/AnimationOption
-@onready var preview_container: SubViewportContainer = $MarginContainer/VBoxContainer/PreviewPanel/PreviewViewportContainer
-@onready var preview_viewport: SubViewport = $MarginContainer/VBoxContainer/PreviewPanel/PreviewViewportContainer/PreviewViewport
-@onready var preview_world: Node3D = $MarginContainer/VBoxContainer/PreviewPanel/PreviewViewportContainer/PreviewViewport/PreviewWorld
-@onready var model_root: Node3D = $MarginContainer/VBoxContainer/PreviewPanel/PreviewViewportContainer/PreviewViewport/PreviewWorld/ModelRoot
-@onready var camera: Camera3D = $MarginContainer/VBoxContainer/PreviewPanel/PreviewViewportContainer/PreviewViewport/PreviewWorld/Camera3D
+@onready var mod_option: OptionButton = $Chrome/MainRow/LeftPanel/LeftVBox/ToolbarRow/ModOption
+@onready var prev_button: Button = $Chrome/MainRow/LeftPanel/LeftVBox/ToolbarRow/PrevButton
+@onready var next_button: Button = $Chrome/MainRow/LeftPanel/LeftVBox/ToolbarRow/NextButton
+@onready var back_button: Button = $Chrome/MainRow/LeftPanel/LeftVBox/ToolbarRow/BackButton
+@onready var status_label: Label = $Chrome/MainRow/RightPanel/RightVBox/StatusLabel
+@onready var mod_title_label: Label = $Chrome/MainRow/LeftPanel/LeftVBox/ModTitle
+@onready var form_list: ItemList = $Chrome/MainRow/LeftPanel/LeftVBox/FormListPanel/FormList
+@onready var animation_option: OptionButton = $Chrome/MainRow/RightPanel/RightVBox/AnimationRow/AnimationOption
+@onready var preview_container: SubViewportContainer = $Chrome/MainRow/RightPanel/RightVBox/PreviewPanel/PreviewViewportContainer
+@onready var preview_viewport: SubViewport = $Chrome/MainRow/RightPanel/RightVBox/PreviewPanel/PreviewViewportContainer/PreviewViewport
+@onready var preview_world: Node3D = $Chrome/MainRow/RightPanel/RightVBox/PreviewPanel/PreviewViewportContainer/PreviewViewport/PreviewWorld
+@onready var model_root: Node3D = $Chrome/MainRow/RightPanel/RightVBox/PreviewPanel/PreviewViewportContainer/PreviewViewport/PreviewWorld/ModelRoot
+@onready var camera: Camera3D = $Chrome/MainRow/RightPanel/RightVBox/PreviewPanel/PreviewViewportContainer/PreviewViewport/PreviewWorld/Camera3D
 
 var mod_entries: Array[Dictionary] = []
+var variant_entries: Array[Dictionary] = []
 var current_model: Node3D = null
 var preview_animation_player: AnimationPlayer = null
 var camera_target: Vector3 = Vector3.ZERO
 var camera_distance: float = 4.0
 var min_camera_distance: float = 1.2
 var max_camera_distance: float = 20.0
+var shader_loader: ModLoader = null
 
 
 func _ready() -> void:
 	UISkin.ensure_ui_fits_screen()
+	UISkin.attach_focus_arrow(self)
 	mod_option.item_selected.connect(_on_mod_selected)
+	form_list.item_selected.connect(_on_variant_selected)
 	animation_option.item_selected.connect(_on_animation_selected)
 	prev_button.pressed.connect(_on_prev_pressed)
 	next_button.pressed.connect(_on_next_pressed)
@@ -47,10 +53,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		_on_next_pressed()
 		return
 	if _pressed(event, &"p1_up") or _pressed(event, &"p2_up"):
-		_adjust_zoom(-0.6)
+		_select_variant_relative(-1)
 		return
 	if _pressed(event, &"p1_down") or _pressed(event, &"p2_down"):
-		_adjust_zoom(0.6)
+		_select_variant_relative(1)
 		return
 
 
@@ -68,17 +74,20 @@ func _scan_mods() -> void:
 	mod_entries.clear()
 	mod_option.clear()
 	for entry in ContentResolver.scan_character_entries(mods_roots, "model"):
+		var mod_path: String = str(entry.get("path", ""))
 		mod_entries.append(
 			{
 				"name": str(entry.get("name", "")),
-				"path": str(entry.get("path", "")),
+				"path": mod_path,
+				"display_name": str(entry.get("display_name", entry.get("name", ""))),
 				"model_path": str(entry.get("model_path", "")),
-				"def_data": entry.get("def_data", {})
+				"def_data": entry.get("def_data", {}),
+				"forms_data": _load_mod_forms_data(mod_path)
 			}
 		)
-	mod_entries.sort_custom(func(a, b): return str(a.get("name", "")) < str(b.get("name", "")))
+	mod_entries.sort_custom(func(a, b): return str(a.get("display_name", "")) < str(b.get("display_name", "")))
 	for i in range(mod_entries.size()):
-		mod_option.add_item(str(mod_entries[i].get("name", "")), i)
+		mod_option.add_item(str(mod_entries[i].get("display_name", mod_entries[i].get("name", ""))), i)
 
 
 func _select_default_mod() -> void:
@@ -99,9 +108,9 @@ func _on_mod_selected(index: int) -> void:
 	if index < 0 or index >= mod_entries.size():
 		return
 	var entry: Dictionary = mod_entries[index]
-	var model_path: String = str(entry.get("model_path", ""))
-	_load_preview_model(model_path, entry.get("def_data", {}))
-	status_label.text = "Viewing: %s" % str(entry.get("name", ""))
+	mod_title_label.text = str(entry.get("display_name", entry.get("name", "")))
+	_rebuild_variant_entries(entry)
+	_select_variant(0)
 
 
 func _on_prev_pressed() -> void:
@@ -129,7 +138,83 @@ func _on_back_pressed() -> void:
 	get_tree().change_scene_to_file("res://ui/MainMenu.tscn")
 
 
-func _load_preview_model(model_path: String, def_data: Dictionary) -> void:
+func _rebuild_variant_entries(mod_entry: Dictionary) -> void:
+	variant_entries.clear()
+	form_list.clear()
+	var base_def: Dictionary = mod_entry.get("def_data", {})
+	variant_entries.append({"label": "[BASE]", "form_id": "", "form_data": {}, "def_data": base_def})
+	form_list.add_item("[BASE]")
+	var forms_data: Dictionary = mod_entry.get("forms_data", {})
+	var keys: Array[String] = []
+	for k in forms_data.keys():
+		keys.append(str(k))
+	keys.sort()
+	for key in keys:
+		var fdata: Dictionary = forms_data.get(key, {})
+		var merged_def: Dictionary = _effective_def_for_variant(base_def, fdata)
+		variant_entries.append({"label": key, "form_id": key, "form_data": fdata, "def_data": merged_def})
+		form_list.add_item(key.to_upper())
+	if form_list.item_count > 0:
+		form_list.select(0)
+
+
+func _select_variant(index: int) -> void:
+	if index < 0 or index >= variant_entries.size():
+		return
+	if mod_entries.is_empty():
+		return
+	var mod_idx: int = mod_option.get_selected()
+	if mod_idx < 0 or mod_idx >= mod_entries.size():
+		return
+	var mod_entry: Dictionary = mod_entries[mod_idx]
+	var variant: Dictionary = variant_entries[index]
+	form_list.select(index)
+	var model_path: String = _resolve_variant_model_path(mod_entry, variant)
+	_load_preview_model(model_path, variant.get("def_data", {}), str(mod_entry.get("path", "")))
+	var form_label: String = str(variant.get("label", "[BASE]"))
+	status_label.text = "Viewing %s · %s" % [str(mod_entry.get("display_name", mod_entry.get("name", ""))), form_label]
+
+
+func _on_variant_selected(index: int) -> void:
+	_select_variant(index)
+	SystemSFX.play_ui_from(self, "ui_move")
+
+
+func _select_variant_relative(delta: int) -> void:
+	if variant_entries.is_empty():
+		return
+	var current: int = 0
+	var selected: PackedInt32Array = form_list.get_selected_items()
+	if not selected.is_empty():
+		current = selected[0]
+	var next_idx: int = wrapi(current + delta, 0, variant_entries.size())
+	_select_variant(next_idx)
+	SystemSFX.play_ui_from(self, "ui_move")
+
+
+func _resolve_variant_model_path(mod_entry: Dictionary, variant: Dictionary) -> String:
+	var model_path: String = str(mod_entry.get("model_path", ""))
+	var form_data: Dictionary = variant.get("form_data", {})
+	var form_model_raw: String = str(form_data.get("model_path", form_data.get("model_file", ""))).strip_edges()
+	if not form_model_raw.is_empty():
+		model_path = _resolve_mod_relative_path(mod_entry, form_model_raw)
+	return model_path
+
+
+func _merge_defs(base_def: Dictionary, override_data: Dictionary) -> Dictionary:
+	var out: Dictionary = base_def.duplicate(true)
+	for k in override_data.keys():
+		out[k] = override_data[k]
+	return out
+
+
+func _effective_def_for_variant(base_def: Dictionary, variant_data: Dictionary) -> Dictionary:
+	if shader_loader == null:
+		shader_loader = ModLoader.new()
+	return shader_loader.character_def_with_costume_overrides(base_def, variant_data)
+
+
+func _load_preview_model(model_path: String, def_data: Dictionary, mod_path: String = "") -> void:
 	for child in model_root.get_children():
 		child.queue_free()
 	current_model = null
@@ -141,9 +226,21 @@ func _load_preview_model(model_path: String, def_data: Dictionary) -> void:
 	node3d.scale = _extract_model_scale(def_data)
 	node3d.position.y += float(def_data.get("model_offset_y", 0.0))
 	model_root.add_child(node3d)
+	_apply_preview_shader(node3d, mod_path, def_data, model_path)
 	current_model = node3d
 	_fit_camera_to_model(node3d)
 	_rebuild_animation_selector(node3d)
+
+
+func _apply_preview_shader(node3d: Node3D, mod_path: String, def_data: Dictionary, source_model_path: String) -> void:
+	if node3d == null:
+		return
+	var mod_dir: String = mod_path.strip_edges()
+	if mod_dir.is_empty():
+		return
+	if shader_loader == null:
+		shader_loader = ModLoader.new()
+	shader_loader.apply_character_def_shader_to_model(node3d, mod_dir, def_data, source_model_path)
 
 
 func _load_model_scene(path: String) -> Node:
@@ -268,6 +365,29 @@ func _normalize_root(root: String) -> String:
 	if not normalized.ends_with("/"):
 		normalized += "/"
 	return normalized
+
+
+func _load_mod_forms_data(mod_path: String) -> Dictionary:
+	var path: String = "%stransformations.json" % mod_path
+	if not FileAccess.file_exists(path):
+		return {}
+	var file := FileAccess.open(path, FileAccess.READ)
+	if file == null:
+		return {}
+	var parsed = JSON.parse_string(file.get_as_text())
+	if typeof(parsed) != TYPE_DICTIONARY:
+		return {}
+	var forms_dict: Dictionary = (parsed as Dictionary).get("forms", {})
+	return forms_dict if typeof(forms_dict) == TYPE_DICTIONARY else {}
+
+
+func _resolve_mod_relative_path(mod_entry: Dictionary, raw_path: String) -> String:
+	if raw_path.is_empty():
+		return ""
+	if raw_path.begins_with("res://") or raw_path.begins_with("user://"):
+		return raw_path
+	var mod_path: String = str(mod_entry.get("path", ""))
+	return "%s%s" % [mod_path, raw_path]
 
 
 func _find_animation_player_recursive(root: Node) -> AnimationPlayer:

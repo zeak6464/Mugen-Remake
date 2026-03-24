@@ -81,6 +81,7 @@ var user_camera_dirty: bool = false
 
 func _ready() -> void:
 	UISkin.ensure_ui_fits_screen()
+	UISkin.attach_focus_arrow(self)
 	_connect_signals()
 	_setup_preview_materials()
 	_setup_preview_camera_defaults()
@@ -118,10 +119,18 @@ func _scan_stages() -> void:
 	stage_entries.clear()
 	stage_option.clear()
 	for entry in ContentResolver.scan_stage_entries(stages_roots):
-		stage_entries.append({"name": str(entry.get("name", "")), "folder": str(entry.get("folder_path", ""))})
-	stage_entries.sort_custom(func(a, b): return str(a.get("name", "")) < str(b.get("name", "")))
+		stage_entries.append(
+			{
+				"name": str(entry.get("name", "")),
+				"display_name": str(entry.get("display_name", entry.get("name", ""))),
+				"folder": str(entry.get("folder_path", ""))
+			}
+		)
+	stage_entries.sort_custom(
+		func(a, b): return str(a.get("display_name", a.get("name", ""))) < str(b.get("display_name", b.get("name", "")))
+	)
 	for i in range(stage_entries.size()):
-		stage_option.add_item(str(stage_entries[i].get("name", "")), i)
+		stage_option.add_item(str(stage_entries[i].get("display_name", stage_entries[i].get("name", ""))), i)
 	if stage_entries.is_empty():
 		status_label.text = "No stage folders found in user://stages or res://stages."
 
@@ -156,7 +165,7 @@ func _on_stage_selected(index: int) -> void:
 	_reload_preview_characters()
 	user_camera_dirty = false
 	_update_preview()
-	status_label.text = "Loaded stage: %s" % str(stage_entries[index].get("name", ""))
+	status_label.text = "Loaded stage: %s" % str(stage_entries[index].get("display_name", stage_entries[index].get("name", "")))
 
 
 func _on_reload_pressed() -> void:

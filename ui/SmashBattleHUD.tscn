@@ -1,80 +1,153 @@
-[gd_scene format=3 uid="uid://cpil0k5n183m1"]
+[gd_scene load_steps=3 format=3 uid="uid://cpil0k5n183m1"]
 
-[ext_resource type="Script" uid="uid://cfbxgrxmyjv1b" path="res://ui/SmashBattleHUD.gd" id="1_smash_hud_script"]
+[ext_resource type="Script" path="res://ui/SmashBattleHUD.gd" id="1_smash_hud_script"]
 [ext_resource type="Theme" uid="uid://ksxjx5uqcuqd" path="res://ui/theme/GlobalUITheme.tres" id="2_global_theme"]
 
-[node name="SmashBattleHUD" type="CanvasLayer" unique_id=67636157]
+[node name="SmashBattleHUD" type="CanvasLayer"]
+layer = 10
 script = ExtResource("1_smash_hud_script")
 
-[node name="TopBar" type="Control" parent="." unique_id=1866145995]
+[node name="TopBar" type="Control" parent="."]
 layout_mode = 3
 anchors_preset = 10
 anchor_right = 1.0
-offset_left = 16.0
-offset_top = 10.0
-offset_right = -16.0
-offset_bottom = 130.0
+offset_bottom = 138.0
 grow_horizontal = 2
 theme = ExtResource("2_global_theme")
 
-[node name="P1Stocks" type="Label" parent="TopBar" unique_id=1198382201]
-layout_mode = 0
-offset_left = 10.0
-offset_top = 12.0
-offset_right = 240.0
-offset_bottom = 36.0
-theme_override_font_sizes/font_size = 20
-text = "P1 Stocks: 3"
-
-[node name="P2Stocks" type="Label" parent="TopBar" unique_id=934552278]
-layout_mode = 0
-offset_left = 1014.0
-offset_top = 5.0
-offset_right = 1246.0
-offset_bottom = 33.0
-theme_override_font_sizes/font_size = 20
-text = "P2 Stocks: 3"
-horizontal_alignment = 2
-
-[node name="P1Percent" type="Label" parent="TopBar" unique_id=2104306418]
-layout_mode = 0
-offset_left = 10.0
-offset_top = 42.0
-offset_right = 240.0
-offset_bottom = 76.0
-theme_override_font_sizes/font_size = 30
-text = "P1: 0%"
-
-[node name="P2Percent" type="Label" parent="TopBar" unique_id=1699711041]
-layout_mode = 0
-offset_left = 1014.0
-offset_top = 35.0
-offset_right = 1246.0
-offset_bottom = 77.0
-theme_override_font_sizes/font_size = 30
-text = "P2: 0%"
-horizontal_alignment = 2
-
-[node name="CenterInfo" type="Control" parent="TopBar" unique_id=553102846]
-anchors_preset = 0
-anchor_left = 0.5
-anchor_right = 0.5
-offset_left = -120.0
-offset_top = 12.0
-offset_right = 120.0
-offset_bottom = 96.0
+[node name="BarBacking" type="ColorRect" parent="TopBar"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
 grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.03, 0.02, 0.08, 0.9)
+mouse_filter = 2
 
-[node name="Round" type="Label" parent="TopBar/CenterInfo" unique_id=370375318]
-layout_mode = 0
-offset_top = 30.0
-offset_right = 77.0
-offset_bottom = 56.0
-text = "Round: 1"
+[node name="BarAccent" type="ColorRect" parent="TopBar"]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -3.0
+grow_horizontal = 2
+color = Color(0.75, 0.4, 0.95, 1)
+mouse_filter = 2
+
+[node name="MainHBox" type="HBoxContainer" parent="TopBar"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = 12.0
+offset_right = -20.0
+offset_bottom = -10.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 28
+
+[node name="P1Column" type="VBoxContainer" parent="TopBar/MainHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 4
+
+[node name="P1Tag" type="Label" parent="TopBar/MainHBox/P1Column"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+theme_override_colors/font_color = Color(0.62, 0.85, 1, 1)
+text = "PLAYER 1"
+
+[node name="P1Name" type="Label" parent="TopBar/MainHBox/P1Column"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 19
+text = "Fighter"
+text_overrun_behavior = 3
+
+[node name="P1Stocks" type="Label" parent="TopBar/MainHBox/P1Column"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 26
+theme_override_colors/font_color = Color(1, 0.92, 0.55, 1)
+text = "● ● ●"
+
+[node name="P1Percent" type="Label" parent="TopBar/MainHBox/P1Column"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 38
+theme_override_colors/font_color = Color(1, 0.45, 0.38, 1)
+text = "0%"
+
+[node name="CenterColumn" type="VBoxContainer" parent="TopBar/MainHBox"]
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_constants/separation = 6
+alignment = 1
+
+[node name="ModeBanner" type="Label" parent="TopBar/MainHBox/CenterColumn"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+theme_override_colors/font_color = Color(0.85, 0.65, 1, 1)
+text = "SMASH"
 horizontal_alignment = 1
 
-[node name="Status" type="Label" parent="TopBar/CenterInfo" unique_id=528337524]
-layout_mode = 0
-theme_override_font_sizes/font_size = 22
-text = "Smash!"
+[node name="Round" type="Label" parent="TopBar/MainHBox/CenterColumn"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+text = "GAME 1"
+horizontal_alignment = 1
+
+[node name="Status" type="Label" parent="TopBar/MainHBox/CenterColumn"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(0.82, 0.88, 1, 1)
+text = "Go!"
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="P2Column" type="VBoxContainer" parent="TopBar/MainHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 4
+
+[node name="P2Tag" type="Label" parent="TopBar/MainHBox/P2Column"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+theme_override_colors/font_color = Color(1, 0.65, 0.65, 1)
+text = "PLAYER 2"
+horizontal_alignment = 2
+
+[node name="P2Name" type="Label" parent="TopBar/MainHBox/P2Column"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 19
+text = "Fighter"
+horizontal_alignment = 2
+text_overrun_behavior = 3
+
+[node name="P2Stocks" type="Label" parent="TopBar/MainHBox/P2Column"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 26
+theme_override_colors/font_color = Color(1, 0.92, 0.55, 1)
+text = "● ● ●"
+horizontal_alignment = 2
+
+[node name="P2Percent" type="Label" parent="TopBar/MainHBox/P2Column"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 38
+theme_override_colors/font_color = Color(1, 0.45, 0.38, 1)
+text = "0%"
+horizontal_alignment = 2
+
+[node name="BottomHint" type="Label" parent="."]
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -26.0
+grow_horizontal = 2
+theme = ExtResource("2_global_theme")
+theme_override_colors/font_color = Color(0.55, 0.58, 0.72, 0.8)
+theme_override_font_sizes/font_size = 12
+text = "Pause · Esc / Start"
 horizontal_alignment = 1

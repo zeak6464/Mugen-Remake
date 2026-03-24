@@ -25,7 +25,16 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.06, 0.06, 0.08, 1)
+color = Color(0.04, 0.05, 0.11, 1)
+
+[node name="HeaderAccent" type="ColorRect" parent="." unique_id=514284341]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 4.0
+grow_horizontal = 2
+color = Color(0.42, 0.58, 0.95, 1)
+mouse_filter = 2
 
 [node name="MarginContainer" type="MarginContainer" parent="." unique_id=2136351438]
 layout_mode = 0
@@ -53,8 +62,16 @@ theme_override_constants/separation = 10
 
 [node name="TitleLabel" type="Label" parent="MarginContainer/ContentScroll/ContentVBox" unique_id=1034103904]
 layout_mode = 0
+theme_override_colors/font_color = Color(0.95, 0.97, 1, 1)
 theme_override_font_sizes/font_size = 28
-text = "Hit/Persistent-Hurt/Throw/Push Box Editor"
+text = "Hit / Hurt / Throw / Push Box Editor"
+horizontal_alignment = 1
+
+[node name="SubtitleLabel" type="Label" parent="MarginContainer/ContentScroll/ContentVBox" unique_id=1034103905]
+layout_mode = 0
+theme_override_colors/font_color = Color(0.65, 0.72, 0.88, 1)
+theme_override_font_sizes/font_size = 14
+text = "Per-state collision boxes · sync with animation frames"
 horizontal_alignment = 1
 
 [node name="TopRow" type="HBoxContainer" parent="MarginContainer/ContentScroll/ContentVBox" unique_id=970330603]

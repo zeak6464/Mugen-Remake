@@ -1,5 +1,7 @@
 # State Controllers Guide
 
+Related: **[ENGINE_OVERVIEW.md](ENGINE_OVERVIEW.md)** · **[Character_Guide.md](Character_Guide.md)** · **[docs/README.md](README.md)**
+
 This guide is the detailed reference for the `controllers` array used in `states.json`.
 
 It is based on current runtime behavior in `engine/StateController.gd`.

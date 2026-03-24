@@ -25,6 +25,8 @@ const DEFAULT_TOURNAMENT_SIZE_INDEX: int = 0
 @onready var tournament_size_row: Control = $MarginContainer/VBoxContainer/TournamentSizeRow
 @onready var tournament_size_option: OptionButton = $MarginContainer/VBoxContainer/TournamentSizeRow/TournamentSizeOption
 @onready var save_replay_check: CheckBox = $MarginContainer/VBoxContainer/SaveReplayRow/SaveReplayCheck
+@onready var training_smash_row: Control = $MarginContainer/VBoxContainer/TrainingSmashRow
+@onready var training_smash_check: CheckBox = $MarginContainer/VBoxContainer/TrainingSmashRow/TrainingSmashCheck
 @onready var fight_button: Button = $MarginContainer/VBoxContainer/ButtonsRow/FightButton
 @onready var back_button: Button = $MarginContainer/VBoxContainer/ButtonsRow/BackButton
 
@@ -33,14 +35,16 @@ var watch_match_type: String = ""
 
 
 func _ready() -> void:
-	UISkin.ensure_ui_fits_screen()
-	UISkin.apply_background(self, "options_menu_bg")
+	_ensure_ui_fits_screen()
+	_apply_background_fallback()
 	game_mode = str(get_tree().get_meta("game_mode", "training")).to_lower()
 	watch_match_type = str(get_tree().get_meta("watch_match_type", "")).to_lower() if game_mode == "watch" else ""
 	_apply_title()
 	_build_options()
-	_show_rows_for_mode()
 	_load_saved_or_defaults()
+	_show_rows_for_mode()
+	if training_smash_check != null:
+		training_smash_check.toggled.connect(_on_training_smash_toggled)
 	fight_button.pressed.connect(_on_fight_pressed)
 	back_button.pressed.connect(_on_back_pressed)
 	_ensure_focus_modes()
@@ -127,6 +131,8 @@ func _menu_focus_controls() -> Array[Control]:
 		_append_focus(out, time_limit_option)
 	if tournament_size_row.visible and tournament_size_option != null:
 		_append_focus(out, tournament_size_option)
+	if training_smash_row != null and training_smash_row.visible and training_smash_check != null:
+		_append_focus(out, training_smash_check)
 	if stocks_row.visible:
 		_append_focus(out, stocks_option)
 	_append_focus(out, save_replay_check)
@@ -198,7 +204,19 @@ func _show_rows_for_mode() -> void:
 	var use_rounds_time: bool = game_mode in ["training", "cpu_training", "versus", "team", "arcade", "survival", "online", "coop", "tournament"]
 	if game_mode == "watch":
 		use_rounds_time = watch_match_type in ["", "versus", "team"]
-	var use_stocks: bool = game_mode == "smash" or (game_mode == "watch" and watch_match_type == "smash")
+	var training_smash_eligible: bool = game_mode == "training" or game_mode == "cpu_training"
+	if training_smash_row != null:
+		training_smash_row.visible = training_smash_eligible
+	var ts_on: bool = (
+		training_smash_eligible
+		and training_smash_check != null
+		and training_smash_check.button_pressed
+	)
+	var use_stocks: bool = (
+		game_mode == "smash"
+		or (game_mode == "watch" and watch_match_type == "smash")
+		or ts_on
+	)
 	rounds_row.visible = use_rounds_time
 	time_limit_row.visible = use_rounds_time
 	tournament_size_row.visible = game_mode == "tournament"
@@ -267,11 +285,23 @@ func _load_saved_or_defaults() -> void:
 	var cfg := ConfigFile.new()
 	if cfg.load(OPTIONS_CFG_PATH) == OK:
 		save_replay_check.button_pressed = bool(cfg.get_value("gameplay", "save_replay", false))
+		if training_smash_check != null:
+			training_smash_check.button_pressed = bool(cfg.get_value("gameplay", "training_smash_rules", false))
+
+
+func _on_training_smash_toggled(_toggled_on: bool) -> void:
+	_show_rows_for_mode()
 
 
 func _on_fight_pressed() -> void:
 	SystemSFX.play_ui_from(self, "ui_confirm")
 	var tree: SceneTree = get_tree()
+	var ts_rules: bool = (
+		(game_mode == "training" or game_mode == "cpu_training")
+		and training_smash_check != null
+		and training_smash_check.button_pressed
+	)
+	tree.set_meta("training_smash_rules", ts_rules)
 	tree.set_meta("option_rounds_to_win", ROUNDS_CHOICES[rounds_option.selected])
 	tree.set_meta("option_round_time_seconds", TIME_LIMIT_CHOICES[time_limit_option.selected])
 	tree.set_meta("option_rounds_index", rounds_option.selected)
@@ -290,6 +320,8 @@ func _on_fight_pressed() -> void:
 	var cfg := ConfigFile.new()
 	cfg.load(OPTIONS_CFG_PATH)
 	cfg.set_value("gameplay", "save_replay", save_replay_check.button_pressed)
+	if training_smash_check != null:
+		cfg.set_value("gameplay", "training_smash_rules", training_smash_check.button_pressed)
 	cfg.save(OPTIONS_CFG_PATH)
 	tree.change_scene_to_file(character_select_path)
 
@@ -297,3 +329,17 @@ func _on_fight_pressed() -> void:
 func _on_back_pressed() -> void:
 	SystemSFX.play_ui_from(self, "ui_back")
 	get_tree().change_scene_to_file(main_menu_path)
+
+
+func _ensure_ui_fits_screen() -> void:
+	var width: int = int(ProjectSettings.get_setting("display/window/size/viewport_width", 1280))
+	var height: int = int(ProjectSettings.get_setting("display/window/size/viewport_height", 720))
+	var window := get_window()
+	if window != null:
+		window.min_size = Vector2i(maxi(1, width), maxi(1, height))
+
+
+func _apply_background_fallback() -> void:
+	var bg := get_node_or_null("BackgroundColor") as ColorRect
+	if bg != null:
+		bg.visible = true

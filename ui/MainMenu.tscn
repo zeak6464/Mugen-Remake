@@ -19,7 +19,28 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-color = Color(0.06, 0.06, 0.08, 1)
+color = Color(0.05, 0.055, 0.09, 1)
+
+[node name="HeaderAccent" type="ColorRect" parent="." unique_id=1361919416]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 4.0
+grow_horizontal = 2
+color = Color(0.42, 0.58, 0.95, 1)
+mouse_filter = 2
+
+[node name="VignetteBottom" type="ColorRect" parent="." unique_id=1361919417]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -140.0
+grow_horizontal = 2
+grow_vertical = 0
+color = Color(0.02, 0.02, 0.05, 0.55)
+mouse_filter = 2
 
 [node name="Logo" type="Sprite2D" parent="." unique_id=1281717510]
 position = Vector2(813, 482)
@@ -29,11 +50,13 @@ texture = ExtResource("3_nmrkx")
 [node name="TitleLabel" type="Label" parent="." unique_id=1287810162]
 layout_mode = 0
 offset_left = 18.0
-offset_top = 14.0
-offset_right = 338.0
-offset_bottom = 53.0
-theme_override_font_sizes/font_size = 28
-horizontal_alignment = 1
+offset_top = 16.0
+offset_right = 360.0
+offset_bottom = 56.0
+theme_override_colors/font_color = Color(0.93, 0.96, 1, 1)
+theme_override_font_sizes/font_size = 22
+text = "Main Menu"
+horizontal_alignment = 0
 
 [node name="CenterContainer" type="CenterContainer" parent="." unique_id=672242037]
 layout_mode = 1
@@ -41,14 +64,54 @@ anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = 20.0
-offset_top = 255.0
-offset_right = -927.0
-offset_bottom = -130.0
+offset_top = 110.0
+offset_right = -840.0
+offset_bottom = -175.0
 grow_horizontal = 2
 grow_vertical = 2
 
 [node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer" unique_id=354132110]
 layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="MenuCursor" type="Label" parent="." unique_id=170100001]
+visible = false
+layout_mode = 0
+offset_left = 16.0
+offset_top = 120.0
+offset_right = 44.0
+offset_bottom = 154.0
+theme_override_font_sizes/font_size = 28
+text = "▶"
+vertical_alignment = 1
+
+[node name="DescriptionPanel" type="Panel" parent="." unique_id=170100002]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 18.0
+offset_top = -165.0
+offset_right = -18.0
+offset_bottom = -18.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="DescriptionLabel" type="Label" parent="DescriptionPanel" unique_id=170100003]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = 18.0
+offset_right = -24.0
+offset_bottom = -18.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 34
+text = "Select a mode."
+vertical_alignment = 1
 
 [node name="TrainingModeButton" type="Button" parent="CenterContainer/VBoxContainer" unique_id=848529132]
 custom_minimum_size = Vector2(320, 36)
@@ -248,6 +311,11 @@ custom_minimum_size = Vector2(320, 36)
 layout_mode = 2
 text = "Preview Tools"
 
+[node name="EditorsShaderButton" type="Button" parent="CenterContainer/VBoxContainer/EditorsSubmenu" unique_id=30008725]
+custom_minimum_size = Vector2(320, 36)
+layout_mode = 2
+text = "Shader Preview"
+
 [node name="EditorsStageButton" type="Button" parent="CenterContainer/VBoxContainer/EditorsSubmenu" unique_id=3000873]
 custom_minimum_size = Vector2(320, 36)
 layout_mode = 2
@@ -371,6 +439,19 @@ text = "  - Commands"
 custom_minimum_size = Vector2(320, 32)
 layout_mode = 2
 text = "  - Preview Tools"
+
+[node name="CharacterEditorShaderButton" type="Button" parent="CenterContainer/VBoxContainer/CharacterEditorSubmenu" unique_id=754610284]
+custom_minimum_size = Vector2(320, 32)
+layout_mode = 2
+text = "  - Shader Preview"
+
+[node name="CharacterEditorSubmenuButtons" type="HBoxContainer" parent="CenterContainer/VBoxContainer/CharacterEditorSubmenu" unique_id=754610285]
+layout_mode = 2
+
+[node name="CharacterEditorBackButton" type="Button" parent="CenterContainer/VBoxContainer/CharacterEditorSubmenu/CharacterEditorSubmenuButtons" unique_id=754610286]
+custom_minimum_size = Vector2(156, 30)
+layout_mode = 2
+text = "Back"
 
 [node name="StageEditorButton" type="Button" parent="CenterContainer/VBoxContainer" unique_id=1224864657]
 custom_minimum_size = Vector2(320, 36)

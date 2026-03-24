@@ -18,7 +18,15 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-color = Color(0.06, 0.06, 0.08, 1)
+color = Color(0.04, 0.05, 0.11, 1)
+
+[node name="HeaderAccent" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 4.0
+grow_horizontal = 2
+color = Color(0.42, 0.58, 0.95, 1)
 
 [node name="MarginContainer" type="MarginContainer" parent="."]
 layout_mode = 1
@@ -36,9 +44,31 @@ theme_override_constants/separation = 16
 
 [node name="TitleLabel" type="Label" parent="MarginContainer/VBoxContainer"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 28
+theme_override_colors/font_color = Color(0.95, 0.97, 1, 1)
+theme_override_font_sizes/font_size = 30
 text = "Match Options"
 horizontal_alignment = 1
+
+[node name="SubtitleLabel" type="Label" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.65, 0.72, 0.88, 1)
+theme_override_font_sizes/font_size = 14
+text = "Rounds · time · replay before the fight"
+horizontal_alignment = 1
+
+[node name="TrainingSmashRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+visible = false
+
+[node name="TrainingSmashLabel" type="Label" parent="MarginContainer/VBoxContainer/TrainingSmashRow"]
+custom_minimum_size = Vector2(180, 0)
+layout_mode = 2
+text = "Smash rules"
+
+[node name="TrainingSmashCheck" type="CheckBox" parent="MarginContainer/VBoxContainer/TrainingSmashRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Stocks & blast zones (draft both fighters when applicable)"
 
 [node name="RoundsRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
 layout_mode = 2

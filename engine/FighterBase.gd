@@ -60,9 +60,11 @@ var sounds_data: Dictionary = {}
 var projectiles_data: Dictionary = {}
 var transformations_data: Dictionary = {}
 var costumes_data: Dictionary = {}
+var parts_data: Dictionary = {}
 var opponent: FighterBase = null
 var collision_scale: float = 1.0
 var mod_directory: String = ""
+var _shader_reapply_callback: Callable = Callable()
 var current_form_id: String = "base"
 var active_form_data: Dictionary = {}
 var current_costume_id: String = "base"
@@ -401,6 +403,7 @@ func inject_character_data(data: Dictionary) -> void:
 	projectiles_data = character_data.get("projectiles", {})
 	transformations_data = character_data.get("transformations", {})
 	costumes_data = character_data.get("costumes", {})
+	parts_data = character_data.get("parts", {})
 	base_physics_data = physics_data.duplicate(true)
 	base_state_data = state_data.duplicate(true)
 	base_sounds_data = sounds_data.duplicate(true)
@@ -477,7 +480,10 @@ func apply_pushback(pushback: Vector3) -> void:
 
 
 func apply_launch_velocity(launch_velocity: Vector3) -> void:
-	velocity = launch_velocity
+	if smash_mode_enabled:
+		velocity += launch_velocity
+	else:
+		velocity = launch_velocity
 
 
 func controller_vel_set(params: Dictionary) -> void:
@@ -1769,7 +1775,9 @@ func get_smash_knockback_multiplier() -> float:
 	if not smash_mode_enabled:
 		return 1.0
 	var weight: float = maxf(1.0, float(physics_data.get("weight", 100)))
-	var percent_mult: float = clampf(1.0 + (smash_percent * 0.018), 1.0, 6.0)
+	# Percent scaling: old cap at 6x made 999% feel like ~300%. Use quadratic tail + high cap.
+	var p: float = smash_percent
+	var percent_mult: float = clampf(1.0 + (p * 0.052) + (p * p * 0.000015), 1.0, 80.0)
 	return percent_mult * (100.0 / weight)
 
 
@@ -1852,6 +1860,15 @@ func get_mod_directory() -> String:
 	return mod_directory
 
 
+func register_mod_shader_reapply(callback: Callable) -> void:
+	_shader_reapply_callback = callback
+
+
+func _reapply_runtime_character_shader() -> void:
+	if _shader_reapply_callback.is_valid():
+		_shader_reapply_callback.call(self)
+
+
 func try_transform(form_id: String) -> bool:
 	if form_id.is_empty() or current_form_id == form_id:
 		return false
@@ -1866,6 +1883,7 @@ func try_transform(form_id: String) -> bool:
 	current_form_id = form_id
 	_try_apply_form_model(form_data)
 	_apply_form_overrides()
+	_reapply_runtime_character_shader()
 	var enter_state: String = str(form_data.get("enter_state", ""))
 	if state_controller != null and not enter_state.is_empty() and state_controller.states_data.has(enter_state):
 		state_controller.change_state(enter_state)
@@ -1890,13 +1908,17 @@ func apply_start_form(form_id: String) -> bool:
 	current_form_id = form_id
 	_try_apply_form_model(form_data)
 	_apply_form_overrides()
+	_reapply_runtime_character_shader()
 	return true
 
 
 func apply_start_costume(costume_id: String) -> bool:
 	if costume_id.is_empty() or costume_id == "base":
+		var was_non_base: bool = current_costume_id != "base"
 		current_costume_id = "base"
 		active_costume_data = {}
+		if was_non_base:
+			_reapply_runtime_character_shader()
 		return true
 	if costume_id == current_costume_id:
 		return true
@@ -1915,6 +1937,7 @@ func apply_start_costume(costume_id: String) -> bool:
 	current_costume_id = resolved_key
 	_try_apply_costume_model(costume_data)
 	_apply_costume_visual_overrides()
+	_reapply_runtime_character_shader()
 	return true
 
 
@@ -2052,14 +2075,16 @@ func play_state_animation(animation_name: String, should_loop: bool = true) -> b
 	if animation_name.is_empty():
 		return false
 	if animation_player != null:
-		var anim: Animation = animation_player.get_animation(animation_name)
-		if anim != null:
-			_set_animation_loop_mode(animation_player, animation_name, should_loop)
-			animation_player.play(animation_name)
-			return true
-		if animation_player.get_animation_list().size() == 1:
-			var fallback_anim: String = str(animation_player.get_animation_list()[0])
-			anim = animation_player.get_animation(fallback_anim)
+		if animation_player.has_animation(animation_name):
+			var anim: Animation = animation_player.get_animation(animation_name)
+			if anim != null:
+				_set_animation_loop_mode(animation_player, animation_name, should_loop)
+				animation_player.play(animation_name)
+				return true
+		var list: PackedStringArray = animation_player.get_animation_list()
+		if list.size() == 1 and animation_player.has_animation(list[0]):
+			var fallback_anim: String = str(list[0])
+			var anim: Animation = animation_player.get_animation(fallback_anim)
 			if anim != null:
 				_set_animation_loop_mode(animation_player, fallback_anim, should_loop)
 				animation_player.play(fallback_anim)
@@ -2068,14 +2093,16 @@ func play_state_animation(animation_name: String, should_loop: bool = true) -> b
 	for player_node in players:
 		if player_node is AnimationPlayer:
 			var player := player_node as AnimationPlayer
-			var anim: Animation = player.get_animation(animation_name)
-			if anim != null:
-				_set_animation_loop_mode(player, animation_name, should_loop)
-				player.play(animation_name)
-				return true
-			if player.get_animation_list().size() == 1:
-				var nested_fallback: String = str(player.get_animation_list()[0])
-				anim = player.get_animation(nested_fallback)
+			if player.has_animation(animation_name):
+				var anim: Animation = player.get_animation(animation_name)
+				if anim != null:
+					_set_animation_loop_mode(player, animation_name, should_loop)
+					player.play(animation_name)
+					return true
+			var list: PackedStringArray = player.get_animation_list()
+			if list.size() == 1 and player.has_animation(list[0]):
+				var nested_fallback: String = str(list[0])
+				var anim: Animation = player.get_animation(nested_fallback)
 				if anim != null:
 					_set_animation_loop_mode(player, nested_fallback, should_loop)
 					player.play(nested_fallback)
@@ -2637,6 +2664,7 @@ func _restore_base_form_data() -> void:
 	if current_costume_id != "base" and not active_costume_data.is_empty():
 		_try_apply_costume_model(active_costume_data)
 		_apply_costume_visual_overrides()
+	_reapply_runtime_character_shader()
 
 
 func _merge_dictionary_overrides(base_dict: Dictionary, overrides: Dictionary) -> Dictionary:
@@ -2938,12 +2966,26 @@ func _apply_locomotion() -> void:
 		return
 
 	var state_info: Dictionary = state_controller.get_current_state_data()
+	var state_id: String = state_controller.current_state
+	# Crouch must run before _state_allows_movement: default crouch has allow_movement false, so we would
+	# return early and never process "release down -> idle", leaving the fighter stuck in crouch.
+	var down_input: float = command_interpreter.get_latest_raw_direction().y
+	var holding_down: bool = down_input > walk_deadzone
+	if state_controller.states_data.has("crouch"):
+		if holding_down and (state_id == "idle" or state_id == "walk"):
+			state_controller.change_state("crouch")
+			state_id = "crouch"
+		elif not holding_down and state_id == "crouch":
+			state_controller.change_state("idle")
+			state_id = state_controller.current_state
+	state_info = state_controller.get_current_state_data()
+
 	if not _state_allows_movement(state_info):
 		velocity.x = move_toward(velocity.x, 0.0, default_walk_speed * 0.35)
 		previous_move_direction = 0
 		return
 
-	var state_id: String = state_controller.current_state
+	state_id = state_controller.current_state
 	var move_input: float = command_interpreter.get_latest_raw_direction().x
 	var grounded: bool = _is_grounded_for_jump()
 	var frame_now: int = int(Engine.get_physics_frames())
@@ -2966,17 +3008,6 @@ func _apply_locomotion() -> void:
 			run_entered_at_frame = frame_now
 		last_tap_direction = move_direction
 		last_tap_frame = frame_now
-
-	# Crouch: hold down -> crouch; release -> idle
-	var down_input: float = command_interpreter.get_latest_raw_direction().y
-	var holding_down: bool = down_input > walk_deadzone
-	if state_controller.states_data.has("crouch"):
-		if holding_down and (state_id == "idle" or state_id == "walk"):
-			state_controller.change_state("crouch")
-			state_id = "crouch"
-		elif not holding_down and state_id == "crouch":
-			state_controller.change_state("idle")
-			state_id = state_controller.current_state
 
 	# Keep locomotion state in sync with movement input so walk/run animations play.
 	if state_id != "run" and state_id != "crouch":
@@ -3118,6 +3149,8 @@ func _can_block_hit(hit_data: Dictionary) -> bool:
 
 
 func _apply_jump_and_gravity(delta: float) -> void:
+	if state_controller == null:
+		return
 	var gravity: float = default_gravity
 	if runtime_gravity_override >= 0.0:
 		gravity = runtime_gravity_override
@@ -3131,6 +3164,12 @@ func _apply_jump_and_gravity(delta: float) -> void:
 	var holding_down: bool = command_interpreter != null and command_interpreter.get_latest_raw_direction().y > walk_deadzone
 	var jump_just_pressed: bool = _consume_jump_press()
 	var jumped_this_frame: bool = false
+
+	# Land from air: return to idle so grounded locomotion / attacks work again.
+	var land_cs: String = state_controller.current_state
+	if grounded and (land_cs == "fall" or land_cs == "jump") and velocity.y <= 0.0:
+		if state_controller.states_data.has("idle"):
+			state_controller.change_state("idle")
 
 	if grounded:
 		if juggle_points_used > 0:
@@ -3155,8 +3194,24 @@ func _apply_jump_and_gravity(delta: float) -> void:
 		var effective_max_fall: float = fast_fall_speed if holding_down and velocity.y < 0.0 else max_fall_speed
 		velocity.y = maxf(velocity.y, -effective_max_fall)
 
+	if jumped_this_frame:
+		_try_play_jump_state_animation()
+	elif state_controller.current_state == "jump" and not grounded and velocity.y <= 0.0:
+		if state_controller.states_data.has("fall"):
+			state_controller.change_state("fall")
+
+
+func _try_play_jump_state_animation() -> void:
+	if state_controller == null:
+		return
+	if not state_controller.states_data.has("jump"):
+		return
+	state_controller.change_state("jump")
+
 
 func _can_jump() -> bool:
+	if state_controller == null:
+		return false
 	var state_info: Dictionary = state_controller.get_current_state_data()
 	if state_info.has("allow_jump"):
 		return bool(state_info["allow_jump"])

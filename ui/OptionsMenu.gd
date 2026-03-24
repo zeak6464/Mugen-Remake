@@ -69,8 +69,8 @@ const DEFAULT_SHOW_INPUT_BUFFER: bool = false
 @onready var back_button: Button = $MarginContainer/VBoxContainer/BottomButtons/BackButton
 
 func _ready() -> void:
-	UISkin.ensure_ui_fits_screen()
-	UISkin.apply_background(self, "options_menu_bg")
+	_ensure_ui_fits_screen()
+	_apply_background_fallback()
 	_build_difficulty_options()
 	_build_time_limit_options()
 	_build_smash_stock_options()
@@ -96,6 +96,20 @@ func _ready() -> void:
 	_load_and_apply_settings()
 	status_label.text = ""
 	_ensure_focus_modes()
+
+
+func _ensure_ui_fits_screen() -> void:
+	var width: int = int(ProjectSettings.get_setting("display/window/size/viewport_width", 1280))
+	var height: int = int(ProjectSettings.get_setting("display/window/size/viewport_height", 720))
+	var window := get_window()
+	if window != null:
+		window.min_size = Vector2i(maxi(1, width), maxi(1, height))
+
+
+func _apply_background_fallback() -> void:
+	var bg := get_node_or_null("BackgroundColor") as ColorRect
+	if bg != null:
+		bg.visible = true
 	difficulty_option.grab_focus()
 
 

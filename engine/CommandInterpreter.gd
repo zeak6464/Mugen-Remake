@@ -1,6 +1,8 @@
 extends Node
 class_name CommandInterpreter
 
+const JoypadMotionAssist = preload("res://engine/JoypadMotionAssist.gd")
+
 signal input_buffer_updated
 signal command_matched(command_id: String, command_entry: Dictionary)
 
@@ -61,6 +63,12 @@ var last_matched_command_id: String = ""
 var last_matched_command_frame: int = -999999
 var latest_raw_direction: Vector2 = Vector2.ZERO
 
+## When enabled and the engine exposes per-joypad motion APIs, blends gravity tilt into the move vector.
+@export var joy_motion_assist_enabled: bool = true
+## Device from Controls (user://options.cfg joypad_device_p*). -1 = first connected pad.
+@export var joy_motion_assist_device_id: int = -1
+@export var joy_motion_assist_blend: float = 0.35
+
 
 func set_fighter(p_fighter: Node) -> void:
 	fighter = p_fighter
@@ -72,6 +80,13 @@ func set_facing_direction(is_facing_right: bool) -> void:
 
 func set_command_data(data: Dictionary) -> void:
 	command_data = data.duplicate(true)
+
+
+func configure_motion_assist(enabled: bool, preferred_device_id: int, blend: float = -1.0) -> void:
+	joy_motion_assist_enabled = enabled
+	joy_motion_assist_device_id = preferred_device_id
+	if blend >= 0.0:
+		joy_motion_assist_blend = blend
 
 
 func set_input_mode(mode: InputMode) -> void:
@@ -388,7 +403,10 @@ func _read_direction_from_actions() -> Vector2:
 		up_strength = Input.get_action_strength(action_up)
 	var x: float = right_strength - left_strength
 	var y: float = down_strength - up_strength
-	return Vector2(x, y)
+	var base := Vector2(x, y)
+	if joy_motion_assist_enabled:
+		base = JoypadMotionAssist.apply_direction_blend(base, joy_motion_assist_device_id, joy_motion_assist_blend)
+	return base
 
 
 func _read_pressed_buttons() -> Array[String]:
@@ -448,6 +466,7 @@ func _evaluate_commands() -> void:
 		last_matched_command_id = command_id
 		last_matched_command_frame = frame_counter
 		command_matched.emit(command_id, entry)
+		return
 
 
 func _get_command_entries() -> Array:

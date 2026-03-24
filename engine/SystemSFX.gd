@@ -57,6 +57,9 @@ const MENU_MUSIC_PATHS: Dictionary = {
 	"charactersel": ["res://sounds/Menu/charactersel.mp3"],
 	"mapsel": ["res://sounds/Menu/mapsel.mp3"]
 }
+const UI_SKIN_AUDIO_DIR: String = "user://ui-skin/audio/ui/"
+const BATTLE_SKIN_AUDIO_DIR: String = "user://ui-skin/audio/battle/"
+const SKIN_AUDIO_EXTS: Array[String] = [".ogg", ".wav", ".mp3"]
 
 var ui_player: AudioStreamPlayer = null
 var battle_player: AudioStreamPlayer = null
@@ -124,7 +127,7 @@ static func stop_menu_music_from(context: Node) -> void:
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	UISkin.ensure_skin_dirs()
+	_ensure_skin_audio_dirs()
 	_ensure_players()
 
 
@@ -159,7 +162,7 @@ func _play_event(player: AudioStreamPlayer, tone_map: Dictionary, category: Stri
 		return
 	var tone_data: Dictionary = tone_map.get(event_id, {})
 	var volume_db: float = float(tone_data.get("volume_db", -14.0))
-	var custom_stream = UISkin.get_audio_stream(category, event_id)
+	var custom_stream = _get_skin_audio_stream(category, event_id)
 	if custom_stream != null and custom_stream is AudioStream:
 		player.stream = custom_stream
 		player.volume_db = volume_db
@@ -304,3 +307,30 @@ func _resolve_imported_resource_path(source_path: String) -> String:
 	if cfg.load(import_path) != OK:
 		return ""
 	return str(cfg.get_value("remap", "path", "")).strip_edges()
+
+
+func _ensure_skin_audio_dirs() -> void:
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(UI_SKIN_AUDIO_DIR))
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(BATTLE_SKIN_AUDIO_DIR))
+
+
+func _get_skin_audio_stream(category: String, event_id: String):
+	var cat: String = category.strip_edges().to_lower()
+	var event_name: String = event_id.strip_edges()
+	if event_name.is_empty():
+		return null
+	var base_dir: String = UI_SKIN_AUDIO_DIR if cat == "ui" else BATTLE_SKIN_AUDIO_DIR
+	var path_no_ext: String = "%s%s" % [base_dir, event_name]
+	var audio_path: String = _find_existing_skin_audio_file(path_no_ext)
+	if audio_path.is_empty():
+		return null
+	var stream = load(audio_path)
+	return stream if stream is AudioStream else null
+
+
+func _find_existing_skin_audio_file(base_path_no_ext: String) -> String:
+	for ext in SKIN_AUDIO_EXTS:
+		var candidate: String = "%s%s" % [base_path_no_ext, ext]
+		if FileAccess.file_exists(candidate):
+			return candidate
+	return ""

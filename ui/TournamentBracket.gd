@@ -31,7 +31,8 @@ func _ready() -> void:
 	if tournament_over and round_results.size() > 0:
 		var champ_idx: int = int(round_results[round_results.size() - 1])
 		if champ_idx >= 0 and champ_idx < entrants.size():
-			champion_name = str(entrants[champ_idx].get("mod", "Unknown"))
+			var ce: Dictionary = entrants[champ_idx]
+			champion_name = str(ce.get("mod_display", ce.get("mod", "Unknown")))
 		else:
 			champion_name = "Unknown"
 	_build_bracket_display(n)
@@ -77,7 +78,8 @@ func _get_opponents(num_entrants: int, match_idx: int, results: Array) -> Array:
 func _entrant_name(idx: int) -> String:
 	if idx < 0 or idx >= entrants.size():
 		return "?"
-	return str(entrants[idx].get("mod", "?"))
+	var ent: Dictionary = entrants[idx]
+	return str(ent.get("mod_display", ent.get("mod", "?")))
 
 
 func _build_bracket_display(num_entrants: int) -> void:

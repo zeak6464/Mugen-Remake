@@ -68,6 +68,16 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.0352941, 0.0470588, 0.0784314, 1)
 
+[node name="HeaderAccent" type="ColorRect" parent="UI/Root" unique_id=151895519]
+z_index = 24
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 4.0
+grow_horizontal = 2
+mouse_filter = 2
+color = Color(0.42, 0.58, 0.95, 1)
+
 [node name="BackdropTopGlow" type="ColorRect" parent="UI/Root" unique_id=543940789]
 layout_mode = 1
 anchors_preset = 10
@@ -187,7 +197,7 @@ offset_top = 10.0
 offset_right = 140.0
 offset_bottom = 36.0
 theme_override_font_sizes/font_size = 20
-text = "P1 ROSTER"
+text = "1P"
 vertical_alignment = 1
 
 [node name="RosterScroll" type="Control" parent="UI/Root/Player1UI/TopStripPanel" unique_id=1082596094]
@@ -258,7 +268,7 @@ anchor_right = 1.0
 offset_bottom = 30.0
 grow_horizontal = 2
 theme_override_font_sizes/font_size = 24
-text = "PLAYER 1"
+text = "1P"
 vertical_alignment = 1
 
 [node name="PreviewFrame" type="Panel" parent="UI/Root/Player1UI/P1Panel/P1VBox" unique_id=1101695131]
@@ -313,10 +323,10 @@ vertical_alignment = 1
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
-offset_left = 620.0
-offset_top = -66.0
-offset_right = 686.0
-offset_bottom = -36.0
+offset_left = 33.0
+offset_top = -202.0
+offset_right = 99.0
+offset_bottom = -172.0
 grow_horizontal = 2
 theme_override_constants/separation = 8
 
@@ -324,11 +334,12 @@ theme_override_constants/separation = 8
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
-offset_left = -23.0
-offset_top = -63.0
-offset_right = 37.0
-offset_bottom = -35.0
+offset_left = 28.0
+offset_top = -14.0
+offset_right = -6.0
+offset_bottom = 42.0
 grow_horizontal = 2
+theme_override_font_sizes/font_size = 18
 text = "P1 Cursor"
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -339,7 +350,7 @@ anchors_preset = 12
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_top = -102.0
+offset_top = -112.0
 grow_horizontal = 2
 grow_vertical = 0
 
@@ -348,32 +359,55 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 10.0
-offset_top = 8.0
-offset_right = -10.0
-offset_bottom = -8.0
+offset_left = 12.0
+offset_top = 10.0
+offset_right = -12.0
+offset_bottom = -10.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="FolderTitleP1" type="Label" parent="UI/Root/Player1UI/P1Panel/P1VBox/CharacterFolderPanelP1/FolderP1Root" unique_id=1507770560]
+[node name="FolderTitleRowP1" type="HBoxContainer" parent="UI/Root/Player1UI/P1Panel/P1VBox/CharacterFolderPanelP1/FolderP1Root" unique_id=1507770559]
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
-offset_bottom = 22.0
+offset_bottom = 38.0
 grow_horizontal = 2
-theme_override_font_sizes/font_size = 12
-text = "P1 Character Folder"
-horizontal_alignment = 1
+theme_override_constants/separation = 16
+
+[node name="FolderSummaryP1" type="RichTextLabel" parent="UI/Root/Player1UI/P1Panel/P1VBox/CharacterFolderPanelP1/FolderP1Root/FolderTitleRowP1" unique_id=1507770560]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/default_color = Color(0.9, 0.93, 1, 1)
+theme_override_font_sizes/normal_font_size = 14
+bbcode_enabled = true
+text = "P1 —"
+scroll_active = false
+autowrap_mode = 2
+shortcut_keys_enabled = false
+
+[node name="FolderHintsP1" type="RichTextLabel" parent="UI/Root/Player1UI/P1Panel/P1VBox/CharacterFolderPanelP1/FolderP1Root/FolderTitleRowP1" unique_id=1507770561]
+custom_minimum_size = Vector2(300, 34)
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 4
+theme_override_colors/default_color = Color(0.55, 0.64, 0.82, 1)
+theme_override_font_sizes/normal_font_size = 13
+bbcode_enabled = true
+text = " "
+scroll_active = false
+autowrap_mode = 0
+shortcut_keys_enabled = false
+horizontal_alignment = 2
+vertical_alignment = 1
 
 [node name="VariantP1Host" type="ScrollContainer" parent="UI/Root/Player1UI/P1Panel/P1VBox/CharacterFolderPanelP1/FolderP1Root" unique_id=1527344416]
 layout_mode = 1
-anchors_preset = 12
-anchor_top = 1.0
+anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_top = -52.0
+offset_top = 42.0
 grow_horizontal = 2
-grow_vertical = 0
+grow_vertical = 2
 vertical_scroll_mode = 0
 
 [node name="VariantRowP1" type="HBoxContainer" parent="UI/Root/Player1UI/P1Panel/P1VBox/CharacterFolderPanelP1/FolderP1Root/VariantP1Host" unique_id=1276913035]
@@ -412,7 +446,7 @@ offset_right = -16.0
 offset_bottom = 36.0
 grow_horizontal = 0
 theme_override_font_sizes/font_size = 20
-text = "P2 ROSTER"
+text = "COM"
 horizontal_alignment = 2
 vertical_alignment = 1
 
@@ -484,7 +518,7 @@ anchor_right = 1.0
 offset_bottom = 30.0
 grow_horizontal = 2
 theme_override_font_sizes/font_size = 24
-text = "PLAYER 2"
+text = "COM"
 horizontal_alignment = 2
 vertical_alignment = 1
 
@@ -541,10 +575,10 @@ vertical_alignment = 1
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
-offset_left = -637.0
-offset_top = 714.0
-offset_right = -637.0
-offset_bottom = 744.0
+offset_left = -37.0
+offset_top = 720.0
+offset_right = -37.0
+offset_bottom = 750.0
 grow_horizontal = 2
 theme_override_constants/separation = 8
 alignment = 2
@@ -554,10 +588,11 @@ layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
 offset_left = 4.0
-offset_top = 569.0
+offset_top = -13.0
 offset_right = 4.0
-offset_bottom = 597.0
+offset_bottom = 43.0
 grow_horizontal = 2
+theme_override_font_sizes/font_size = 18
 text = "P2 Cursor"
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -568,7 +603,7 @@ anchors_preset = 12
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_top = -102.0
+offset_top = -112.0
 grow_horizontal = 2
 grow_vertical = 0
 
@@ -577,32 +612,55 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 10.0
-offset_top = 8.0
-offset_right = -10.0
-offset_bottom = -8.0
+offset_left = 12.0
+offset_top = 10.0
+offset_right = -12.0
+offset_bottom = -10.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="FolderTitleP2" type="Label" parent="UI/Root/Player2UI/P2Panel/P2VBox/CharacterFolderPanelP2/FolderP2Root" unique_id=1659955556]
+[node name="FolderTitleRowP2" type="HBoxContainer" parent="UI/Root/Player2UI/P2Panel/P2VBox/CharacterFolderPanelP2/FolderP2Root" unique_id=1659955555]
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
-offset_bottom = 22.0
+offset_bottom = 38.0
 grow_horizontal = 2
-theme_override_font_sizes/font_size = 12
-text = "P2 Character Folder"
-horizontal_alignment = 1
+theme_override_constants/separation = 16
+
+[node name="FolderSummaryP2" type="RichTextLabel" parent="UI/Root/Player2UI/P2Panel/P2VBox/CharacterFolderPanelP2/FolderP2Root/FolderTitleRowP2" unique_id=1659955556]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/default_color = Color(0.9, 0.93, 1, 1)
+theme_override_font_sizes/normal_font_size = 14
+bbcode_enabled = true
+text = "P2 —"
+scroll_active = false
+autowrap_mode = 2
+shortcut_keys_enabled = false
+
+[node name="FolderHintsP2" type="RichTextLabel" parent="UI/Root/Player2UI/P2Panel/P2VBox/CharacterFolderPanelP2/FolderP2Root/FolderTitleRowP2" unique_id=1659955557]
+custom_minimum_size = Vector2(300, 34)
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 4
+theme_override_colors/default_color = Color(0.55, 0.64, 0.82, 1)
+theme_override_font_sizes/normal_font_size = 13
+bbcode_enabled = true
+text = " "
+scroll_active = false
+autowrap_mode = 0
+shortcut_keys_enabled = false
+horizontal_alignment = 2
+vertical_alignment = 1
 
 [node name="VariantP2Host" type="ScrollContainer" parent="UI/Root/Player2UI/P2Panel/P2VBox/CharacterFolderPanelP2/FolderP2Root" unique_id=736579329]
 layout_mode = 1
-anchors_preset = 12
-anchor_top = 1.0
+anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_top = -52.0
+offset_top = 42.0
 grow_horizontal = 2
-grow_vertical = 0
+grow_vertical = 2
 vertical_scroll_mode = 0
 
 [node name="VariantRowP2" type="HBoxContainer" parent="UI/Root/Player2UI/P2Panel/P2VBox/CharacterFolderPanelP2/FolderP2Root/VariantP2Host" unique_id=1251247593]

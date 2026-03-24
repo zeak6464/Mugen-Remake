@@ -1,8 +1,11 @@
 extends Control
 
 const RING_MENU_SCENE: PackedScene = preload("res://ui/components/RingMenu.tscn")
+const OPTIONS_CFG_PATH: String = "user://options.cfg"
+const OPTIONS_SECTION_STAGE: String = "stage_select"
 
 @export var stages_roots: Array[String] = ["user://stages/", "res://stages/"]
+@export var music_scan_roots: Array[String] = ["user://sounds/", "res://sounds/"]
 @export var training_scene_path: String = "res://stages/TestArena.tscn"
 @export var tournament_bracket_scene_path: String = "res://ui/TournamentBracket.tscn"
 @export var grid_columns: int = 5
@@ -12,6 +15,7 @@ const RING_MENU_SCENE: PackedScene = preload("res://ui/components/RingMenu.tscn"
 @onready var stage_preview: TextureRect = $MarginContainer/VBoxContainer/PreviewPanel/PreviewRow/StagePreview
 @onready var selected_stage_label: Label = $MarginContainer/VBoxContainer/PreviewPanel/PreviewRow/PreviewInfo/SelectedStageLabel
 @onready var cursor_hint_label: Label = $MarginContainer/VBoxContainer/PreviewPanel/PreviewRow/PreviewInfo/CursorHintLabel
+@onready var bgm_option_button: OptionButton = $MarginContainer/VBoxContainer/PreviewPanel/PreviewRow/PreviewInfo/BgmRow/BgmOptionButton
 @onready var grid_container: Control = $MarginContainer/VBoxContainer/GridPanel/GridScroll/GridContainer
 @onready var status_label: Label = $MarginContainer/VBoxContainer/StatusLabel
 @onready var back_button: Button = $MarginContainer/VBoxContainer/BottomRow/BackButton
@@ -30,10 +34,12 @@ var preview_model: Node3D = null
 var preview_camera: Camera3D = null
 var stage_ring_menu: RingMenu = null
 var stage_ring_syncing: bool = false
+var _bgm_populate_syncing: bool = false
 
 
 func _ready() -> void:
 	UISkin.ensure_ui_fits_screen()
+	UISkin.attach_focus_arrow(self)
 	UISkin.apply_background(self, "stage_select_bg")
 	SystemSFX.play_menu_music_from(self, "mapsel", true, -8.0)
 	rng.randomize()
@@ -43,6 +49,9 @@ func _ready() -> void:
 	_scan_stages()
 	_build_stage_tiles()
 	_build_stage_grid()
+	if bgm_option_button != null:
+		bgm_option_button.item_selected.connect(_on_bgm_item_selected)
+	_populate_bgm_options()
 	if use_stage_ring_menu:
 		_setup_stage_ring_menu()
 	else:
@@ -89,7 +98,18 @@ func _event_action_pressed(event: InputEvent, action: StringName) -> bool:
 
 func _resolve_mode() -> void:
 	game_mode = str(get_tree().get_meta("game_mode", "training")).to_lower()
-	if game_mode != "arcade" and game_mode != "versus" and game_mode != "smash" and game_mode != "team" and game_mode != "survival" and game_mode != "watch" and game_mode != "online" and game_mode != "coop" and game_mode != "tournament":
+	if (
+		game_mode != "arcade"
+		and game_mode != "versus"
+		and game_mode != "smash"
+		and game_mode != "team"
+		and game_mode != "survival"
+		and game_mode != "watch"
+		and game_mode != "online"
+		and game_mode != "coop"
+		and game_mode != "tournament"
+		and game_mode != "cpu_training"
+	):
 		game_mode = "training"
 	match game_mode:
 		"arcade":
@@ -110,6 +130,8 @@ func _resolve_mode() -> void:
 			instruction_label.text = "Tournament - Select stage"
 		"online":
 			instruction_label.text = "Online"
+		"cpu_training":
+			instruction_label.text = "CPU Training"
 		_:
 			instruction_label.text = "Training Mode"
 
@@ -121,13 +143,16 @@ func _scan_stages() -> void:
 		stage_entries.append(
 			{
 				"name": str(entry.get("name", "")),
+				"display_name": str(entry.get("display_name", entry.get("name", ""))),
 				"folder_path": folder_path,
 				"preview_texture": _load_stage_preview_texture(folder_path),
 				"stage_def": entry.get("stage_def", {}),
 				"model_path": str(entry.get("model_path", ""))
 			}
 		)
-	stage_entries.sort_custom(func(a, b): return str(a.get("name", "")) < str(b.get("name", "")))
+	stage_entries.sort_custom(
+		func(a, b): return str(a.get("display_name", a.get("name", ""))) < str(b.get("display_name", b.get("name", "")))
+	)
 
 
 func _build_stage_tiles() -> void:
@@ -153,7 +178,7 @@ func _build_stage_grid() -> void:
 		if str(tile.get("kind", "")) == "stage":
 			var entry: Dictionary = tile.get("entry", {})
 			var preview_tex: Texture2D = entry.get("preview_texture", null)
-			button.tooltip_text = str(entry.get("name", "Unknown Stage"))
+			button.tooltip_text = str(entry.get("display_name", entry.get("name", "Unknown Stage")))
 			if preview_tex != null:
 				button.icon = preview_tex
 				button.expand_icon = true
@@ -223,9 +248,9 @@ func _refresh_ui() -> void:
 	if kind == "stage":
 		var entry: Dictionary = tile.get("entry", {})
 		if stage_locked:
-			selected_stage_label.text = "Stage: %s (Ready)" % str(entry.get("name", "Unknown"))
+			selected_stage_label.text = "Stage: %s (Ready)" % str(entry.get("display_name", entry.get("name", "Unknown")))
 		else:
-			selected_stage_label.text = "Stage: %s" % str(entry.get("name", "Unknown"))
+			selected_stage_label.text = "Stage: %s" % str(entry.get("display_name", entry.get("name", "Unknown")))
 		_update_stage_preview(entry)
 	else:
 		selected_stage_label.text = "Stage: Random%s" % (" (Ready)" if stage_locked else "")
@@ -330,6 +355,7 @@ func _start_selected_stage() -> void:
 	if folder_path.is_empty():
 		return
 	SystemSFX.play_ui_from(self, "ui_confirm")
+	var music_path: String = _get_selected_bgm_path()
 	if game_mode == "online":
 		if NetworkManager.is_host():
 			var p2_mod: String = NetworkManager.get_opponent_character()
@@ -338,17 +364,20 @@ func _start_selected_stage() -> void:
 					status_label.text = "Waiting for opponent to pick character..."
 				return
 			get_tree().set_meta("training_stage_folder", folder_path)
+			get_tree().set_meta("training_stage_music_path", music_path)
 			NetworkManager.start_battle_and_go(
 				str(get_tree().get_meta("training_p1_mod", "")),
 				p2_mod,
 				folder_path,
-				training_scene_path
+				training_scene_path,
+				music_path
 			)
 		else:
 			if status_label != null:
 				status_label.text = "Waiting for host to start..."
 		return
 	get_tree().set_meta("training_stage_folder", folder_path)
+	get_tree().set_meta("training_stage_music_path", music_path)
 	if game_mode == "tournament":
 		get_tree().change_scene_to_file(tournament_bracket_scene_path)
 	else:
@@ -370,7 +399,7 @@ func _resolve_selected_stage_entry() -> Dictionary:
 func _tile_title(tile: Dictionary) -> String:
 	if str(tile.get("kind", "")) == "stage":
 		var entry: Dictionary = tile.get("entry", {})
-		return str(entry.get("name", "Unknown Stage"))
+		return str(entry.get("display_name", entry.get("name", "Unknown Stage")))
 	return "RANDOM"
 
 
@@ -539,3 +568,71 @@ func _parse_vec3(raw_value, fallback: Vector3) -> Vector3:
 	if parts.size() < 3:
 		return fallback
 	return Vector3(float(parts[0]), float(parts[1]), float(parts[2]))
+
+
+func _populate_bgm_options() -> void:
+	if bgm_option_button == null:
+		return
+	_bgm_populate_syncing = true
+	bgm_option_button.clear()
+	bgm_option_button.add_item("Stage default (stage.def)", 0)
+	bgm_option_button.set_item_metadata(0, "")
+	var tracks: Array[Dictionary] = ContentResolver.scan_music_track_entries(music_scan_roots)
+	for t in tracks:
+		var p: String = str(t.get("path", ""))
+		var lbl: String = str(t.get("label", p))
+		if p.is_empty():
+			continue
+		var id: int = bgm_option_button.get_item_count()
+		bgm_option_button.add_item(lbl, id)
+		bgm_option_button.set_item_metadata(id, p)
+	var saved: String = _load_saved_stage_music_path().strip_edges()
+	if not _select_bgm_by_path(saved) and bgm_option_button.get_item_count() > 0:
+		bgm_option_button.select(0)
+	_bgm_populate_syncing = false
+
+
+func _select_bgm_by_path(path: String) -> bool:
+	if bgm_option_button == null:
+		return false
+	if path.is_empty():
+		bgm_option_button.select(0)
+		return true
+	for i in range(bgm_option_button.get_item_count()):
+		var meta = bgm_option_button.get_item_metadata(i)
+		if str(meta).strip_edges() == path:
+			bgm_option_button.select(i)
+			return true
+	return false
+
+
+func _get_selected_bgm_path() -> String:
+	if bgm_option_button == null:
+		return ""
+	var idx: int = bgm_option_button.selected
+	if idx < 0:
+		return ""
+	var meta = bgm_option_button.get_item_metadata(idx)
+	if meta == null:
+		return ""
+	return str(meta).strip_edges()
+
+
+func _load_saved_stage_music_path() -> String:
+	var cfg := ConfigFile.new()
+	if cfg.load(OPTIONS_CFG_PATH) != OK:
+		return ""
+	return str(cfg.get_value(OPTIONS_SECTION_STAGE, "stage_music_path", ""))
+
+
+func _save_stage_music_path(path: String) -> void:
+	var cfg := ConfigFile.new()
+	cfg.load(OPTIONS_CFG_PATH)
+	cfg.set_value(OPTIONS_SECTION_STAGE, "stage_music_path", path)
+	cfg.save(OPTIONS_CFG_PATH)
+
+
+func _on_bgm_item_selected(_index: int) -> void:
+	if _bgm_populate_syncing:
+		return
+	_save_stage_music_path(_get_selected_bgm_path())

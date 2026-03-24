@@ -15,6 +15,30 @@ var projectile_def: Dictionary = {}
 var visual_root: Node3D = null
 var trail_root: GPUParticles3D = null
 
+## Downward acceleration (world units / sec²). 0 = legacy linear motion only.
+## (Named fall_gravity — Area3D reserves "gravity".)
+var fall_gravity: float = 0.0
+## 0 = slide / rest on floor; >0 reflects off static geometry (layer mask below).
+var bounce_restitution: float = 0.0
+var bounce_horizontal_mult: float = 1.0
+## Stop bouncing when vertical speed after bounce is below this (prevents jitter).
+var bounce_min_vertical_speed: float = 0.35
+## -1 = unlimited bounces; 0 = never bounce (same as restitution 0 for count).
+var max_floor_bounces: int = -1
+## True = apply frame-step equations (vy -= g, pos += v) without delta scaling.
+var use_discrete_step: bool = false
+## Optional lifecycle behavior: despawn once bounce count reaches max_floor_bounces.
+var despawn_on_max_bounces: bool = false
+## Optional lifecycle behavior: despawn when bounce speed falls below threshold.
+var despawn_on_settle: bool = true
+## Optional lifecycle behavior: despawn after traveling this distance (<= 0 disables).
+var max_range: float = 0.0
+## Bitmask for floor raycasts (default: layer 1 = static stage meshes / legacy floor).
+var floor_collision_mask: int = 1
+var _half_y: float = 0.25
+var _floor_bounces_done: int = 0
+var _start_position: Vector3 = Vector3.ZERO
+
 
 func setup(owner_node: Node, spawn_position: Vector3, projectile_velocity: Vector3, frames_to_live: int, data: Dictionary, size: Vector3, should_despawn_on_hit: bool, def: Dictionary = {}) -> void:
 	owner_fighter = owner_node
@@ -24,8 +48,25 @@ func setup(owner_node: Node, spawn_position: Vector3, projectile_velocity: Vecto
 	hit_data = data.duplicate(true)
 	despawn_on_hit = should_despawn_on_hit
 	projectile_def = def.duplicate(true)
+	fall_gravity = maxf(0.0, float(projectile_def.get("gravity", 0.0)))
+	var restitution_input: Variant = projectile_def.get("bounce_restitution", projectile_def.get("bounce_damping", 0.0))
+	bounce_restitution = clampf(float(restitution_input), 0.0, 2.0)
+	bounce_horizontal_mult = clampf(float(projectile_def.get("bounce_horizontal_mult", 1.0)), 0.0, 2.0)
+	bounce_min_vertical_speed = maxf(0.0, float(projectile_def.get("bounce_min_vertical_speed", 0.35)))
+	max_floor_bounces = int(projectile_def.get("max_floor_bounces", projectile_def.get("max_bounces", -1)))
+	use_discrete_step = bool(projectile_def.get("use_discrete_step", false))
+	despawn_on_max_bounces = bool(projectile_def.get("despawn_on_max_bounces", projectile_def.has("max_bounces")))
+	despawn_on_settle = bool(projectile_def.get("despawn_on_settle", true))
+	max_range = maxf(0.0, float(projectile_def.get("max_range", 0.0)))
+	floor_collision_mask = maxi(1, int(projectile_def.get("floor_collision_mask", 1)))
+	_half_y = maxf(0.025, size.y * 0.5)
+	_floor_bounces_done = 0
+	_start_position = global_position
 	monitoring = true
 	monitorable = true
+	# Match HitboxSystem hurtboxes (layer 1). Default Area3D mask can miss overlaps.
+	collision_layer = 1
+	collision_mask = 1
 	set_meta("owner_fighter", owner_fighter)
 	_ensure_collision_shape(size)
 	_ensure_visual(size)
@@ -37,7 +78,15 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
-	global_position += velocity * delta
+	if fall_gravity > 0.0:
+		velocity.y -= fall_gravity if use_discrete_step else (fall_gravity * delta)
+	global_position += velocity if use_discrete_step else (velocity * delta)
+	if fall_gravity > 0.0 or bounce_restitution > 0.0:
+		_resolve_floor_collision()
+	if max_range > 0.0 and _start_position.distance_to(global_position) > max_range:
+		projectile_expired.emit(self)
+		queue_free()
+		return
 	_update_visual_facing()
 	_update_trail_direction()
 	frame_count += 1
@@ -111,6 +160,61 @@ func reflect_to(new_owner: Node) -> void:
 	set_meta("owner_fighter", owner_fighter)
 	velocity.x *= -1.0
 	hit_target_ids.clear()
+
+
+func _resolve_floor_collision() -> void:
+	var world := get_world_3d()
+	if world == null:
+		return
+	var space := world.direct_space_state
+	var from := global_position + Vector3(0.0, _half_y + 0.04, 0.0)
+	var to := global_position + Vector3(0.0, -80.0, 0.0)
+	var query := PhysicsRayQueryParameters3D.create(from, to)
+	query.collision_mask = floor_collision_mask
+	var hit: Dictionary = space.intersect_ray(query)
+	if hit.is_empty():
+		return
+	var n: Vector3 = hit.get("normal", Vector3.UP)
+	if n.y < 0.45:
+		return
+	var floor_y: float = hit.position.y
+	var bottom_y: float = global_position.y - _half_y
+	if bottom_y > floor_y + 0.08:
+		return
+	var penetrated_floor: bool = bottom_y < floor_y
+	if penetrated_floor:
+		global_position = hit.position + n * (_half_y + 0.02)
+	var vn: float = velocity.dot(n)
+	if vn >= -0.02:
+		return
+	if bounce_restitution > 0.0:
+		if max_floor_bounces >= 0 and _floor_bounces_done >= max_floor_bounces:
+			if despawn_on_max_bounces:
+				projectile_expired.emit(self)
+				queue_free()
+				return
+			velocity -= vn * n
+			return
+		if use_discrete_step and n.y > 0.85:
+			# Mario-style discrete bounce: vy = -vy * e
+			velocity.y = absf(velocity.y) * bounce_restitution
+		else:
+			velocity = velocity - (1.0 + bounce_restitution) * vn * n
+		velocity.x *= bounce_horizontal_mult
+		velocity.z *= bounce_horizontal_mult
+		_floor_bounces_done += 1
+		if despawn_on_max_bounces and max_floor_bounces >= 0 and _floor_bounces_done >= max_floor_bounces:
+			projectile_expired.emit(self)
+			queue_free()
+			return
+		if n.y > 0.85 and absf(velocity.y) < bounce_min_vertical_speed:
+			if despawn_on_settle:
+				projectile_expired.emit(self)
+				queue_free()
+				return
+			velocity.y = 0.0
+	else:
+		velocity -= vn * n
 
 
 func _ensure_collision_shape(size: Vector3) -> void:

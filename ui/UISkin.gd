@@ -84,6 +84,59 @@ static func apply_background(root_control: Control, texture_name: String) -> voi
 		(background_color_node as CanvasItem).visible = false
 
 
+static func setup_fighting_game_menu_chrome(root_control: Control) -> void:
+	if root_control == null:
+		return
+	layout_legacy_controls(root_control)
+
+
+static func attach_focus_arrow(root_control: Control) -> void:
+	if root_control == null:
+		return
+	var arrow := root_control.get_node_or_null("UISkinFocusArrow") as Label
+	if arrow == null:
+		arrow = Label.new()
+		arrow.name = "UISkinFocusArrow"
+		arrow.text = "▶"
+		arrow.add_theme_font_size_override("font_size", 28)
+		arrow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		arrow.z_index = 200
+		arrow.visible = false
+		root_control.add_child(arrow)
+	var vp := root_control.get_viewport()
+	if vp == null:
+		return
+	# Keep parser-safe across engine patch versions; callers can re-run this on focus moves.
+	_update_focus_arrow_position(root_control, arrow, vp.gui_get_focus_owner())
+
+
+static func _update_focus_arrow_position(root_control: Control, arrow: Label, target: Control) -> void:
+	if root_control == null or arrow == null:
+		return
+	if target == null or not is_instance_valid(target):
+		arrow.visible = false
+		return
+	if not root_control.is_ancestor_of(target):
+		arrow.visible = false
+		return
+	if not target.visible:
+		arrow.visible = false
+		return
+	if target.focus_mode == Control.FOCUS_NONE:
+		arrow.visible = false
+		return
+	var target_rect: Rect2 = target.get_global_rect()
+	var root_rect: Rect2 = root_control.get_global_rect()
+	var arrow_size: Vector2 = arrow.get_combined_minimum_size()
+	if arrow_size.x <= 1.0 or arrow_size.y <= 1.0:
+		arrow_size = Vector2(24.0, 24.0)
+	arrow.position = Vector2(
+		maxf(4.0, target_rect.position.x - root_rect.position.x - 28.0),
+		target_rect.position.y - root_rect.position.y + (target_rect.size.y * 0.5) - (arrow_size.y * 0.5)
+	)
+	arrow.visible = true
+
+
 static func ensure_ui_fits_screen() -> void:
 	var main_loop := Engine.get_main_loop()
 	if not (main_loop is SceneTree):

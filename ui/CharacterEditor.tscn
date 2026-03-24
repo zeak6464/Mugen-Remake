@@ -13,17 +13,48 @@ grow_vertical = 2
 theme = ExtResource("2_theme")
 script = ExtResource("1_character_editor")
 
+[node name="BackgroundColor" type="ColorRect" parent="." unique_id=162140211]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.04, 0.05, 0.1, 1)
+mouse_filter = 2
+
+[node name="HeaderAccent" type="ColorRect" parent="." unique_id=162140213]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 4.0
+grow_horizontal = 2
+color = Color(0.42, 0.58, 0.95, 1)
+mouse_filter = 2
+
 [node name="MarginContainer" type="MarginContainer" parent="." unique_id=652157724]
 anchors_preset = 0
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
 
 [node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer" unique_id=98709736]
 anchors_preset = 0
 size_flags_horizontal = 3
 size_flags_vertical = 3
+theme_override_constants/separation = 10
+
+[node name="ScreenTitle" type="Label" parent="MarginContainer/VBoxContainer" unique_id=98709735]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.94, 0.96, 1, 1)
+theme_override_font_sizes/font_size = 26
+text = "Character Editor"
+horizontal_alignment = 1
 
 [node name="TopRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer" unique_id=1468529365]
 anchors_preset = 0
@@ -616,6 +647,100 @@ size_flags_horizontal = 3
 size_flags_vertical = 3
 bbcode_enabled = true
 scroll_following = true
+
+[node name="ShaderHost" type="Control" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot"]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/ShaderHost"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 8
+
+[node name="ShaderRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/ShaderHost/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="ShaderLabel" type="Label" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/ShaderHost/VBoxContainer/ShaderRow"]
+layout_mode = 2
+text = "Shader"
+
+[node name="ShaderPreviewOption" type="OptionButton" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/ShaderHost/VBoxContainer/ShaderRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ShaderPreviewPathEdit" type="LineEdit" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/ShaderHost/VBoxContainer/ShaderRow"]
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Custom: res://... or mod-relative .gdshader"
+
+[node name="ShaderPreviewRescanButton" type="Button" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/ShaderHost/VBoxContainer/ShaderRow"]
+layout_mode = 2
+text = "Rescan"
+
+[node name="ShaderPreviewSaveDefButton" type="Button" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/ShaderHost/VBoxContainer/ShaderRow"]
+layout_mode = 2
+text = "Save shader + params"
+
+[node name="ShaderHintLabel" type="Label" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/ShaderHost/VBoxContainer"]
+layout_mode = 2
+text = "Use group_uniforms NAME; in .gdshader for section headers. hint_range(min,max,step) → slider + value. sampler2D → dropdown (UV gradient, mod images). 3D: LMB orbit, MMB/RMB/Shift+LMB pan, wheel zoom, Home reset. Save: shader_path + shader_user_uniforms (JSON)."
+autowrap_mode = 3
+
+[node name="ShaderParamsLabel" type="Label" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/ShaderHost/VBoxContainer"]
+layout_mode = 2
+text = "Shader uniforms (auto-discovered)"
+
+[node name="ShaderDynamicScroll" type="ScrollContainer" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/ShaderHost/VBoxContainer"]
+custom_minimum_size = Vector2(0, 200)
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="ShaderDynamicParamsVBox" type="VBoxContainer" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/ShaderHost/VBoxContainer/ShaderDynamicScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+
+[node name="ShaderLiveFeedbackLabel" type="Label" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/ShaderHost/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.45, 0.85, 0.55, 1)
+autowrap_mode = 3
+text = "Live preview: select a shader above, then edit parameters."
+
+[node name="ShaderPreviewViewportContainer" type="SubViewportContainer" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/ShaderHost/VBoxContainer"]
+custom_minimum_size = Vector2(400, 260)
+layout_mode = 2
+size_flags_vertical = 3
+stretch = true
+
+[node name="ShaderPreviewViewport" type="SubViewport" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/ShaderHost/VBoxContainer/ShaderPreviewViewportContainer"]
+handle_input_locally = true
+size = Vector2i(800, 520)
+render_target_update_mode = 4
+
+[node name="ShaderPreviewWorld" type="Node3D" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/ShaderHost/VBoxContainer/ShaderPreviewViewportContainer/ShaderPreviewViewport"]
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/ShaderHost/VBoxContainer/ShaderPreviewViewportContainer/ShaderPreviewViewport/ShaderPreviewWorld"]
+transform = Transform3D(0.866025, -0.353553, 0.353553, 0, 0.707107, 0.707107, -0.5, -0.612372, 0.612372, 0, 2.5, 3)
+
+[node name="ShaderPreviewCamera" type="Camera3D" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/ShaderHost/VBoxContainer/ShaderPreviewViewportContainer/ShaderPreviewViewport/ShaderPreviewWorld"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.15, 3.6)
+current = true
+
+[node name="ShaderPreviewModelRoot" type="Node3D" parent="MarginContainer/VBoxContainer/ContentPanel/EditorsRoot/ShaderHost/VBoxContainer/ShaderPreviewViewportContainer/ShaderPreviewViewport/ShaderPreviewWorld"]
 
 [node name="StatusLabel" type="Label" parent="MarginContainer/VBoxContainer" unique_id=1164158928]
 layout_mode = 0

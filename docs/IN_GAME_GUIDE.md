@@ -1,8 +1,9 @@
 # In-Game Guide
 
-This is the complete player and creator guide for the current game build.
+This is the complete **player and creator** guide for the current build: menus, editors, mod folders, and data-driven systems.
 
-It covers gameplay flow, menus, editors, mod folders, and data-driven systems that are already in the project.
+- **Developer architecture map**: [ENGINE_OVERVIEW.md](ENGINE_OVERVIEW.md)  
+- **All docs**: [README.md](README.md)
 
 ## 1) Game Flow
 
@@ -211,13 +212,18 @@ Sections:
 
 - `Box Tools`
 - `Raw Files`
+- `States`
+- `Commands`
 - `Preview`
 - `Frame Data`
+- `Shader Preview` (3D viewport: pick shader, live preview, **Save to character.def**)
 
 Highlights:
 
 - Box editing uses the dedicated box workflow scene.
 - Frame Data view reads from `states.json`.
+- Shader Preview scans `res://shaders`, mod folders, and `res://mods/*` for `.gdshader`; custom paths supported via the line field.
+- Uniforms are **discovered from the shader** (engine list or `.gdshader` parse). **Save** writes **`shader_user_uniforms`** as one-line JSON plus **`shader_path`**. In battle, **`ModLoader`** merges that JSON over legacy **`shader_rim_*`** keys when present.
 - Persistent hurtboxes are part of box tools workflow.
 
 ## 10) Stage Editor

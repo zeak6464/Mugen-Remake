@@ -28,8 +28,13 @@ func spawn_projectile(projectile_id: String, facing_right: bool, spawn_origin: V
 		spawn_offset.x *= -1.0
 
 	var velocity: Vector3 = _to_vector3(def.get("velocity", Vector3.ZERO))
+	var has_vx: bool = def.has("vx")
+	var vx: float = float(def.get("vx", 0.0))
+	var vy_initial: float = float(def.get("vy_initial", 0.0))
 	var stationary: bool = bool(def.get("stationary", false))
-	if not stationary and velocity.is_zero_approx():
+	if not stationary and has_vx:
+		velocity = Vector3(vx if facing_right else -vx, vy_initial, 0.0)
+	elif not stationary and velocity.is_zero_approx():
 		var speed: float = float(def.get("speed", 8.0))
 		velocity = Vector3(speed if facing_right else -speed, 0.0, 0.0)
 	elif not facing_right and not velocity.is_zero_approx():

@@ -20,72 +20,156 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.05, 0.07, 0.1, 1)
+color = Color(0.0745098, 0.176471, 0.2, 1)
 
-[node name="MarginContainer" type="MarginContainer" parent="." unique_id=729364823]
+[node name="HeaderAccentTop" type="ColorRect" parent="." unique_id=1568935128]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 6.0
+grow_horizontal = 2
+mouse_filter = 2
+color = Color(0.82, 0.86, 0.72, 0.95)
+
+[node name="Chrome" type="Control" parent="." unique_id=729364823]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 20.0
-offset_top = 20.0
-offset_right = -20.0
-offset_bottom = -20.0
+offset_left = 24.0
+offset_top = 24.0
+offset_right = -24.0
+offset_bottom = -24.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer" unique_id=584934098]
-layout_mode = 2
+[node name="MainRow" type="HBoxContainer" parent="Chrome" unique_id=584934098]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
-theme_override_constants/separation = 8
+theme_override_constants/separation = 18
 
-[node name="TopRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer" unique_id=1806056544]
+[node name="LeftPanel" type="Panel" parent="Chrome/MainRow" unique_id=10621901]
+custom_minimum_size = Vector2(500, 0)
+layout_mode = 2
+size_flags_horizontal = 0
+
+[node name="LeftVBox" type="VBoxContainer" parent="Chrome/MainRow/LeftPanel" unique_id=10621902]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 12.0
+offset_top = 12.0
+offset_right = -12.0
+offset_bottom = -12.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 10
+
+[node name="ModTitle" type="Label" parent="Chrome/MainRow/LeftPanel/LeftVBox" unique_id=10621903]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.03, 0.05, 0.08, 0.9)
+theme_override_font_sizes/font_size = 26
+text = "General Tao"
+horizontal_alignment = 1
+clip_text = true
+
+[node name="FormListPanel" type="Panel" parent="Chrome/MainRow/LeftPanel/LeftVBox" unique_id=10621904]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="FormList" type="ItemList" parent="Chrome/MainRow/LeftPanel/LeftVBox/FormListPanel" unique_id=10621905]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = -8.0
+offset_bottom = -8.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(0.08, 0.1, 0.12, 1)
+theme_override_colors/font_selected_color = Color(0.08, 0.1, 0.12, 1)
+theme_override_colors/guide_color = Color(0.15, 0.26, 0.28, 0.45)
+theme_override_constants/v_separation = 8
+theme_override_font_sizes/font_size = 22
+allow_reselect = true
+auto_height = true
+
+[node name="ToolbarRow" type="HBoxContainer" parent="Chrome/MainRow/LeftPanel/LeftVBox" unique_id=1806056544]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 8
 
-[node name="ModOption" type="OptionButton" parent="MarginContainer/VBoxContainer/TopRow" unique_id=1176271214]
+[node name="ModOption" type="OptionButton" parent="Chrome/MainRow/LeftPanel/LeftVBox/ToolbarRow" unique_id=1176271214]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="PrevButton" type="Button" parent="MarginContainer/VBoxContainer/TopRow" unique_id=972449598]
+[node name="PrevButton" type="Button" parent="Chrome/MainRow/LeftPanel/LeftVBox/ToolbarRow" unique_id=972449598]
 custom_minimum_size = Vector2(90, 0)
 layout_mode = 2
 text = "Prev"
 
-[node name="NextButton" type="Button" parent="MarginContainer/VBoxContainer/TopRow" unique_id=1447388283]
+[node name="NextButton" type="Button" parent="Chrome/MainRow/LeftPanel/LeftVBox/ToolbarRow" unique_id=1447388283]
 custom_minimum_size = Vector2(90, 0)
 layout_mode = 2
 text = "Next"
 
-[node name="BackButton" type="Button" parent="MarginContainer/VBoxContainer/TopRow" unique_id=1683178810]
+[node name="BackButton" type="Button" parent="Chrome/MainRow/LeftPanel/LeftVBox/ToolbarRow" unique_id=1683178810]
 custom_minimum_size = Vector2(110, 0)
 layout_mode = 2
 text = "Back"
 
-[node name="StatusLabel" type="Label" parent="MarginContainer/VBoxContainer" unique_id=600183729]
-layout_mode = 2
-text = "Model Viewer"
-
-[node name="AnimationRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer" unique_id=1745051165]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="AnimationLabel" type="Label" parent="MarginContainer/VBoxContainer/AnimationRow" unique_id=1587330928]
-layout_mode = 2
-text = "Animation"
-
-[node name="AnimationOption" type="OptionButton" parent="MarginContainer/VBoxContainer/AnimationRow" unique_id=1969573814]
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="PreviewPanel" type="Panel" parent="MarginContainer/VBoxContainer" unique_id=172522274]
+[node name="RightPanel" type="Panel" parent="Chrome/MainRow" unique_id=10621910]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
-[node name="PreviewViewportContainer" type="SubViewportContainer" parent="MarginContainer/VBoxContainer/PreviewPanel" unique_id=505446082]
+[node name="RightVBox" type="VBoxContainer" parent="Chrome/MainRow/RightPanel" unique_id=10621911]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 12.0
+offset_top = 12.0
+offset_right = -12.0
+offset_bottom = -12.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 10
+
+[node name="StatusLabel" type="Label" parent="Chrome/MainRow/RightPanel/RightVBox" unique_id=600183729]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.96, 0.98, 1)
+theme_override_font_sizes/font_size = 18
+text = "Viewing"
+autowrap_mode = 2
+
+[node name="AnimationRow" type="HBoxContainer" parent="Chrome/MainRow/RightPanel/RightVBox" unique_id=1745051165]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="AnimationLabel" type="Label" parent="Chrome/MainRow/RightPanel/RightVBox/AnimationRow" unique_id=1587330928]
+layout_mode = 2
+text = "Animation"
+
+[node name="AnimationOption" type="OptionButton" parent="Chrome/MainRow/RightPanel/RightVBox/AnimationRow" unique_id=1969573814]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="PreviewPanel" type="Panel" parent="Chrome/MainRow/RightPanel/RightVBox" unique_id=172522274]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="PreviewViewportContainer" type="SubViewportContainer" parent="Chrome/MainRow/RightPanel/RightVBox/PreviewPanel" unique_id=505446082]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -98,26 +182,26 @@ grow_horizontal = 2
 grow_vertical = 2
 stretch = true
 
-[node name="PreviewViewport" type="SubViewport" parent="MarginContainer/VBoxContainer/PreviewPanel/PreviewViewportContainer" unique_id=2009868929]
+[node name="PreviewViewport" type="SubViewport" parent="Chrome/MainRow/RightPanel/RightVBox/PreviewPanel/PreviewViewportContainer" unique_id=2009868929]
 own_world_3d = true
 handle_input_locally = false
-size = Vector2i(1223, 784)
+size = Vector2i(673, 798)
 render_target_update_mode = 4
 
-[node name="PreviewWorld" type="Node3D" parent="MarginContainer/VBoxContainer/PreviewPanel/PreviewViewportContainer/PreviewViewport" unique_id=812832164]
+[node name="PreviewWorld" type="Node3D" parent="Chrome/MainRow/RightPanel/RightVBox/PreviewPanel/PreviewViewportContainer/PreviewViewport" unique_id=812832164]
 
-[node name="DirectionalLight3D" type="DirectionalLight3D" parent="MarginContainer/VBoxContainer/PreviewPanel/PreviewViewportContainer/PreviewViewport/PreviewWorld" unique_id=1633138055]
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="Chrome/MainRow/RightPanel/RightVBox/PreviewPanel/PreviewViewportContainer/PreviewViewport/PreviewWorld" unique_id=1633138055]
 transform = Transform3D(0.90630776, -0.24240388, 0.34618863, 0, 0.81915206, 0.57357645, -0.42261827, -0.5198368, 0.74240386, 0, 0, 0)
 light_energy = 1.2
 
-[node name="OmniLight3D" type="OmniLight3D" parent="MarginContainer/VBoxContainer/PreviewPanel/PreviewViewportContainer/PreviewViewport/PreviewWorld" unique_id=602799267]
+[node name="OmniLight3D" type="OmniLight3D" parent="Chrome/MainRow/RightPanel/RightVBox/PreviewPanel/PreviewViewportContainer/PreviewViewport/PreviewWorld" unique_id=602799267]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.5, 1.8, 2)
 light_energy = 0.7
 
-[node name="Camera3D" type="Camera3D" parent="MarginContainer/VBoxContainer/PreviewPanel/PreviewViewportContainer/PreviewViewport/PreviewWorld" unique_id=62603295]
+[node name="Camera3D" type="Camera3D" parent="Chrome/MainRow/RightPanel/RightVBox/PreviewPanel/PreviewViewportContainer/PreviewViewport/PreviewWorld" unique_id=62603295]
 transform = Transform3D(1, 0, 0, 0, 0.9781476, 0.20791192, 0, -0.20791192, 0.9781476, 0, 0.29534245, 4.736217)
 current = true
 fov = 22.0
 near = 0.01
 
-[node name="ModelRoot" type="Node3D" parent="MarginContainer/VBoxContainer/PreviewPanel/PreviewViewportContainer/PreviewViewport/PreviewWorld" unique_id=615298234]
+[node name="ModelRoot" type="Node3D" parent="Chrome/MainRow/RightPanel/RightVBox/PreviewPanel/PreviewViewportContainer/PreviewViewport/PreviewWorld" unique_id=615298234]

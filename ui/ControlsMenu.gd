@@ -53,6 +53,7 @@ const KEYMAP_ACTIONS: Array[StringName] = [
 @onready var status_label: Label = $MarginContainer/VBoxContainer/StatusLabel
 @onready var back_button: Button = $MarginContainer/VBoxContainer/BottomButtons/BackButton
 
+var motion_assist_check: CheckBox = null
 var keymap_buttons: Dictionary = {}
 var waiting_for_action: StringName = StringName()
 var player_device_option_buttons: Dictionary = {}
@@ -62,9 +63,17 @@ var embedded_mode: bool = false
 
 func _ready() -> void:
 	UISkin.ensure_ui_fits_screen()
+	UISkin.attach_focus_arrow(self)
 	UISkin.apply_background(self, "controls_menu_bg")
+	UISkin.setup_fighting_game_menu_chrome(self)
 	keymap_scroll.follow_focus = true
 	back_button.pressed.connect(_on_back_pressed)
+	motion_assist_check = CheckBox.new()
+	motion_assist_check.text = "Controller motion assist (tilt / gravity when engine supports it)"
+	motion_assist_check.toggled.connect(_on_motion_assist_toggled)
+	var vb: VBoxContainer = $MarginContainer/VBoxContainer
+	vb.add_child(motion_assist_check)
+	vb.move_child(motion_assist_check, 2)
 	_build_keymap_list()
 	_load_keymap_settings()
 	status_label.text = ""
@@ -208,6 +217,8 @@ func _load_keymap_settings() -> void:
 
 	player_selected_device[1] = int(cfg.get_value("input", "joypad_device_p1", -1))
 	player_selected_device[2] = int(cfg.get_value("input", "joypad_device_p2", -1))
+	if motion_assist_check != null:
+		motion_assist_check.button_pressed = bool(cfg.get_value("input", "joy_motion_assist", true))
 	_refresh_device_options()
 
 	var bindings = cfg.get_value("input", "bindings", {})
@@ -241,6 +252,16 @@ func _save_keymap_settings() -> void:
 	cfg.set_value("input", "bindings", bindings)
 	cfg.set_value("input", "joypad_device_p1", int(player_selected_device.get(1, -1)))
 	cfg.set_value("input", "joypad_device_p2", int(player_selected_device.get(2, -1)))
+	if motion_assist_check != null:
+		cfg.set_value("input", "joy_motion_assist", motion_assist_check.button_pressed)
+	cfg.save(SETTINGS_PATH)
+
+
+func _on_motion_assist_toggled(_toggled_on: bool) -> void:
+	var cfg := ConfigFile.new()
+	cfg.load(SETTINGS_PATH)
+	if motion_assist_check != null:
+		cfg.set_value("input", "joy_motion_assist", motion_assist_check.button_pressed)
 	cfg.save(SETTINGS_PATH)
 
 

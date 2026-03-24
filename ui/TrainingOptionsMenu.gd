@@ -46,6 +46,8 @@ var current_is_training_mode: bool = true
 
 func _ready() -> void:
 	UISkin.ensure_ui_fits_screen()
+	var root_control := $Root as Control
+	UISkin.attach_focus_arrow(root_control)
 	_load_sound_settings()
 	resume_button.pressed.connect(
 		func() -> void:

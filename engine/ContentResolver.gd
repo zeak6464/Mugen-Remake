@@ -23,9 +23,33 @@ static func ensure_user_root(root: String) -> void:
 		DirAccess.make_dir_recursive_absolute(root_abs)
 
 
+static func _root_variant_label_for_path(path: String) -> String:
+	var p: String = path.strip_edges()
+	if p.begins_with("user://"):
+		return "User"
+	if p.begins_with("res://"):
+		return "Pack"
+	return "Other"
+
+
+## When the same folder name exists under more than one root, set display_name to "Name (User)" / "Name (Pack)" etc.
+static func apply_duplicate_display_names(
+	entries: Array[Dictionary], name_key: String = "name", path_key: String = "path"
+) -> void:
+	var counts: Dictionary = {}
+	for e in entries:
+		var n: String = str(e.get(name_key, ""))
+		counts[n] = int(counts.get(n, 0)) + 1
+	for e in entries:
+		var n: String = str(e.get(name_key, ""))
+		var disp: String = n
+		if int(counts.get(n, 0)) > 1:
+			disp = "%s (%s)" % [n, _root_variant_label_for_path(str(e.get(path_key, "")))]
+		e["display_name"] = disp
+
+
 static func scan_character_entries(mods_roots: Array[String], mode: String = "playable") -> Array[Dictionary]:
 	var entries: Array[Dictionary] = []
-	var seen_names: Dictionary = {}
 	for root in mods_roots:
 		var normalized_root: String = normalize_root(root)
 		if normalized_root.is_empty():
@@ -37,15 +61,17 @@ static func scan_character_entries(mods_roots: Array[String], mode: String = "pl
 		dir.list_dir_begin()
 		var item: String = dir.get_next()
 		while not item.is_empty():
-			if dir.current_is_dir() and item != "." and item != ".." and not seen_names.has(item):
+			if dir.current_is_dir() and item != "." and item != "..":
 				var mod_path: String = "%s%s/" % [normalized_root, item]
 				var entry: Dictionary = build_character_entry(item, mod_path)
 				if _character_entry_matches_mode(entry, mode):
 					entries.append(entry)
-					seen_names[item] = true
 			item = dir.get_next()
 		dir.list_dir_end()
-	entries.sort_custom(func(a, b): return str(a.get("name", "")) < str(b.get("name", "")))
+	apply_duplicate_display_names(entries, "name", "path")
+	entries.sort_custom(
+		func(a, b): return str(a.get("display_name", a.get("name", ""))) < str(b.get("display_name", b.get("name", "")))
+	)
 	return entries
 
 
@@ -144,7 +170,6 @@ static func find_character_model_path(mod_path: String, def_data: Dictionary = {
 
 static func scan_stage_entries(stages_roots: Array[String]) -> Array[Dictionary]:
 	var entries: Array[Dictionary] = []
-	var seen_names: Dictionary = {}
 	for root in stages_roots:
 		var normalized_root: String = normalize_root(root)
 		if normalized_root.is_empty():
@@ -156,7 +181,7 @@ static func scan_stage_entries(stages_roots: Array[String]) -> Array[Dictionary]
 		dir.list_dir_begin()
 		var item: String = dir.get_next()
 		while not item.is_empty():
-			if dir.current_is_dir() and item != "." and item != ".." and not seen_names.has(item):
+			if dir.current_is_dir() and item != "." and item != "..":
 				var folder_path: String = "%s%s" % [normalized_root, item]
 				if is_stage_folder(folder_path):
 					var stage_def: Dictionary = load_stage_def("%s/stage.def" % folder_path)
@@ -169,10 +194,12 @@ static func scan_stage_entries(stages_roots: Array[String]) -> Array[Dictionary]
 							"model_path": find_stage_model_path(folder_path, stage_def)
 						}
 					)
-					seen_names[item] = true
 			item = dir.get_next()
 		dir.list_dir_end()
-	entries.sort_custom(func(a, b): return str(a.get("name", "")) < str(b.get("name", "")))
+	apply_duplicate_display_names(entries, "name", "folder_path")
+	entries.sort_custom(
+		func(a, b): return str(a.get("display_name", a.get("name", ""))) < str(b.get("display_name", b.get("name", "")))
+	)
 	return entries
 
 
@@ -357,3 +384,70 @@ static func _find_animation_player_recursive(root: Node) -> AnimationPlayer:
 		if found != null:
 			return found
 	return null
+
+
+const MUSIC_FILE_EXTENSIONS: Array[String] = [".ogg", ".wav", ".mp3"]
+
+
+## Recursively collect playable music paths under each root (e.g. user://sounds/, res://sounds/).
+static func scan_music_track_entries(roots: Array[String], max_depth: int = 4) -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	var seen: Dictionary = {}
+	for root in roots:
+		var n: String = normalize_root(root)
+		if n.is_empty():
+			continue
+		ensure_user_root(n)
+		_scan_music_dir_recursive(n, out, seen, max_depth)
+	out.sort_custom(
+		func(a, b): return str(a.get("label", "")) < str(b.get("label", ""))
+	)
+	return out
+
+
+static func _open_dir_for_scan(virtual_path: String) -> DirAccess:
+	var p: String = normalize_root(virtual_path)
+	if p.begins_with("user://"):
+		var abs_p: String = ProjectSettings.globalize_path(p)
+		if abs_p.is_empty():
+			return null
+		return DirAccess.open(abs_p)
+	return DirAccess.open(p)
+
+
+static func _scan_music_dir_recursive(dir_virtual: String, out: Array, seen: Dictionary, depth: int) -> void:
+	if depth < 0:
+		return
+	var normalized: String = normalize_root(dir_virtual)
+	var d: DirAccess = _open_dir_for_scan(normalized)
+	if d == null:
+		return
+	d.list_dir_begin()
+	var item: String = d.get_next()
+	while not item.is_empty():
+		if item == "." or item == "..":
+			item = d.get_next()
+			continue
+		var child_virtual: String = "%s%s" % [normalized, item]
+		if d.current_is_dir():
+			_scan_music_dir_recursive(child_virtual, out, seen, depth - 1)
+		else:
+			var lower: String = item.to_lower()
+			for ext in MUSIC_FILE_EXTENSIONS:
+				if lower.ends_with(ext):
+					if seen.has(child_virtual):
+						break
+					seen[child_virtual] = true
+					out.append({"path": child_virtual, "label": _music_track_display_label(child_virtual)})
+					break
+		item = d.get_next()
+	d.list_dir_end()
+
+
+static func _music_track_display_label(full_path: String) -> String:
+	var s: String = full_path
+	for prefix in ["user://sounds/", "res://sounds/"]:
+		if s.begins_with(prefix):
+			return s.substr(prefix.length())
+	var tag: String = _root_variant_label_for_path(s)
+	return "%s — %s" % [s.get_file().get_basename(), tag]

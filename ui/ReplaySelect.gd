@@ -17,6 +17,7 @@ const REPLAY_EXT: String = ".json"
 
 func _ready() -> void:
 	UISkin.ensure_ui_fits_screen()
+	UISkin.attach_focus_arrow(self)
 	UISkin.apply_background(self, "options_menu_bg")
 	title_label.text = "Watch Replay"
 	play_button.pressed.connect(_on_play_pressed)
