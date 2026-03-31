@@ -64,9 +64,10 @@ var _preview_shader_loader: ModLoader = null
 var _preview_p1_key: String = ""
 var _preview_p2_key: String = ""
 
-const ROSTER_PAGE_SIZE: int = 8
-const ROSTER_ICON_BUTTON_SIZE := Vector2(92, 52)
+const ROSTER_PAGE_SIZE: int = 7
+const ROSTER_ICON_BUTTON_SIZE := Vector2(132, 74)
 const ROSTER_TEXT_BUTTON_SIZE := Vector2(124, 54)
+const FOLDER_STRIP_VISIBLE_COUNT: int = 8
 const FOLDER_STAGE_FORM: int = 0
 const FOLDER_STAGE_COSTUME: int = 1
 
@@ -414,10 +415,10 @@ func _create_roster_button(mod_entry: Dictionary, player_id: int, index: int) ->
 	button.text = ""
 	if icon_tex == null:
 		button.text = _short_roster_name(full_name.to_upper(), 11)
+		button.set_meta("has_portrait_icon", false)
 	else:
-		button.icon = icon_tex
-		button.expand_icon = true
-		button.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		button.set_meta("has_portrait_icon", true)
+		_attach_roster_icon(button, icon_tex)
 	button.flat = false
 	button.alignment = HORIZONTAL_ALIGNMENT_CENTER
 	button.clip_text = true
@@ -825,7 +826,7 @@ func _refresh_roster_markers() -> void:
 		if p1_locked and p1_selected_mod == _mod_load_key_at(i):
 			tags.append("LOCK")
 		var base_name: String = _mod_name_at(i)
-		if b.icon == null:
+		if not bool(b.get_meta("has_portrait_icon", false)):
 			b.text = _short_roster_name(base_name.to_upper(), 11)
 		b.tooltip_text = "%s%s" % [base_name, "" if tags.is_empty() else " [%s]" % ",".join(tags)]
 		_apply_roster_button_visual_state(
@@ -846,7 +847,7 @@ func _refresh_roster_markers() -> void:
 		if p2_locked and p2_selected_mod == _mod_load_key_at(i):
 			tags.append("LOCK")
 		var base_name: String = _mod_name_at(i)
-		if b.icon == null:
+		if not bool(b.get_meta("has_portrait_icon", false)):
 			b.text = _short_roster_name(base_name.to_upper(), 11)
 		b.tooltip_text = "%s%s" % [base_name, "" if tags.is_empty() else " [%s]" % ",".join(tags)]
 		_apply_roster_button_visual_state(
@@ -898,7 +899,9 @@ func _refresh_roster_folder_row_for_player(player_id: int, base_row: Control, fo
 		var cos_labels: Array[String] = ["Default"]
 		for ck in ckeys:
 			cos_labels.append(ck)
-		for j in range(cos_labels.size()):
+		var cstart: int = _folder_strip_window_start(cos_labels.size(), folder_costume_index, FOLDER_STRIP_VISIBLE_COUNT)
+		var cend: int = min(cos_labels.size(), cstart + FOLDER_STRIP_VISIBLE_COUNT)
+		for j in range(cstart, cend):
 			var b := Button.new()
 			b.custom_minimum_size = ROSTER_TEXT_BUTTON_SIZE
 			b.text = _folder_strip_button_text(cos_labels[j].to_upper(), j == folder_costume_index)
@@ -911,7 +914,9 @@ func _refresh_roster_folder_row_for_player(player_id: int, base_row: Control, fo
 	var forms: Array[String] = mod_entry.get("forms", [])
 	for form_id in forms:
 		labels.append(str(form_id))
-	for i in range(labels.size()):
+	var start_idx: int = _folder_strip_window_start(labels.size(), folder_variant_index, FOLDER_STRIP_VISIBLE_COUNT)
+	var end_idx: int = min(labels.size(), start_idx + FOLDER_STRIP_VISIBLE_COUNT)
+	for i in range(start_idx, end_idx):
 		var b := Button.new()
 		b.custom_minimum_size = ROSTER_TEXT_BUTTON_SIZE
 		b.text = _folder_strip_button_text(labels[i].to_upper(), i == folder_variant_index)
@@ -919,6 +924,19 @@ func _refresh_roster_folder_row_for_player(player_id: int, base_row: Control, fo
 		b.pressed.connect(_on_variant_pressed.bind(player_id, i))
 		_apply_roster_button_visual_state(b, i == folder_variant_index, true, false, player_id)
 		folder_row.add_child(b)
+
+
+func _folder_strip_window_start(total: int, selected: int, visible_count: int) -> int:
+	if total <= visible_count:
+		return 0
+	var half: int = visible_count / 2
+	var start: int = selected - half
+	if start < 0:
+		start = 0
+	var max_start: int = total - visible_count
+	if start > max_start:
+		start = max_start
+	return start
 
 
 func _apply_roster_button_visual_state(button: Button, is_cursor: bool, is_open: bool, is_locked: bool, player_id: int) -> void:
@@ -1786,7 +1804,7 @@ func _load_mod_icon_texture(mod_path: String) -> Texture2D:
 	for candidate in candidates:
 		var texture := _load_texture_from_path(candidate)
 		if texture != null:
-			return texture
+			return _crop_icon_texture_padding(texture)
 	return null
 
 
@@ -1802,6 +1820,67 @@ func _load_texture_from_path(path: String) -> Texture2D:
 	if image.load(abs_path) != OK:
 		return null
 	return ImageTexture.create_from_image(image)
+
+
+func _crop_icon_texture_padding(texture: Texture2D) -> Texture2D:
+	if texture == null:
+		return null
+	var image: Image = texture.get_image()
+	if image == null or image.is_empty():
+		return texture
+	var used: Rect2i = image.get_used_rect()
+	if used.size.x <= 0 or used.size.y <= 0:
+		return texture
+	# Avoid needless copy when icon already uses most of the canvas.
+	if float(used.size.x) >= float(image.get_width()) * 0.9 and float(used.size.y) >= float(image.get_height()) * 0.9:
+		return texture
+	var cropped := Image.create_empty(used.size.x, used.size.y, false, image.get_format())
+	cropped.blit_rect(image, used, Vector2i.ZERO)
+	return ImageTexture.create_from_image(cropped)
+
+
+func _fit_icon_to_target(texture: Texture2D, target_size: Vector2) -> Texture2D:
+	if texture == null:
+		return null
+	var image: Image = texture.get_image()
+	if image == null or image.is_empty():
+		return texture
+	var src_w: float = float(maxi(1, image.get_width()))
+	var src_h: float = float(maxi(1, image.get_height()))
+	var dst_w: float = maxf(1.0, target_size.x)
+	var dst_h: float = maxf(1.0, target_size.y)
+	var scale: float = minf(dst_w / src_w, dst_h / src_h)
+	var out_w: int = maxi(1, int(round(src_w * scale)))
+	var out_h: int = maxi(1, int(round(src_h * scale)))
+	if out_w == image.get_width() and out_h == image.get_height():
+		return texture
+	var resized: Image = image.duplicate()
+	resized.resize(out_w, out_h, Image.INTERPOLATE_NEAREST)
+	return ImageTexture.create_from_image(resized)
+
+
+func _attach_roster_icon(button: Button, texture: Texture2D) -> void:
+	if button == null or texture == null:
+		return
+	var existing := button.get_node_or_null("PortraitIcon") as TextureRect
+	if existing != null:
+		existing.texture = texture
+		return
+	var portrait := TextureRect.new()
+	portrait.name = "PortraitIcon"
+	portrait.texture = texture
+	portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	portrait.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	portrait.anchors_preset = Control.PRESET_FULL_RECT
+	portrait.anchor_right = 1.0
+	portrait.anchor_bottom = 1.0
+	portrait.offset_left = 4.0
+	portrait.offset_top = 4.0
+	portrait.offset_right = -4.0
+	portrait.offset_bottom = -4.0
+	button.add_child(portrait)
 
 
 func _load_character_def(path: String) -> Dictionary:
